@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795671773";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795672535";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1973,8 +1973,8 @@ function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1
  return `<article class="excard"><div class="exhead"><div><h4>${e_(ex.name)}</h4>${ex.orig?`<p class="swapped small">In place of ${e_(ex.orig)}</p>`:""}${ex.notes?`<p class="exnote">${e_(ex.notes)}</p>`:""}</div>
   <a class="demo${V.exact?"":" find"}" href="${e_(V.url)}" target="_blank" rel="noopener">${V.exact?"▶ Watch how":"▶ Find a video"}</a></div>${swapBox(ex,i)}
   ${window.F2C_videos&&F2C_videos.isCoach()?`<div class="vidset"><button type="button" class="linkbtn small" data-vid="${i}">${V.custom?"Change video (you set this one)":"Change video"}</button><div class="vidbox" hidden><label class="sr" for="vid${i}">YouTube Shorts link</label><input id="vid${i}" type="url" inputmode="url" placeholder="Paste a YouTube Shorts link"><div class="nav"><span class="status small"></span>${V.custom?`<button type="button" class="btn small" data-vidclear="${i}">Use the default</button>`:""}<button type="button" class="btn small primary" data-vidsave="${i}">Save video</button></div></div></div>`:""}
-  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span><b>${n}</b> × ${e_(ex.reps||"")}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
-  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?"+ lb":P.hand?"Each hand":"Weight"}</span><span>${K==="timed"?"Seconds":P.side?"Reps / side":"Reps"}</span><span>RIR</span><span>Tempo used</span><span></span></div>`}${rows}</div>
+  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span>${F2C_term("setsreps",`<b>${n}</b> × ${e_(ex.reps||"")}`)}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
+  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?F2C_term("bw","+ lb"):P.hand?F2C_term("perhand","Each hand"):"Weight"}</span><span>${K==="timed"?"Seconds":P.side?F2C_term("perside","Reps / side"):"Reps"}</span><span>${F2C_term("rir","RIR")}</span><span>${F2C_term("tempo","Tempo used")}</span><span></span></div>`}${rows}</div>
   <button class="histbtn" type="button">History</button><div class="hist" hidden>${hist(s,w,L)}</div></article>`}
 function hist(s,w,L){const out=[];for(let k=w;k>=1&&out.length<8;k--){const sets=[];for(let n=1;n<=10;n++){const v=L[`w${k}|${ui.day}|${s}|${n}`];if(v&&(v.wt||v.reps))sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}${v.rir?` <em>RIR ${e_(v.rir)}</em>`:""}${v.t?` <em>${e_((TEMPOS.find(t=>t[0]===v.t)||[,v.t])[1])}</em>`:""}`)}
  if(sets.length)out.push(`<li><b>Week ${k}</b> ${sets.join(" · ")}</li>`)}return out.length?`<ul>${out.join("")}</ul>`:`<p class="muted">Nothing logged yet.</p>`}
@@ -2709,7 +2709,7 @@ window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!
  let h=`<div class="sheet"><div class="sheethead"><div><span class="label">InBody</span><h3>Body scans</h3></div>${b&&b.lastDate?`<span class="pill">Last scan ${e_(b.lastDate)}</span>`:""}</div>`;
  const due=scanDue();h+=due?`<div class="note gold"><b>Scan due.</b> ${e_(due)} Scan every 4 weeks and at each phase change.${PROTOCOL}</div>`:`<p class="muted small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"")}. Scan every 4 weeks and at each phase change.</p><details><summary class="small">How to scan for a fair comparison</summary>${PROTOCOL}</details>`;
  h+=`</div>`;
- if(last)h+=`<div class="kpis">${[["Weight",last.weight," lb"],["Body fat",last.bf,"%"],["Muscle (SMM)",last.smm," lb"],["Lean mass",last.lean," lb"],["BMR",last.bmr," kcal"]].filter(x=>x[1]!==""&&x[1]!=null).map(x=>`<div class="kpi"><span class="label">${x[0]}</span><b>${e_(x[1])}${x[2]}</b></div>`).join("")}</div>`;
+ if(last)h+=`<div class="kpis">${[["Weight",last.weight," lb"],[F2C_term("bf","Body fat"),last.bf,"%"],[F2C_term("smm","Muscle (SMM)"),last.smm," lb"],[F2C_term("lean","Lean mass"),last.lean," lb"],[F2C_term("bmr","BMR"),last.bmr," kcal"]].filter(x=>x[1]!==""&&x[1]!=null).map(x=>`<div class="kpi"><span class="label">${x[0]}</span><b>${e_(x[1])}${x[2]}</b></div>`).join("")}</div>`;
  if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
  const c=b&&b.cmp;
  if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
@@ -2737,7 +2737,7 @@ function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||
  let h="";
  const seg=(k,title,note)=>{const m=sg[k];if(!m||!SEG.some(([x])=>m[x]))return "";const pm=psg[k]||{};
   return `<h4 class="sect">${title}</h4>${note?`<p class="muted small">${note}</p>`:""}<div class="scroll"><table><thead><tr><th>Body part</th><th>lb</th><th>% of ideal</th>${prev?"<th>Change</th>":""}</tr></thead><tbody>${SEG.filter(([x])=>m[x]).map(([x,l])=>{const v=m[x]||{},p=pm[x]||{};return `<tr><td>${l}</td><td class="num">${e_(v.lb==null?"":v.lb)}</td><td class="num">${e_(v.pct==null?"":v.pct+"%")}</td>${prev?`<td class="num">${chg(v.lb,p.lb," lb")}</td>`:""}</tr>`}).join("")}</tbody></table></div>`};
- h+=seg("lean","Muscle by body part","100% means average for your height. Left and right within about 3% of each other is balanced.");
+ h+=seg("lean",F2C_term("segment","Muscle by body part"),"100% means average for your height. Left and right within about 3% of each other is balanced.");
  h+=seg("fat","Fat by body part","");
  const pk={};(pd.sections||[]).forEach(x=>(x.items||[]).forEach(it=>{if(it.key)pk[it.key]=it.value}));
  const secs=(d.sections||[]).filter(x=>(x.items||[]).length);
@@ -2860,6 +2860,63 @@ document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest
 const st=document.createElement("style");st.textContent=`.setrow.simple{grid-template-columns:20px 1fr 40px}.simplelbl{color:var(--muted);font-size:.85rem}.v2food{margin:10px 0}.v2foodlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}.v2foodlist li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:8px}`;
 document.head.appendChild(st);
 })();
+
+/* ---------- glossary: tap a term to see what it means, or open the full list ---------- */
+(function(){
+const G=[
+ ["Training",[
+  ["rir","RIR","Reps in reserve: how many more clean reps you could have done when you stopped. 0 = couldn't do another (failure). 1 = one left. 2 = two left. Most working sets aim for 1 to 2. The app uses it to decide when to add weight."],
+  ["tempo","Tempo","How fast you move the weight. \"3s down\" means take 3 seconds to lower it. Pause = stop for 1 to 2 seconds at the bottom. Hold top = squeeze at the top. Iso hold = hold still in one spot. Slower lowering makes a lighter weight work harder."],
+  ["setsreps","Sets × reps","\"3 × 8-10\" means 3 sets of 8 to 10 reps. Pick a weight you can do at least 8 times. When every set reaches 10 at your target RIR two sessions in a row, the app suggests more weight."],
+  ["perhand","Per hand","For moves with two dumbbells or kettlebells. Enter the weight of one dumbbell (a pair of 50s = 50). Totals count both hands."],
+  ["perside","Per side","For moves done one arm or one leg at a time. Enter the reps for one side. Totals count both sides."],
+  ["bw","+ lb (bodyweight)","For moves like push-ups and pull-ups. Leave it blank if you used just your body. If you wore a vest or belt, enter the added pounds."],
+  ["progression","Weight suggestions","The app watches your logged sets. Top of the rep range on every set for 2 sessions in a row: add weight. Below the range 2 sessions: stay put. 3 sessions: drop the weight 5 to 10%."],
+  ["deload","Deload","A planned easier week (same weights, fewer sets or less effort) so your body can recover and come back stronger."],
+  ["warmup","Warm-up sets","Light sets before your working weight. They don't count toward your sets and get no weight suggestions."],
+  ["lifted","Weight lifted","Weight × reps for every set, added up. Dumbbells count both hands, one-side moves count both sides, bodyweight moves count the part of your body weight they lift."],
+  ["hardsets","Sets per muscle","Working sets that train a muscle. Most people grow well on about 10 to 20 a week per muscle."],
+  ["estmax","Est. max (1RM)","The heaviest single rep you could probably do, estimated from your logged sets. Used to track strength without testing a true max."],
+  ["zone2","Zone 2","Easy steady cardio where you can still talk in full sentences. Builds endurance without wearing you out."]]],
+ ["Body scans",[
+  ["inbody","InBody","A scale that sends a tiny safe current through your body to estimate muscle, fat and water. Scan at the same time of day each time for a fair comparison."],
+  ["dexa","DEXA","A low-dose X-ray scan that measures fat, lean mass and bone. More precise than InBody. Compare DEXA with DEXA, not with InBody."],
+  ["smm","SMM","Skeletal muscle mass: the muscle you can train (arms, legs, trunk), in pounds. The number to watch go up."],
+  ["bf","Body fat %","The share of your weight that is fat. Also shown as PBF (percent body fat)."],
+  ["lean","Lean mass","Everything that isn't fat: muscle, water, bone and organs."],
+  ["bmr","BMR","Basal metabolic rate: calories your body burns at rest in a day, before any activity."],
+  ["bmi","BMI","Body mass index: weight compared to height. It can't tell muscle from fat, so muscular people often read high."],
+  ["tbw","Total body water","All the water in your body. Most of it lives in muscle."],
+  ["ecw","ECW/TBW","Water outside your cells compared to all your water. About 0.36 to 0.39 is typical. Higher can mean swelling or inflammation."],
+  ["drylean","Dry lean mass","Protein and minerals: your lean mass with the water taken out."],
+  ["vfl","Visceral fat","Fat stored around your organs. Lower is healthier. InBody shows it as a level (under 10 is the target)."],
+  ["segment","Muscle by body part","Lean mass in each arm, each leg and the trunk. 100% means average for your height. Left and right within about 3% is balanced."],
+  ["smi","SMI","Skeletal muscle index: muscle in your arms and legs divided by your height squared."],
+  ["phase","Phase angle","How healthy your cells are, from the scan's current. Higher is better; it tends to rise with training."],
+  ["control","Fat and lean control","What the scan suggests gaining (+) or losing (-) for a balanced body. A rough guide, not a goal."]]],
+ ["Food",[
+  ["kcal","Calories (kcal)","Energy from food. Your target depends on your goal: more to build, less to lean out."],
+  ["macros","Macros","Protein, carbs and fat, in grams. Protein builds muscle, carbs fuel training, fat supports hormones."],
+  ["estimate","Meal estimate","When you type or photograph what you ate, your coach estimates calories and macros from typical portions. Close, not exact."]]]];
+const e_=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const D={};G.forEach(([,list])=>list.forEach(([k,l,t])=>D[k]={l,t}));
+window.F2C_term=(k,label)=>D[k]?`<button type="button" class="term" data-term="${k}">${label||D[k].l}<i class="ti" aria-hidden="true">?</i></button>`:(label||"");
+function close(){const p=document.getElementById("termPop");if(p)p.remove()}
+function pop(btn){close();openedAt=Date.now();const d=D[btn.dataset.term];if(!d)return;const p=document.createElement("div");p.id="termPop";p.className="termpop";p.setAttribute("role","dialog");
+ p.innerHTML=`<b>${e_(d.l)}</b><p>${e_(d.t)}</p><button type="button" class="linkbtn small" data-allterms>All terms</button>`;document.body.appendChild(p);
+ const r=btn.getBoundingClientRect(),w=Math.min(300,innerWidth-24);p.style.width=w+"px";p.style.left=Math.max(12,Math.min(innerWidth-w-12,r.left+r.width/2-w/2))+"px";
+ const h=p.offsetHeight;p.style.top=(r.bottom+8+h<innerHeight?r.bottom+8:Math.max(12,r.top-h-8))+"px"}
+function all(){close();const o=document.createElement("div");o.className="tgate";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");
+ o.innerHTML=`<div class="tbox"><h2>What the terms mean</h2><div class="tscroll" tabindex="0">${G.map(([g,list])=>`<h4>${e_(g)}</h4><dl class="gloss">${list.map(([,l,t])=>`<dt>${e_(l)}</dt><dd>${e_(t)}</dd>`).join("")}</dl>`).join("")}</div><div class="nav"><button class="btn primary" type="button">Close</button></div></div>`;
+ document.body.appendChild(o);o.querySelector(".nav button").onclick=()=>o.remove()}
+window.F2C_glossary=all;
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-term]");if(t){e.preventDefault();e.stopPropagation();const open=document.getElementById("termPop");if(open&&open.dataset.k===t.dataset.term){close();return}pop(t);document.getElementById("termPop").dataset.k=t.dataset.term;return}
+ if(e.target.closest&&e.target.closest("[data-allterms]")){all();return}if(!(e.target.closest&&e.target.closest("#termPop")))close()},true);
+let openedAt=0;addEventListener("scroll",()=>{if(Date.now()-openedAt>400)close()},{passive:true});
+const foot=document.getElementById("foot");if(foot){const a=document.createElement("button");a.type="button";a.className="linkbtn";a.textContent="What the terms mean";a.onclick=all;foot.appendChild(document.createTextNode(" "));foot.appendChild(a)}
+const st=document.createElement("style");st.textContent=`.term{all:unset;cursor:pointer;border-bottom:1.5px dotted currentColor;line-height:1.2}.term .ti{display:inline-grid;place-items:center;width:15px;height:15px;margin-left:4px;border-radius:50%;font:700 10px/1 system-ui,sans-serif;font-style:normal;background:#64748b;color:#fff;vertical-align:1px;text-transform:none;letter-spacing:0}
+.termpop{position:fixed;z-index:9999;background:#0f172a;color:#f8fafc;border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:14px;line-height:1.4}.termpop p{margin:6px 0 8px}.termpop .linkbtn{color:#93c5fd}
+.gloss dt{font-weight:700;margin-top:10px}.gloss dd{margin:2px 0 0}`;document.head.appendChild(st)})();
 
 
 /* ===== Body view: holographic 3D figure shaded by training volume ===== */
@@ -3030,7 +3087,7 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
   <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
   <p class="muted small holohint">${UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn the figure. Pinch to zoom. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
   ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
-   <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total weight lifted · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
+   <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
    <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
   <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets.</p></div>`;
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
