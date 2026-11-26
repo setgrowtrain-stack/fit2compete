@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795708768";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795709972";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -3032,8 +3032,20 @@ function reshape(THREE,A,S){const F=factors(S),P=A.pos.slice(),G=A.head.groups;
    const ref=seg==="tr"?.11:leg?.065:.035,reg=seg==="tr"?1:leg?.8:.6;
    let d=(F[seg]-1)*ref+fat(reg);
    const nz=N[3*i+2];if(F.vis>0&&nz>.15&&y>.93&&y<1.22&&Math.abs(x)<.17){const t=Math.exp(-Math.pow((y-1.06)/.08,2))*Math.max(0,1-Math.abs(x)/.17);d+=F.vis*t*nz*6}
-   P[3*i]+=N[3*i]*d;P[3*i+1]+=N[3*i+1]*d;P[3*i+2]+=N[3*i+2]*d}}
+   P[3*i]+=N[3*i]*d;P[3*i+1]+=N[3*i+1]*d;P[3*i+2]+=N[3*i+2]*d}
+  // no genitals: smooth the front of the groin into a plain surface
+  for(let i=sk.v0;i<sk.v0+sk.vn;i++){const x=A.pos[3*i],y=A.pos[3*i+1],z=A.pos[3*i+2],ax=Math.abs(x);if(ax>.056||y<.70||y>.875||z<-.005)continue;
+   const w=1-ss(.034,.056,ax),cap=.068*Math.pow(ss(.705,.87,y),.7)+(P[3*i+2]-z);P[3*i+2]=P[3*i+2]*(1-w)+Math.min(P[3*i+2],cap)*w}
+  if(S.female){const amp=.04+Math.min(40,F.bf)*.0007; // breasts, sized a little by body fat
+   for(let i=sk.v0;i<sk.v0+sk.vn;i++){const x=A.pos[3*i],y=A.pos[3*i+1],nz=N[3*i+2];if(nz<.2||y<1.15||y>1.4)continue;
+    const r2=(Math.pow(Math.abs(x)-.095,2)+Math.pow(y-1.275,2))/(.06*.06);if(r2>4)continue;const d=amp*Math.exp(-r2)*nz;P[3*i]+=N[3*i]*d;P[3*i+1]+=N[3*i+1]*d-d*.25;P[3*i+2]+=N[3*i+2]*d}}}
+ if(S.female){ // female frame: narrower shoulders and waist, wider hips
+  for(let i=0;i<P.length/3;i++){const y=P[3*i+1];let k=1-.1*ss(1.12,1.36,y)-.06*Math.exp(-Math.pow((y-1.04)/.06,2))+.1*Math.exp(-Math.pow((y-.88)/.09,2));
+   if(y<.8)k+=.04*ss(.45,.8,y);P[3*i]*=k}}
  return {P,F}}
+function noGroin(A,g){const I=A.idx.subarray(g.i0,g.i0+g.in),P=A.pos,out=[];const bad=v=>{const x=Math.abs(P[3*v]),y=P[3*v+1],z=P[3*v+2];return x<.046&&y>.718&&y<.868&&z>-.01};
+ for(let i=0;i<I.length;i+=3){if(bad(I[i])||bad(I[i+1])||bad(I[i+2]))continue;out.push(I[i],I[i+1],I[i+2])}return new Uint32Array(out)}
+const ss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
 
 /* ---------- 3D ---------- */
 let R=null; // {renderer, raf, ro}
@@ -3059,7 +3071,7 @@ async function draw(box,V,S){
  const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(30,w/h,.1,50);cam.position.set(0,1.0,4.9);
  const controls=new OC(cam,renderer.domElement);controls.target.set(0,.9,0);controls.enablePan=false;controls.minDistance=1.6;controls.maxDistance=8;controls.autoRotate=true;controls.autoRotateSpeed=1.2;
  controls.addEventListener("start",()=>controls.autoRotate=false);
- controls.zoomToCursor=true;controls.enablePan=true;controls.minDistance=.3;controls.screenSpacePanning=true;
+ controls.zoomToCursor=false;controls.enablePan=true;controls.minDistance=.3;controls.screenSpacePanning=true;
  const hue=new THREE.Color(UI.color),hsl={};hue.getHSL(hsl);
  const tint=t=>t?new THREE.Color().setHSL(hsl.h,1,.62-.3*t):new THREE.Color().setHSL(hsl.h,.18,.66);
  const IDX={};MUSCLES.forEach(([m],i)=>IDX[m]=i);
@@ -3069,7 +3081,7 @@ async function draw(box,V,S){
  const mi=new Float32Array(A.head.nv).fill(-1);G.forEach(g=>{const k=g.m==="other"||g.m==="skin"?-1:IDX[g.m];mi.fill(k,g.v0,g.v0+g.vn)});
  const RS=reshape(THREE,A,S),all=new THREE.BufferAttribute(RS.P,3);
  const musc=new THREE.BufferGeometry();musc.setAttribute("position",all);musc.setAttribute("mi",new THREE.BufferAttribute(mi,1));musc.setAttribute("fb",new THREE.BufferAttribute(A.fib,1));musc.setIndex(new THREE.BufferAttribute(A.idx.subarray(0,skinG.i0),1));musc.computeVertexNormals();
- const skin=new THREE.BufferGeometry();skin.setAttribute("position",all);skin.setIndex(new THREE.BufferAttribute(A.idx.subarray(skinG.i0,skinG.i0+skinG.in),1));skin.computeVertexNormals();
+ const skin=new THREE.BufferGeometry();skin.setAttribute("position",all);skin.setIndex(new THREE.BufferAttribute(noGroin(A,skinG),1));skin.computeVertexNormals();
  const U={mc:{value:mcol},mh:{value:mheat},paleC:{value:tint(0)},hueC:{value:hue},latsH:{value:0},absH:{value:0},absI:{value:IDX.abs},latC:{value:mcol[IDX.lats]},absC:{value:mcol[IDX.abs]}};
  const VS=`attribute float mi;varying float vMi;varying vec3 vP;varying vec3 vO;varying vec3 vN;varying vec3 vV;
   void main(){vMi=mi;vP=position;vO=normal;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`;
@@ -3100,6 +3112,13 @@ async function draw(box,V,S){
     if(!gl_FrontFacing)a*=.3;
     gl_FragColor=vec4(c*(1.+.3*fr),clamp(a,0.,1.));}`});
  const fig=new THREE.Group();const mMesh=new THREE.Mesh(musc,mMat);mMesh.renderOrder=1;const sMesh=new THREE.Mesh(skin,sMat);sMesh.renderOrder=2;fig.add(mMesh,sMesh);
+ { // smooth patch over the groin (the model's genitals are removed)
+  const F=RS.F,d=Math.max(-.004,(F.bf-15)/100*.08)+(F.tr-1)*.11,nx=14,ny=18,pos=[],ind=[];
+  for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++){const x=-.048+.096*i/nx,y=.716+.154*j/ny,ax=Math.abs(x),c=.068*Math.pow(ss(.705,.87,y),.7);
+   const z=c*(1-.25*Math.pow(ax/.048,2))+d*ss(.72,.8,y);pos.push(x,y,z)}
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,e=c+1;ind.push(a,b,c,b,e,c)}
+  const pg=new THREE.BufferGeometry();pg.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));pg.setIndex(ind);pg.computeVertexNormals();
+  const pm=new THREE.Mesh(pg,sMesh.material);pm.renderOrder=2;fig.add(pm);fig.userData.patch=pm}
  fig.scale.setScalar(S.hIn*.0254/1.72);scene.add(fig);
  const LAY=UI.layer||"muscle";
  if(LAY==="fat"){ // yellow fat under the skin over the muscles
@@ -3107,7 +3126,7 @@ async function draw(box,V,S){
   sMesh.material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.FrontSide,uniforms:{a:{value:fa}},vertexShader:VS,
    fragmentShader:`uniform float a;varying vec3 vP;varying vec3 vN;varying vec3 vV;void main(){vec3 n=normalize(vN);float fr=pow(1.-abs(dot(n,normalize(vV))),1.6);
     float lit=.6+.4*max(dot(n,normalize(vec3(.3,.6,1.))),0.);float b=.5+.5*sin(vP.y*260.+sin(vP.x*180.)*2.);vec3 c=mix(vec3(.98,.8,.28),vec3(1.,.9,.5),b*.35)*lit;
-    gl_FragColor=vec4(c+fr*.25,clamp(a+fr*.25,0.,.95));}`});}
+    gl_FragColor=vec4(c+fr*.25,clamp(a+fr*.25,0.,.95));}`});fig.userData.patch&&(fig.userData.patch.material=sMesh.material);}
  if(LAY==="organs"){mMesh.visible=false;
   try{const O=await loadOrgans();const P=new THREE.BufferAttribute(O.pos,3);
    const vfl=scanVal(S.scan,"vfl"),lv=vfl!=null?vfl:Math.max(1,Math.round(((+(S.scan&&S.scan.bf)||S.bf||20)-10)/1.5));
@@ -3133,6 +3152,13 @@ async function draw(box,V,S){
    const r=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
    const h=ray.intersectObject(sMesh,false)[0];controls.autoRotate=false;
    if(!h){fly(home.t,home.p);return}const dir=cam.position.clone().sub(controls.target).normalize();fly(h.point.clone(),h.point.clone().add(dir.multiplyScalar(.75)))});
+  // pinch or scroll: first slide the spot under your fingers to the center, then zoom into it
+  const pts=new Map();let wheelT=0;
+  const aimAt=(cx,cy)=>{const r=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1),cam);
+   const h=ray.intersectObject(sMesh,false)[0];if(!h)return;controls.autoRotate=false;const d=h.point.clone().sub(controls.target);fly(h.point.clone(),cam.position.clone().add(d))};
+  renderer.domElement.addEventListener("pointerdown",e=>{pts.set(e.pointerId,[e.clientX,e.clientY]);if(pts.size===2){const [a,b]=[...pts.values()];aimAt((a[0]+b[0])/2,(a[1]+b[1])/2)}},true);
+  const up=e=>pts.delete(e.pointerId);renderer.domElement.addEventListener("pointerup",up,true);renderer.domElement.addEventListener("pointercancel",up,true);
+  renderer.domElement.addEventListener("wheel",e=>{const n=performance.now();if(n-wheelT>500)aimAt(e.clientX,e.clientY);wheelT=n},{capture:true,passive:true});
   R.anim=()=>anim&&anim()}
  if(UI.view==="pain"){controls.autoRotate=false;ring.visible=ring2.visible=false;
   window.F2C_painScene&&window.F2C_painScene({THREE,scene,cam,fig,renderer,controls,mMesh,sMesh,mi,MUSCLES,box})}
@@ -3163,7 +3189,7 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
   <div class="seg holoseg hololayer">${[["muscle","Muscles"],["fat","Body fat"],["organs","Organs + visceral fat"]].map(([k,l])=>`<button type="button" data-hl="${k}" aria-pressed="${(UI.layer||"muscle")===k}">${l}</button>`).join("")}</div>
   <div class="seg holoseg">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p==="day"?"Day":p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div>
   <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
-  ${(UI.layer||"muscle")!=="muscle"?`<p class="small holoLayerNote">${layerNote(S)}</p>`:""}<p class="muted small holohint">${UI.view==="pain"?"Pinch to zoom in on the spot between your fingers, or double-tap a spot to jump to it. Drag to turn, two fingers to slide. Tap the exact spot that hurts. ":UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn. Pinch to zoom in on the spot between your fingers, or double-tap a spot to jump to it (double-tap empty space to reset). Two fingers to slide. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
+  ${(UI.layer||"muscle")!=="muscle"?`<p class="small holoLayerNote">${layerNote(S)}</p>`:""}<p class="muted small holohint">${UI.view==="pain"?"Pinch over a spot and it slides to the center and zooms into it, or double-tap a spot to jump to it. Drag to turn, two fingers to slide. Tap the exact spot that hurts. ":UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn. Pinch over a spot and it slides to the center and zooms into it, or double-tap a spot to jump to it (double-tap empty space to reset). Two fingers to slide. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
   ${UI.view==="pain"?`<div id="painBox"></div>`:""}${UI.view!=="pain"&&V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
    <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
    <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:UI.view==="pain"?"":`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
@@ -3411,10 +3437,10 @@ const st=document.createElement("style");st.textContent=`.warmrow{display:grid;g
 const T=()=>window.F2C_T,X=()=>window.F2C_X||{},$=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEYS=["rec","hrv","rhr","sleep","perf","deep","rem","debt","strain","steps","cal","spo2","temp","resp"];
-const DEVS=[["whoop","WHOOP"],["oura","Oura Ring"],["garmin","Garmin"],["fitbit","Fitbit / Google"],["apple","Apple Watch / Health"],["samsung","Samsung Health"],["polar","Polar"],["other","Something else"]];
+const DEVS=[["whoop","WHOOP"],["oura","Oura Ring"],["garmin","Garmin"],["fitbit","Fitbit / Google"],["apple","Apple Watch / Health"],["samsung","Samsung Health"],["polar","Polar"],["hume","Hume Band"],["amazfit","Amazfit (Zepp)"],["other","Something else"]];
 const HOW={oura:"Oura: open the Oura app or ouraring.com, Membership hub, Export data, choose CSV. Upload the file here.",garmin:"Garmin: on connect.garmin.com open Reports (sleep, steps, HRV, stress), pick the range and export CSV. Upload it here.",
  fitbit:"Fitbit / Google: go to takeout.google.com, choose Fitbit, export, then upload the zip here.",apple:"Apple Health has no web export for other apps. Take screenshots of Sleep, Heart Rate Variability, Resting Heart Rate and Steps (week view) and upload them; your coach reads them.",
- samsung:"Samsung Health: Settings, Download personal data, then upload the CSV files here. Or upload screenshots.",polar:"Polar: on flow.polar.com, Settings, Export data, then upload the CSV here.",other:"Upload any CSV export with dates, or screenshots of your sleep, recovery and steps screens."};
+ samsung:"Samsung Health: Settings, Download personal data, then upload the CSV files here. Or upload screenshots.",hume:"Hume Band: Hume says your data is exportable. In the Hume Health app, look under your profile or settings for data export and upload the file here. If you can't find it, upload screenshots of your sleep, HRV, resting heart rate and steps screens.",amazfit:"Amazfit: in the Zepp app go to Profile, Settings, and look for Export Data (or Data Management), then upload the file here. Or upload screenshots of your sleep, heart rate and steps screens.",polar:"Polar: on flow.polar.com, Settings, Export data, then upload the CSV here.",other:"Upload any CSV export with dates, or screenshots of your sleep, recovery and steps screens."};
 
 /* ---------- reading files ---------- */
 function csv(text){const rows=[];let row=[],f="",q=false;text=text.replace(/^﻿/,"");
