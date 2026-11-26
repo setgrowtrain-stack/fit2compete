@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795662309";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795664516";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2828,6 +2828,54 @@ const st=document.createElement("style");st.textContent=`.setrow.simple{grid-tem
 document.head.appendChild(st);
 })();
 
+/* Builds a smooth human figure (one mesh) from a signed distance field, and colors it by muscle region.
+   Coordinates in meters for a 1.75 m figure: x left/right, y up from the floor, z forward. */
+window.F2C_BODY=(function(){
+function sdCapsule(px,py,pz,a,b,r0,r1){const bax=b[0]-a[0],bay=b[1]-a[1],baz=b[2]-a[2],pax=px-a[0],pay=py-a[1],paz=pz-a[2];
+ let h=(pax*bax+pay*bay+paz*baz)/(bax*bax+bay*bay+baz*baz);h=h<0?0:h>1?1:h;const dx=pax-bax*h,dy=pay-bay*h,dz=paz-baz*h;return Math.sqrt(dx*dx+dy*dy+dz*dz)-(r0+(r1-r0)*h)}
+function sdEll(px,py,pz,c,r){const x=(px-c[0])/r[0],y=(py-c[1])/r[1],z=(pz-c[2])/r[2];const k0=Math.sqrt(x*x+y*y+z*z);
+ const k1=Math.sqrt(x*x/(r[0]*r[0])+y*y/(r[1]*r[1])+z*z/(r[2]*r[2]));return k1>0?k0*(k0-1)/k1:-Math.min(r[0],r[1],r[2])}
+function smin(a,b,k){const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25}
+/* S: {female, girth (1 = average), soft (body fat vs average), musc (muscle vs average)} */
+function parts(S){const F=S.female,g=S.girth,mu=S.musc,so=S.soft,P=[];
+ const E=(c,r,k)=>P.push({t:"e",c,r,k:k||.035}),C=(a,b,r0,r1,k)=>P.push({t:"c",a,b,r0,r1,k:k||.03});
+ // torso: stacked ellipsoids from hips to shoulders
+ const prof=F?[[.93,.19,.12],[1.0,.165,.11],[1.07,.13,.095],[1.15,.135,.095],[1.24,.15,.105],[1.31,.155,.1],[1.39,.165,.085]]
+             :[[.93,.165,.11],[1.0,.155,.105],[1.08,.145,.1],[1.17,.155,.105],[1.26,.175,.11],[1.34,.19,.1],[1.41,.2,.085]];
+ prof.forEach(([y,w,d],i)=>{const isWaist=y>.98&&y<1.2;const ww=w*(isWaist?Math.sqrt(g*so):g)*(y>1.2?Math.max(.92,Math.min(1.15,mu)):1);E([0,y,0],[ww,.075,d*(isWaist?Math.sqrt(g*so):g)],.06)});
+ E([0,1.06,.035*(so-1)],[.11*g,.08,.08*so],.06); // belly follows body fat
+ // chest / bust and glutes
+ [-1,1].forEach(s=>{if(F){E([s*.075,1.28,.07],[.065,.06,.055])}else E([s*.085,1.31,.07],[.08*mu,.055,.04*mu]);
+  E([s*.075,.93,-.06],[.085*g,.085,.07*g]);
+  E([s*(F?.165:.19)*Math.max(.92,Math.min(1.15,mu)),1.415,0],[.06*mu,.055,.06*mu],.04);           // shoulder cap
+  const ax=(F?.2:.235)*Math.max(.92,Math.min(1.1,mu));
+  C([s*ax,1.40,0],[s*(ax+.03),1.13,-.005],.048*mu,.04*mu);   // upper arm
+  C([s*(ax+.03),1.13,-.005],[s*(ax+.06),.88,.03],.038*mu,.028);// forearm
+  E([s*(ax+.065),.82,.035],[.025,.05,.04],.02);              // hand
+  const lx=F?.095:.09;
+  C([s*lx,.93,0],[s*(lx-.005),.52,.01],.085*g,.056);         // thigh
+  C([s*(lx-.005),.52,.01],[s*(lx-.01),.09,-.015],.052,.034); // shin
+  E([s*(lx-.008),.36,-.035],[.045,.09,.045]);                // calf
+  C([s*(lx-.01),.05,-.03],[s*(lx-.01),.03,.11],.035,.03,.02);// foot
+ });
+ C([0,1.45,-.005],[0,1.58,.005],.055,.05,.04); // neck
+ E([0,1.665,.012],[.078,.105,.095],.04);        // head
+ return P}
+function field(P,x,y,z){let d=1e9;for(const p of P){const v=p.t==="e"?sdEll(x,y,z,p.c,p.r):sdCapsule(x,y,z,p.a,p.b,p.r0,p.r1);d=d===1e9?v:smin(d,v,p.k)}return d}
+/* muscle region for a surface point (position and normal) */
+function region(x,y,z,nx,ny,nz){const ax=Math.abs(x),front=nz>0.05,back=nz<-0.05;
+ if(y>1.53)return null;
+ if(ax>.215&&y>.78){if(y>1.14)return ax>.24&&y>1.36?"shoulders":(front?"biceps":"triceps");return y>.86?"forearms":null}
+ if(y>1.37){if(ax>.13)return "shoulders";return back||y>1.44?"traps":"chest"}
+ if(y>1.22){if(front)return "chest";if(ax>.11)return "lats";return "upperback"}
+ if(y>1.14){if(front)return ax<.085?"abs":"obliques";return ax>.08?"lats":"upperback"}
+ if(y>.98){if(front)return ax<.075?"abs":"obliques";if(ax>.11)return "obliques";return "lowerback"}
+ if(y>.82){if(back)return "glutes";return ax>.05?"quads":null}
+ if(y>.47)return front||ax<.06?"quads":"hamstrings";
+ if(y>.12)return back||nz<0.3?"calves":null;
+ return null}
+return {parts,field,region}})();
+
 
 /* ===== Body view: holographic 3D figure shaded by training volume ===== */
 (function(){
@@ -2902,66 +2950,46 @@ let R=null; // {renderer, raf, ro}
 function dispose(){if(!R)return;cancelAnimationFrame(R.raf);try{R.ro&&R.ro.disconnect();R.controls&&R.controls.dispose();R.renderer.dispose()}catch(e){}R=null}
 async function draw(box,V,S){
  dispose();
- let THREE,OC;try{THREE=await import("./vendor/three.module.min.js");OC=(await import("./vendor/OrbitControls.js")).OrbitControls}catch(e){box.innerHTML=`<p class="muted small" style="padding:20px">The 3D view couldn't load on this device.</p>`;return}
+ let THREE,OC,MC;try{THREE=await import("./vendor/three.module.min.js");OC=(await import("./vendor/OrbitControls.js")).OrbitControls;MC=(await import("./vendor/MarchingCubes.js")).MarchingCubes}catch(e){box.innerHTML=`<p class="muted small" style="padding:20px">The 3D view couldn't load on this device.</p>`;return}
  const w=box.clientWidth||340,h=box.clientHeight||420;
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.setSize(w,h);box.innerHTML="";box.appendChild(renderer.domElement);
- const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(32,w/h,.1,50);cam.position.set(0,1.0,5.2);
- const controls=new OC(cam,renderer.domElement);controls.target.set(0,.95,0);controls.enablePan=false;controls.minDistance=2.6;controls.maxDistance=8;controls.autoRotate=true;controls.autoRotateSpeed=1.4;
+ const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(30,w/h,.1,50);cam.position.set(0,1.0,5.4);
+ const controls=new OC(cam,renderer.domElement);controls.target.set(0,.92,0);controls.enablePan=false;controls.minDistance=2.4;controls.maxDistance=8;controls.autoRotate=true;controls.autoRotateSpeed=1.2;
  controls.addEventListener("start",()=>controls.autoRotate=false);
- scene.add(new THREE.AmbientLight(0xffffff,.55));const dl=new THREE.DirectionalLight(0xffffff,1.1);dl.position.set(2,4,3);scene.add(dl);const bl=new THREE.DirectionalLight(0xffffff,.6);bl.position.set(-2,2,-3);scene.add(bl);
- const hue=new THREE.Color(UI.color);const hsl={};hue.getHSL(hsl);
- const shell=new THREE.MeshStandardMaterial({color:hue,emissive:hue,emissiveIntensity:.22,transparent:true,opacity:.22,roughness:.4,metalness:.1,depthWrite:false});
- const wire=new THREE.MeshBasicMaterial({color:hue,wireframe:true,transparent:true,opacity:.045});
- const fig=new THREE.Group();scene.add(fig);
- // proportions: 1 unit ~ 1 m, figure scaled to height
- const H=S.hIn*.0254, sc=H/1.75;fig.scale.setScalar(sc);
- const girth=Math.min(1.45,Math.max(.82,Math.sqrt(S.bmi/23))), soft=Math.min(1.3,Math.max(.85,S.bf/(S.female?26:17))), mu=S.musc;
- const F=S.female;
- const shW=(F?.19:.23)*Math.max(.9,Math.min(1.25,mu)), waist=(F?.13:.145)*girth*Math.sqrt(soft), hip=(F?.19:.165)*girth, chest=(F?.165:.18)*girth;
- const add=(geo,pos,scl,mat,rot)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scl)m.scale.set(...scl);if(rot)m.rotation.set(...rot);fig.add(m);return m};
- const both=(geo,pos,scl,rot)=>{add(geo,pos,scl,shell,rot);add(geo,pos,scl,wire,rot)};
- const sph=new THREE.SphereGeometry(1,28,20),cap=(r,l)=>new THREE.CapsuleGeometry(r,l,8,16);
- // torso from a lathe profile (radius by height), squashed front to back
- const prof=[[0.001,.86],[hip*.9,.88],[hip,.95],[hip*.95,1.0],[waist,1.08],[waist*1.02,1.14],[chest*.95,1.25],[chest,1.33],[shW*.88,1.41],[shW*.55,1.46],[.06,1.5],[0.001,1.5]].map(p=>new THREE.Vector2(p[0],p[1]));
- const torso=new THREE.LatheGeometry(prof,40);both(torso,[0,0,0],[1,1,.72]);
- both(cap(.05,.06),[0,1.53,0]);           // neck
- both(sph,[0,1.66,0],[.095,.12,.105]);     // head
- const legX=hip*.5, armX=shW+.035;
- [-1,1].forEach(s=>{
-  both(cap(F?.08:.085,.3),[s*legX,.66,0],[girth*.95,1,girth*.95]);   // thigh
-  both(cap(.058,.31),[s*legX*.95,.27,0]);                               // shin
-  both(new THREE.BoxGeometry(.09,.05,.2),[s*legX*.95,.03,.04]);         // foot
-  both(cap(.052,.2),[s*armX,1.27,0],[1,1,1],[0,0,s*.12]);              // upper arm
-  both(cap(.043,.2),[s*(armX+.035),.99,0.01],[1,1,1],[0,0,s*.08]);     // forearm
-  both(sph,[s*(armX+.05),.82,.01],[.04,.06,.025]);                      // hand
- });
- // muscles: ellipsoids sitting on the surface, colored by volume
- const mats={};
- MUSCLES.forEach(([k])=>{const t=V.max?V.vol[k]/V.max:0;
-  // more sets = darker, deeper shade of the chosen color; untrained = faint outline
-  const c=new THREE.Color().setHSL(hsl.h,Math.max(.6,hsl.s),t?(.80-.45*t):.5);
-  mats[k]=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:t?.45-.25*t:.05,transparent:true,opacity:t?.92:.12,roughness:.45,depthWrite:t>0})});
- const M=(k,pos,scl,rot)=>add(sph,pos,scl.map((v,i)=>i===1?v:v*(.85+.15*mu)),mats[k],rot);
- [-1,1].forEach(s=>{
-  M("chest",[s*chest*.42,1.32,chest*.6],[chest*.52,.08*(F?.9:1),.05]);
-  M("shoulders",[s*(shW+.005),1.4,0],[.068*mu,.065,.07*mu]);
-  M("biceps",[s*(armX+.012),1.27,.036],[.036,.1,.032],[0,0,s*.12]);
-  M("triceps",[s*(armX+.005),1.28,-.038],[.038,.11,.032],[0,0,s*.12]);
-  M("forearms",[s*(armX+.04),1.0,.015],[.03,.1,.03],[0,0,s*.08]);
-  M("obliques",[s*waist*.85,1.1,.02],[.035,.09,.06]);
-  M("lats",[s*chest*.66,1.24,-chest*.36],[.065,.14,.04],[0,0,s*-.25]);
-  M("upperback",[s*chest*.3,1.36,-chest*.58],[.075,.06,.035]);
-  M("lowerback",[s*.037,1.08,-waist*.68],[.032,.075,.028]);
-  M("glutes",[s*hip*.42,.92,-hip*.5],[.088*girth,.088,.065]);
-  M("quads",[s*legX,.68,.055*girth],[.066*girth,.18,.045]);
-  M("hamstrings",[s*legX,.66,-.055*girth],[.064*girth,.17,.042]);
-  M("calves",[s*legX*.95,.32,-.042],[.046,.1,.038]);
- });
- M("traps",[0,1.47,-.045],[.11,.04,.04]);
- for(let r=0;r<3;r++)[-1,1].forEach(s=>M("abs",[s*.032,1.2-r*.055,waist*.68+.01],[.028,.025,.014]));
- // floor ring
- const ring=new THREE.Mesh(new THREE.RingGeometry(.35,.37,64),new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
- const ring2=new THREE.Mesh(new THREE.RingGeometry(.48,.485,64),new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:.25,side:THREE.DoubleSide}));ring2.rotation.x=-Math.PI/2;scene.add(ring2);
+ const hue=new THREE.Color(UI.color),hsl={};hue.getHSL(hsl);
+ // one smooth body surface from a distance field
+ const body=F2C_BODY,P=body.parts({female:S.female,girth:Math.min(1.35,Math.max(.85,Math.sqrt(S.bmi/23))),soft:Math.min(1.35,Math.max(.85,S.bf/(S.female?26:17))),musc:S.musc});
+ const res=70,mc=new MC(res,new THREE.MeshBasicMaterial(),false,false,90000),half=.95,iso=mc.isolation,K=2200,sz=mc.size,f=mc.field;
+ for(let k=0;k<sz;k++){const Z=(k/sz*2-1)*half;for(let j=0;j<sz;j++){const Y=(j/sz*2-1)*half+half;for(let i=0;i<sz;i++){const X=(i/sz*2-1)*half;
+  f[i+j*sz+k*sz*sz]=(Math.abs(X)>.42||Math.abs(Z)>.2||Y>1.82)?-400:iso-K*body.field(P,X,Y,Z)}}}
+ mc.update();
+ const n=mc.count,src=mc.geometry,pos=new Float32Array(n*3),nor=new Float32Array(n*3),col=new Float32Array(n*3),heat=new Float32Array(n);
+ const sp=src.attributes.position.array,sn=src.attributes.normal.array;
+ const tint=(t)=>new THREE.Color().setHSL(hsl.h,Math.max(.65,hsl.s),t?(.72-.4*t):.5);
+ const cache={};MUSCLES.forEach(([k])=>{const t=V.max?V.vol[k]/V.max:0;cache[k]={c:tint(t),t}});const base=tint(0);
+ for(let v=0;v<n;v++){const x=sp[v*3]*half,y=sp[v*3+1]*half+half,z=sp[v*3+2]*half;let nx=sn[v*3],ny=sn[v*3+1],nz=sn[v*3+2];
+  pos[v*3]=x;pos[v*3+1]=y;pos[v*3+2]=z;nor[v*3]=nx;nor[v*3+1]=ny;nor[v*3+2]=nz;
+  const r=body.region(x,y,z,nx,ny,nz),m=r&&cache[r];const c=m&&m.t?m.c:base;col[v*3]=c.r;col[v*3+1]=c.g;col[v*3+2]=c.b;heat[v]=m?m.t:0}
+ const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.BufferAttribute(pos,3));geo.setAttribute("normal",new THREE.BufferAttribute(nor,3));
+ geo.setAttribute("color",new THREE.BufferAttribute(col,3));geo.setAttribute("heat",new THREE.BufferAttribute(heat,1));
+ mc.geometry.dispose();
+ // hologram look: glowing grid lines that wrap the body, brighter edges, faint fill; trained muscles filled in their shade
+ const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,
+  uniforms:{dens:{value:46}},
+  vertexShader:`attribute vec3 color;attribute float heat;varying vec3 vC;varying float vH;varying vec3 vP;varying vec3 vN;varying vec3 vV;
+   void main(){vC=color;vH=heat;vP=position;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`uniform float dens;varying vec3 vC;varying float vH;varying vec3 vP;varying vec3 vN;varying vec3 vV;
+   float ln(vec2 c){vec2 g=abs(fract(c-.5)-.5)/fwidth(c);return 1.-min(min(g.x,g.y),1.);}
+   void main(){vec3 p=vP*dens;vec3 an=abs(normalize(cross(dFdx(vP),dFdy(vP))));
+    float grid=ln(p.yz)*an.x+ln(p.xz)*an.y+ln(p.xy)*an.z;
+    float fr=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.);
+    float a=grid*.8+fr*.4+.04+(vH>0.?.3+vH*.45:0.);
+    if(!gl_FrontFacing)a*=.28;
+    gl_FragColor=vec4(vC*(1.+.35*fr),clamp(a,0.,1.));}`});
+ const fig=new THREE.Mesh(geo,mat);fig.scale.setScalar(S.hIn*.0254/1.75);scene.add(fig);
+ const ringMat=o=>new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:o,side:THREE.DoubleSide});
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.33,.345,64),ringMat(.55));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
+ const ring2=new THREE.Mesh(new THREE.RingGeometry(.46,.465,64),ringMat(.22));ring2.rotation.x=-Math.PI/2;scene.add(ring2);
  const ro=new ResizeObserver(()=>{const W=box.clientWidth,Hh=box.clientHeight;if(!W||!Hh)return;renderer.setSize(W,Hh);cam.aspect=W/Hh;cam.updateProjectionMatrix()});ro.observe(box);
  R={renderer,controls,ro,raf:0};
  const tick=()=>{if(!box.isConnected){dispose();return}controls.update();ring.rotation.z+=.004;renderer.render(scene,cam);R.raf=requestAnimationFrame(tick)};tick();
