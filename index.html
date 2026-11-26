@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795710931";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795713706";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2716,13 +2716,24 @@ Rules:
 4. history: earlier results printed on this sheet (e.g. "Body Composition History"), each with its own date, not including this test. Dates like "05. 01. 26" are month, day, year.
 5. Use null for any number that isn't printed. Never guess a number.`;
 const PROTOCOL=`<ul class="clean"><li>Scan fasted, or 2 to 3 hours after eating.</li><li>Same time of day as your last scan.</li><li>No workout before the scan.</li><li>Use the bathroom first; normal water intake the day before.</li></ul>`;
+function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||""),bf=+last.bf;
+ const z=bf?(fem?(bf<25?"green":bf<32?"yellow":"red"):(bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"#16ec06",yellow:"#ffde00",red:"#ff2a4a"},rc=ZC[z]||"#9aa4af";
+ const r=42,C=2*Math.PI*r,pct=Math.min(1,(bf||0)/(fem?45:40));
+ const ch=(k,good)=>{const v=c&&c.change&&c.change[k];if(v==null||!isFinite(v))return "";const n=Math.round(v*10)/10;if(!n)return `<i class="wch">no change</i>`;const ok=(n>0)===good;return `<i class="wch" style="color:${ok?"#16ec06":"#ff2a4a"}">${n>0?"▲ +":"▼ "}${n}</i>`};
+ const t=(lab,val,u,k,good,col)=>val===""||val==null?"":`<div class="wt wsm"><b style="color:${col}">${e_(val)}<small>${u}</small></b><span>${lab}</span>${ch(k,good)}</div>`;
+ return `<div class="sheet wearcard scancard"><div class="whead"><span>LAST SCAN${last.type==="dexa"?" · DEXA":" · INBODY"}</span><span>${e_(last.date||"")}</span></div>
+  <div class="wtop"><div class="wt wrec"><svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 50 50)"/></svg>
+    <div class="wrecv"><b style="color:${rc}">${bf?e_(bf)+"%":"–"}</b><span style="color:${rc}">${F2C_term("bf","BODY FAT")}</span>${ch("bf",false)}</div></div>
+   <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"#ffffff").replace(/style="color:#(16ec06|ff2a4a)"/,'style="color:#aab4be"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,"#1e9bff")}</div></div>
+  <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,"#8fb3cc")}${t("BMR",last.bmr," kcal","bmr",true,"#ffffff")}</div>
+  <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Arrows compare with your scan before this one: green is the direction you want.</p></div>`}
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
  if(!X.loaded){v.innerHTML=`<div class="sheet"><p class="muted">Loading scans…</p></div>`;load(true);return}
  const scans=(b&&b.scans)||[],pend=open().filter(q=>q.type==="inbody"),unconf=scans.filter(s=>!s.confirmed);const last=scans.filter(s=>s.confirmed).slice(-1)[0];
  let h=`<div class="sheet"><div class="sheethead"><div><span class="label">InBody</span><h3>Body scans</h3></div>${b&&b.lastDate?`<span class="pill">Last scan ${e_(b.lastDate)}</span>`:""}</div>`;
  const due=scanDue();h+=due?`<div class="note gold"><b>Scan due.</b> ${e_(due)} Scan every 4 weeks and at each phase change.${PROTOCOL}</div>`:`<p class="muted small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"")}. Scan every 4 weeks and at each phase change.</p><details><summary class="small">How to scan for a fair comparison</summary>${PROTOCOL}</details>`;
  h+=`</div>`;
- if(last)h+=`<div class="kpis">${[["Weight",last.weight," lb"],[F2C_term("bf","Body fat"),last.bf,"%"],[F2C_term("smm","Muscle (SMM)"),last.smm," lb"],[F2C_term("lean","Lean mass"),last.lean," lb"],[F2C_term("bmr","BMR"),last.bmr," kcal"]].filter(x=>x[1]!==""&&x[1]!=null).map(x=>`<div class="kpi"><span class="label">${x[0]}</span><b>${e_(x[1])}${x[2]}</b></div>`).join("")}</div>`;
+ if(last)h+=scanCard(last,b&&b.cmp);
  if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
  const c=b&&b.cmp;
  if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
@@ -3181,7 +3192,7 @@ function layerNote(S){const sc=S.scan,bf=+(sc&&sc.bf)||S.bf,vfl=scanVal(sc,"vfl"
  return `Visceral fat is the fat packed around your organs, the kind linked to heart disease and diabetes. ${vfl!=null?`Your InBody visceral fat level is <b>${vfl}</b>. InBody counts under 10 as healthy; the yellow layer around your stomach, intestines and kidneys grows with the level.`:`No visceral fat level on your scans yet, so the yellow layer is estimated from body fat. An InBody scan gives a real level.`} Organs are a standard model, not your own; only the fat layer changes with your numbers.`}
 const LBL={day:"Today",week:"This week",month:"30 days",year:"12 months"};
 function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host=$("holoWrap");
- if(!host){host=document.createElement("div");host.id="holoWrap";const wb=$("wearBox");v.insertBefore(host,wb?wb.nextSibling:v.firstChild)}
+ if(!host){host=document.createElement("div");host.id="holoWrap";v.insertBefore(host,v.firstChild)}
  const V=volume(UI.period),S=shape();
  const lb=n=>Math.round(n).toLocaleString("en-US");const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k],w:V.lbs[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
  const sc=S.scan,fs=S.first;
@@ -3513,7 +3524,7 @@ function advice(d,base){if(!d)return "";const z=zone(d.rec),hrvLow=d.hrv!=null&&
 window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";const last=W[W.length-1],today=new Date().toISOString().slice(0,10),prev=W.slice(-31,-1),base={hrv:avg(prev,"hrv"),rhr:avg(prev,"rhr")};
  const stale=last.date<new Date(Date.now()-2*864e5).toISOString().slice(0,10);
  const ZC={green:"#16ec06",yellow:"#ffde00",red:"#ff2a4a"},rz=last.rec!=null?zone(last.rec):"",rc=ZC[rz]||"#9aa4af";
- const ring=v=>{const r=42,c=2*Math.PI*r,p=Math.max(0,Math.min(100,v||0));return `<svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" stroke="#2c333b" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 50 50)"/></svg>`};
+ const ring=v=>{const r=42,c=2*Math.PI*r,p=Math.max(0,Math.min(100,v||0));return `<svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 50 50)"/></svg>`};
  const I={hrv:'<path d="M2 12h4l2-5 3 10 3-7 2 2h6"/>',rhr:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',steps:'<path d="M7 14c-1.5 0-2.5 1.5-2.5 3S5.5 20 7 20s2-1.5 2-3-0.5-3-2-3zM15 4c-1.5 0-2.5 1.5-2.5 3s1 3 2.5 3 2-1.5 2-3-.5-3-2-3zM6 12c0-2 .5-4 1.5-4S9 10 8.5 12M14 13c.5 2 1 4 2 4s1.5-2 1-4"/>',cal:'<path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/>',debt:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>'};
  const ic=k=>`<svg viewBox="0 0 24 24" class="wic">${I[k]||""}</svg>`;
  const small=["hrv","rhr","steps","cal"].filter(k=>last[k]!=null).map(k=>`<div class="wt wsm">${ic(k)}<b>${fmt[k](last[k])}</b><span>${k==="hrv"?"HRV":k==="rhr"?"RESTING HR":k==="steps"?"STEPS":"CALORIES"}</span></div>`).join("");
@@ -3543,7 +3554,7 @@ function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W
  const pend=(X().requests||[]).filter(r=>r.type==="question"&&r.meta&&r.meta.kind==="wear"&&(r.status==="new"||r.status==="working"));
  if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length===1?"your screenshots":pend.length+" uploads"}. They'll show up here.</div>`;
  return h+`</div>`}
-function render(){const v=$("v-body");if(!v)return;const old=$("wearBox");const html=wearHtml();if(old)old.outerHTML=html;else v.insertAdjacentHTML("afterbegin",html);wire()}
+function render(){const v=$("setupDevices")||$("v-body");if(!v)return;const old=$("wearBox");const html=wearHtml();if(old)old.outerHTML=html;else v.insertAdjacentHTML("afterbegin",html);wire()}
 function wire(){const f=$("wearFile"),s=$("wearShot"),st=$("wearSt");
  if(f)f.onchange=async()=>{const files=[...f.files];if(!files.length)return;st.textContent="Reading your file…";
   try{const r=await readFiles(files);if(!r.days.length){st.textContent="Couldn't find daily numbers in that file. Try the screenshots button instead.";return}
@@ -3555,7 +3566,7 @@ function wire(){const f=$("wearFile"),s=$("wearShot"),st=$("wearSt");
   try{await sendShots(files.slice(0,10));render();const s2=$("wearSt");if(s2)s2.textContent="Sent. Your coach will read it, usually within 3 hours."}catch(e){st.textContent="Couldn't send. Try again."}}}
 const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{render();applyCoachReads()}catch(e){console.warn("[F2C] wear",e)}return r};
 const _te=window.F2C_todayExtras;window.F2C_todayExtras=function(){let h="";try{h=F2C_wearToday()}catch(e){}return h+(_te?_te.apply(this,arguments):"")};
-window.F2C_wearRead=readFiles;
+window.F2C_wearRead=readFiles;window.F2C_wearRender=()=>render();
 document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-dev]");if(!t)return;const d=t.dataset.dev,pk=$("devPick"),how=$("devHow");
  if(d==="open"){if(pk)pk.hidden=!pk.hidden;return}
  if(d==="whoop"){const wh=X().whoop||{};if(wh.ready){const b=document.createElement("button");b.dataset.whoop="on";b.hidden=true;document.body.appendChild(b);b.click();b.remove()}else if(how)how.innerHTML=`<p class="small">WHOOP sign-in isn't switched on yet. Upload your WHOOP data export instead (WHOOP app: More, App Settings, Data Export).</p>`;return}
@@ -3565,7 +3576,7 @@ document.addEventListener("click",async e=>{const t=e.target.closest&&e.target.c
   if(m==="sync"){t.disabled=true;t.textContent="Syncing…";const r=await F2C_call("whoopSync");X().wear=r.wear;X().whoop=Object.assign({},X().whoop,{last:Date.now()});render();return}
   if(m==="off"){if(!confirm("Disconnect WHOOP? Data already saved stays."))return;await F2C_call("whoopDisconnect");X().whoop=Object.assign({},X().whoop,{connected:false});render()}}
  catch(err){t.disabled=false;if(st)st.textContent=err&&err.message?err.message:"Couldn't reach WHOOP. Try again."}},true);
-const st=document.createElement("style");st.textContent=`.wearcard{background:#14181d!important;color:#e8edf2;border-color:#14181d!important;display:grid;gap:10px}.whead{display:flex;justify-content:space-between;font-weight:800;letter-spacing:.12em;font-size:.78rem;color:#c9d1d9}.wt{background:#232930;border-radius:18px;padding:12px;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.wt b{font-size:1.6rem;line-height:1.1;white-space:nowrap}.wt span{font-size:.7rem;font-weight:800;letter-spacing:.08em;margin-top:4px;color:#aab4be}.wtop{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px}.wrec{position:relative;aspect-ratio:1}.wring{width:100%;max-width:170px}.wrecv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.wrecv b{font-size:2.2rem}.wcol{display:grid;gap:10px}.wmid b{font-size:1.9rem}.wsmall{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}.wsm{padding:10px 4px}.wsm b{font-size:1.15rem;color:#fff}.wsm span{font-size:.6rem}.wic{width:22px;height:22px;fill:none;stroke:#cfd6dd;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-bottom:4px}.wadv{margin:0;font-size:.95rem;line-height:1.4;color:#e8edf2}.z-green{color:#16a34a}.z-yellow{color:#ca8a04}.z-red{color:#dc2626}.wgood{color:#16a34a}.wbad{color:#dc2626}.wearup{display:grid;gap:8px;margin-top:8px}.wearup .btn{justify-self:start;cursor:pointer}.devlist{display:flex;flex-wrap:wrap;gap:6px}.devpick{margin-top:8px;display:grid;gap:8px}`;document.head.appendChild(st);
+const st=document.createElement("style");st.textContent=`.wearcard{background:rgba(20,24,29,.86)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#e8edf2;border-color:rgba(255,255,255,.06)!important;display:grid;gap:10px}.whead{display:flex;justify-content:space-between;font-weight:800;letter-spacing:.12em;font-size:.78rem;color:#c9d1d9}.wt{background:rgba(255,255,255,.07);border-radius:18px;padding:12px;box-sizing:border-box;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.wt b{font-size:1.6rem;line-height:1.1;white-space:nowrap}.wt span{font-size:.7rem;font-weight:800;letter-spacing:.08em;margin-top:4px;color:#aab4be}.wtop{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px}.wrec{position:relative;aspect-ratio:1}.wring{width:100%;max-width:170px}.wrecv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}.wrecv b{font-size:2.2rem}.wcol{display:grid;gap:10px}.wmid b{font-size:1.9rem}.wsmall{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}.wsm{padding:10px 4px}.wsm b{font-size:1.15rem;color:#fff}.wsm span{font-size:.6rem}.wic{width:22px;height:22px;fill:none;stroke:#cfd6dd;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-bottom:4px}.wch{font-style:normal;font-size:.72rem;font-weight:800;margin-top:3px;color:#aab4be}.wt b small{font-size:.55em;margin-left:2px;opacity:.85}.scancard .wrecv .wch{margin-top:2px}.wadv{margin:0;font-size:.95rem;line-height:1.4;color:#e8edf2}.z-green{color:#16a34a}.z-yellow{color:#ca8a04}.z-red{color:#dc2626}.wgood{color:#16a34a}.wbad{color:#dc2626}.wearup{display:grid;gap:8px;margin-top:8px}.wearup .btn{justify-self:start;cursor:pointer}.devlist{display:flex;flex-wrap:wrap;gap:6px}.devpick{margin-top:8px;display:grid;gap:8px}`;document.head.appendChild(st);
 })();
 
 /* ===== Supplement review: the coach checks whether each supplement is needed; times always come from the fixed rules ===== */
@@ -3749,6 +3760,43 @@ Reply with ONLY JSON: {"likely":"one line: the most likely explanation, worded a
 const st=document.createElement("style");st.textContent=`.painfull{position:absolute;top:8px;right:8px;z-index:2}.paintag{position:absolute;left:8px;right:110px;top:8px;z-index:2;background:rgba(0,0,0,.6);color:#fff;font-weight:700;font-size:.85rem;padding:6px 10px;border-radius:8px;pointer-events:none}.painsheet{display:grid;gap:10px}.painform{display:grid;gap:8px}.painarea{font:inherit;font-weight:700;border:1px solid var(--line,#ccc);border-radius:8px;padding:4px 8px;width:min(100%,320px)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chip{display:inline-flex}.chip input{position:absolute;opacity:0;width:0;height:0}.chip span{border:1px solid var(--line,#ccc);border-radius:999px;padding:6px 10px;font-size:.85rem;cursor:pointer}.chip input:checked+span{background:#ff2d55;border-color:#ff2d55;color:#fff}
 .painitem{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px}.painidea{border-left:3px solid #ff8a00;padding-left:10px}.painidea ul{margin:4px 0 8px 18px}.note.red{background:#fde2e2;border-left:4px solid #d11;padding:10px;border-radius:8px}`;document.head.appendChild(st);
+})();
+
+/* ===== Plan tab gets a Setup page (plan buttons, devices, appearance); dark theme ===== */
+(function(){
+const $=id=>document.getElementById(id);
+const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},put=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function theme(t){document.documentElement.classList.toggle("dark",t==="dark");put("f2c-theme",t);const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#060a14":"#ffffff")}
+theme(get("f2c-theme")||"light");
+let sub=get("f2c-plansub")||"plan";
+function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
+ let seg=$("planSeg"),sv=$("setupView");
+ if(!seg){seg=document.createElement("div");seg.id="planSeg";seg.className="seg plansub";seg.innerHTML=`<button type="button" data-ps="plan">Written plan</button><button type="button" data-ps="setup">Setup &amp; devices</button>`;vp.insertBefore(seg,vp.firstChild)}
+ if(!sv){sv=document.createElement("div");sv.id="setupView";sv.className="setupview";sv.innerHTML=`<div id="setupHead"></div><div id="setupDevices"></div>
+  <div class="sheet"><span class="label">Appearance</span><div class="seg themeseg"><button type="button" data-theme="light">Light</button><button type="button" data-theme="dark">Dark</button></div><p class="muted small">Dark uses the same deep navy as the 3D body view.</p></div>`;seg.after(sv)}
+ const top=pp.querySelector(":scope > .top");if(top&&top.parentNode!==$("setupHead"))$("setupHead").appendChild(top);
+ const ap=$("addPanel");if(ap&&ap.parentNode!==sv)sv.insertBefore(ap,$("setupDevices").nextSibling);
+ if(!$("wearBox")&&window.F2C_wearRender)try{F2C_wearRender()}catch(e){}
+ seg.querySelectorAll("[data-ps]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ps===sub));
+ sv.querySelectorAll("[data-theme]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.theme===(get("f2c-theme")||"light")));
+ [...vp.children].forEach(c=>{if(c===seg)return;c.hidden=sub==="setup"?c!==sv:c===sv})}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-ps],button[data-theme],[data-gosetup]");if(!b||b.closest("#ptabs"))return;
+ if(b.dataset.ps){sub=b.dataset.ps;put("f2c-plansub",sub);ensure();return}
+ if(b.dataset.theme){theme(b.dataset.theme);ensure();window.F2C_holoPanel&&0;return}
+ if(b.dataset.gosetup!=null){sub="setup";put("f2c-plansub",sub);const t=document.querySelector('#ptabs button[data-tab="plan"]');t&&t.click();setTimeout(ensure,0)}});
+const mo=new MutationObserver(()=>{if($("v-plan")){mo.disconnect();ensure();new MutationObserver(()=>{clearTimeout(ensure._t);ensure._t=setTimeout(ensure,50)}).observe($("planPanel"),{childList:true})}});
+mo.observe(document.documentElement,{childList:true,subtree:true});
+window.F2C_setupEnsure=ensure;
+const st=document.createElement("style");st.textContent=`.plansub{margin-bottom:12px}.setupview{display:grid;gap:16px}.setupview .top{margin:0}
+html.dark{--bg:#060a14;--card:#0e1625;--ink:#e6edf6;--muted:#9aa8bb;--line:#1d2a3f;--accent-soft:#3a1418;--ok-soft:#0f2a1c;--gold:#f0b44c;--gold-soft:#2b210f;--warn-soft:#331414;--head:#e6edf6;--shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);color-scheme:dark}
+html.dark body{background:radial-gradient(ellipse at 50% 0%,#0f2236 0%,#060a14 60%) no-repeat,#060a14;color:var(--ink)}
+html.dark .ptabs,html.dark #ptabs{background:rgba(8,13,24,.94)!important;border-color:var(--line)!important}
+html.dark #ptabs button{color:var(--muted)}html.dark #ptabs button[aria-selected="true"]{background:transparent!important;color:var(--accent)}
+html.dark header,html.dark .appbar,html.dark .topbar{background:#08101d!important;border-color:var(--line)!important}
+html.dark input,html.dark select,html.dark textarea{background:#0a1220;color:var(--ink);border-color:var(--line)}
+html.dark .btn:not(.primary),html.dark .chipbtn:not([aria-pressed="true"]),html.dark .seg button:not([aria-pressed="true"]){background:#101b2d;color:var(--ink);border-color:var(--line)}
+html.dark .seg{background:#0a1220;border-color:var(--line)}html.dark .note{color:var(--ink)}html.dark table th{background:#0f1a2b}html.dark .kpi,html.dark .chip span{background:#101b2d;border-color:var(--line)}
+html.dark .pill{background:#1a2638;color:var(--ink)}html.dark a{color:#7fb6ff}html.dark .note.red{background:#3a1416}`;document.head.appendChild(st);
 })();
 
 </script>
