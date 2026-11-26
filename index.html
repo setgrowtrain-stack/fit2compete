@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795641760";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795658436";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2709,6 +2709,34 @@ const css=document.createElement("style");css.textContent=`
 b.up{color:var(--ok)}b.down{color:var(--warn)}.v2toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#141414;color:#fff;padding:10px 16px;border-radius:10px;z-index:200;font-size:.9rem;max-width:90vw}
 .banner.v2scan,.banner.v2note{display:block;width:100%;text-align:left;margin:8px 0}`;
 document.head.appendChild(css);
+})();
+
+/* ===== "Save to App": install button in the top bar ===== */
+(function(){
+const standalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+let deferred=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e});
+window.addEventListener("appinstalled",()=>{const b=document.getElementById("saveApp");if(b)b.hidden=true});
+function steps(){const ua=navigator.userAgent;
+ const ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ if(ios&&/CriOS|FxiOS|EdgiOS|GSA/.test(ua))return ["Copy this page's link, then open it in <b>Safari</b> (iPhone only lets Safari add apps to the home screen).","In Safari, tap the <b>Share</b> button (square with an arrow).","Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>."];
+ if(ios)return ["Tap the <b>Share</b> button at the bottom (square with an arrow).","Scroll down and tap <b>Add to Home Screen</b>.","Tap <b>Add</b>. The F2C icon appears on your home screen."];
+ if(/SamsungBrowser/.test(ua))return ["Tap the menu (☰ or ⋮) at the bottom right.","Tap <b>Add page to</b>.","Tap <b>Home screen</b>, then <b>Add</b>."];
+ if(/Firefox/.test(ua))return ["Tap the ⋮ menu.","Tap <b>Add app to Home screen</b> (or <b>Install</b>).","Tap <b>Add</b>."];
+ return ["Tap the ⋮ menu at the top right.","Tap <b>Add to Home screen</b> or <b>Install app</b>.","Tap <b>Install</b> or <b>Add</b>."]}
+function sheet(){let o=document.getElementById("saveSheet");if(o){o.hidden=false;return}
+ o=document.createElement("div");o.id="saveSheet";o.className="savesheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");
+ o.innerHTML=`<div class="savecard"><div class="savehead"><img src="icons/icon-192.png" alt="" width="44" height="44"><div><b>Save Fit 2 Compete as an app</b><span>Puts the F2C icon on your home screen.</span></div></div><ol>${steps().map(s=>`<li>${s}</li>`).join("")}</ol><p class="muted small">Have the old Fit 2 Compete icon? Delete it so you don't open the old version.</p><button type="button" class="btn primary" id="saveClose">Got it</button></div>`;
+ document.body.appendChild(o);o.addEventListener("click",e=>{if(e.target===o||e.target.id==="saveClose")o.hidden=true})}
+function add(){if(standalone()||document.getElementById("saveApp"))return;const bar=document.querySelector(".appbar .in");if(!bar)return;
+ const b=document.createElement("button");b.type="button";b.id="saveApp";b.className="saveapp";b.innerHTML=`<img src="icons/icon-192.png" alt="" width="22" height="22"><span>Save to App</span>`;
+ b.onclick=async()=>{if(deferred){deferred.prompt();try{const r=await deferred.userChoice;if(r&&r.outcome==="accepted")b.hidden=true}catch(e){}deferred=null;return}sheet()};
+ const who=document.getElementById("who");bar.insertBefore(b,who||null)}
+const st=document.createElement("style");st.textContent=`.saveapp{display:inline-flex;align-items:center;gap:6px;font:700 .82rem var(--body);background:#fff;color:#141414;border:0;border-radius:99px;padding:5px 12px 5px 5px;cursor:pointer}.saveapp img{border-radius:6px}
+.savesheet{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.55);display:grid;place-items:end center;padding:12px}.savecard{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;max-width:440px;width:100%;display:grid;gap:12px}
+.savehead{display:flex;gap:12px;align-items:center}.savehead img{border-radius:10px}.savehead span{display:block;color:var(--muted);font-size:.85rem}.savecard ol{margin:0;padding-left:20px;display:grid;gap:8px}`;
+document.head.appendChild(st);
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",add);else add();
 })();
 
 </script>
