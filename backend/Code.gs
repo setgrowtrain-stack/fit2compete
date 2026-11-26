@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.1.0';
+var VERSION = '2.2.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -32,7 +32,7 @@ var TABS = {
   Plans:       ['Athlete Id', 'Athlete', 'Plan version', 'Day', 'Order', 'Exercise', 'Sets', 'Rep range', 'Target RIR', 'Tempo', 'Rest', 'Increment', 'Equipment type', 'Notes', 'Active', 'Updated'],
   SetLog:      ['Id', 'Date', 'Athlete Id', 'Athlete', 'Day', 'Exercise', 'Set #', 'Weight', 'Reps', 'RIR', 'Tempo', 'Done', 'Source', 'Logged by', 'Logged at'],
   Progression: ['Athlete Id', 'Exercise', 'Current working weight', 'Next suggestion', 'Status', 'Reason', 'Sessions at top', 'Sessions below', 'Last session', 'Updated'],
-  InBody:      ['Id', 'Athlete Id', 'Date', 'Weight', 'Body fat %', 'SMM', 'Lean mass', 'BMR', 'File link', 'Source', 'Confirmed', 'Notes'],
+  InBody:      ['Id', 'Athlete Id', 'Date', 'Weight', 'Body fat %', 'SMM', 'Lean mass', 'BMR', 'File link', 'Source', 'Confirmed', 'Notes', 'Scan type', 'Details'],
   Meals:       ['Athlete Id', 'Date', 'Type', 'Meal', 'Food', 'Calories', 'Protein g', 'Carbs g', 'Fat g', 'Source', 'Logged by', 'Logged at'],
   Supplements: ['Athlete Id', 'Name', 'Dose', 'Time', 'Category', 'With food', 'Status', 'Notes', 'Updated'],
   Targets:     ['Athlete Id', 'Phase', 'From', 'To', 'Calories', 'Protein g', 'Carbs g', 'Fat g', 'Bodyweight target', 'Set by', 'Why', 'Updated'],
@@ -665,11 +665,52 @@ function progressionFor_(id) {
 
 /* --------------------------------------------------------------- InBody */
 
+/** Adds the Scan type and Details columns to an older InBody tab. */
+function inBodyCols_() {
+  var sh = sheet_('InBody'), head = TABS.InBody;
+  if (sh.getMaxColumns() < head.length) sh.insertColumnsAfter(sh.getMaxColumns(), head.length - sh.getMaxColumns());
+  if (sh.getRange(1, head.length).getValue() !== head[head.length - 1]) sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#141414').setFontColor('#ffffff');
+  return sh;
+}
+
+/** Everything else read off the scan: device, every printed section and value, segment values, past results printed on the sheet. */
+function scanDetails_(x) {
+  var d = {};
+  if (x.device) d.device = String(x.device).slice(0, 80);
+  if (Array.isArray(x.sections)) d.sections = x.sections.slice(0, 30).map(function (sec) {
+    return { title: String(sec.title || '').slice(0, 80), items: (sec.items || []).slice(0, 60).map(function (it) {
+      var o = { label: String(it.label || '').slice(0, 80), value: typeof it.value === 'number' ? it.value : String(it.value == null ? '' : it.value).slice(0, 60) };
+      if (it.key) o.key = String(it.key).slice(0, 40);
+      if (it.unit) o.unit = String(it.unit).slice(0, 16);
+      if (it.range) o.range = String(it.range).slice(0, 40);
+      return o;
+    }) };
+  });
+  if (x.segments && typeof x.segments === 'object') d.segments = x.segments;
+  if (Array.isArray(x.history)) d.history = x.history.slice(0, 20).map(function (h) { return { date: String(h.date || '').slice(0, 10), weight: num_(h.weight), smm: num_(h.smm), bf: num_(h.bf) }; }).filter(function (h) { return /^\d{4}-\d\d-\d\d$/.test(h.date); });
+  var t = JSON.stringify(d);
+  return t === '{}' ? '' : t.slice(0, 45000);
+}
+
 function addInBody_(athId, x, source, confirmed, fileLink) {
   var id = 'b' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
-  sheet_('InBody').appendRow([id, athId, String(x.date || dateStr_(new Date())).slice(0, 10), num_(x.weight), num_(x.bf), num_(x.smm), num_(x.lean), num_(x.bmr),
-    String(x.file || fileLink || ''), source, !!confirmed, String(x.notes || '').slice(0, 500)]);
+  inBodyCols_().appendRow([id, athId, String(x.date || dateStr_(new Date())).slice(0, 10), num_(x.weight), num_(x.bf), num_(x.smm), num_(x.lean), num_(x.bmr),
+    String(x.file || fileLink || ''), source, !!confirmed, String(x.notes || '').slice(0, 500), String(x.type || (source === 'typed' ? '' : 'inbody')).slice(0, 20), scanDetails_(x)]);
   return id;
+}
+
+/** When a scan is confirmed, adds the earlier results printed on its sheet that aren't on file yet. */
+function addHistory_(athId, details) {
+  var d = {}; try { d = JSON.parse(details || '{}'); } catch (e) {}
+  if (!d.history || !d.history.length) return 0;
+  var v = sheet_('InBody').getDataRange().getValues(), have = {}, n = 0;
+  for (var i = 1; i < v.length; i++) if (v[i][1] === athId) have[dateStr_(v[i][2])] = 1;
+  d.history.forEach(function (h) {
+    if (have[h.date] || h.weight === '') return;
+    have[h.date] = 1; n++;
+    addInBody_(athId, { date: h.date, weight: h.weight, smm: h.smm, bf: h.bf, type: 'history', notes: 'From the history printed on a later scan sheet.' }, 'history', true);
+  });
+  return n;
 }
 
 /** x: {id?, date, weight, bf, smm, lean, bmr, file, notes}. With an id it confirms or corrects that row. */
@@ -682,6 +723,7 @@ function saveInBody(token, athleteId, x) {
     if (x.remove) { sh.deleteRow(r); return { body: bodyFor_(at.id) }; }
     sh.getRange(r, 3, 1, 6).setValues([[String(x.date).slice(0, 10), num_(x.weight), num_(x.bf), num_(x.smm), num_(x.lean), num_(x.bmr)]]);
     sh.getRange(r, 11).setValue(true);
+    addHistory_(at.id, sh.getRange(r, 14).getValue());
   } else {
     if (!x.date || x.weight === '' || x.weight == null) throw err_('bad_request', 'Add at least the date and weight.');
     addInBody_(at.id, x, 'typed', true);
@@ -706,13 +748,13 @@ function muscleOf_(name) {
 /** Scans, whether one is due, and what changed between the last two confirmed scans next to food and training for the same weeks. */
 function bodyFor_(id) {
   var v = sheet_('InBody').getDataRange().getValues(), scans = [];
-  for (var i = 1; i < v.length; i++) if (v[i][1] === id) scans.push({ id: v[i][0], date: dateStr_(v[i][2]), weight: v[i][3], bf: v[i][4], smm: v[i][5], lean: v[i][6], bmr: v[i][7], file: v[i][8], source: v[i][9], confirmed: v[i][10] === true || String(v[i][10]).toUpperCase() === 'TRUE', notes: v[i][11] });
+  for (var i = 1; i < v.length; i++) if (v[i][1] === id) scans.push({ id: v[i][0], date: dateStr_(v[i][2]), weight: v[i][3], bf: v[i][4], smm: v[i][5], lean: v[i][6], bmr: v[i][7], file: v[i][8], source: v[i][9], confirmed: v[i][10] === true || String(v[i][10]).toUpperCase() === 'TRUE', notes: v[i][11], type: v[i][12] || '', details: parseJ_(v[i][13]) });
   scans.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   var ok = scans.filter(function (s) { return s.confirmed; });
   var last = ok[ok.length - 1], days = last ? Math.floor((Date.now() - new Date(last.date + 'T12:00:00').getTime()) / 864e5) : null;
   var out = { scans: scans, lastDate: last ? last.date : null, daysSince: days, due: !last || days >= SCAN_DAYS, cmp: null };
   if (ok.length >= 2) {
-    var a = ok[ok.length - 2], b = last, d = function (k) { return Math.round(10 * ((Number(b[k]) || 0) - (Number(a[k]) || 0))) / 10; };
+    var a = ok[ok.length - 2], b = last, d = function (k) { return a[k] === '' || b[k] === '' || a[k] == null || b[k] == null ? null : Math.round(10 * (Number(b[k]) - Number(a[k]))) / 10; };
     var cmp = { from: a.date, to: b.date, weeks: Math.max(1, Math.round((new Date(b.date) - new Date(a.date)) / 6048e5)),
       change: { weight: d('weight'), bf: d('bf'), smm: d('smm'), lean: d('lean') } };
     // food in the window
@@ -973,6 +1015,8 @@ function sheet_(name) {
   if (!sh) throw err_('not_setup', 'The app isn\'t set up yet. Run setup() in the script editor.');
   return sh;
 }
+
+function parseJ_(t) { if (!t) return null; try { return JSON.parse(t); } catch (e) { return null; } }
 
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }
 

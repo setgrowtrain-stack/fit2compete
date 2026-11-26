@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795668521";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795670412";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2689,9 +2689,19 @@ window.F2C_coachNotes=function(){if(!X.notes.length&&!open().some(q=>q.type==="c
  return h};
 
 /* ---------- Scans (InBody) ---------- */
-const INBODY_PROMPT=`Read this InBody (or similar body composition) result sheet. Convert kilograms to pounds (1 kg = 2.2046 lb) and round to one decimal. Reply with ONLY one JSON object:
-{"date":"YYYY-MM-DD (the test date printed on the sheet)","weight":lb,"bf":percent body fat,"smm":skeletal muscle mass in lb,"lean":lean body mass (or fat-free mass) in lb,"bmr":basal metabolic rate in kcal,"notes":"one short line: anything unclear, or segmental highlights worth knowing"}
-Use null for any number that isn't printed. Never guess a number.`;
+const INBODY_PROMPT=`Read this body composition result sheet. It may be any InBody model, a DEXA report, or another scanner (Styku, Evolt, BodPod and so on). Reply with ONLY one JSON object:
+{"type":"inbody" or "dexa" or "other","device":"model as printed, e.g. InBody 270","date":"YYYY-MM-DD test date printed on the sheet",
+"weight":lb,"bf":percent body fat,"smm":skeletal muscle mass in lb (null if not printed, e.g. DEXA),"lean":lean body mass or fat-free mass in lb,"bmr":basal metabolic rate in kcal,
+"sections":[{"title":"section name as printed","items":[{"key":"standard key from the list below, if one fits","label":"label as printed","value":number (or short text if not a number),"unit":"unit as printed","range":"normal range if printed"}]}],
+"segments":{"lean":{"ra":{"lb":n,"pct":n},"la":{...},"tr":{...},"rl":{...},"ll":{...}},"fat":{same shape, if printed},"ecw_tbw":{"ra":n,...} if printed},
+"history":[{"date":"YYYY-MM-DD","weight":lb,"smm":lb,"bf":percent}],
+"notes":"one short line: anything unreadable or unclear"}
+Rules:
+1. Copy EVERY value printed on the sheet into sections, grouped the way the sheet groups them. Nothing printed is skipped: body water, dry lean mass, protein, minerals, fat mass, lean and muscle, BMI, percent body fat, waist-hip ratio, visceral fat level or area, ECW/TBW, InBody score, phase angle, body cell mass, segmental lean and fat (lb and percent), body fat and lean control targets, target weight, research parameters with their ranges, SMI, and impedance at every frequency for every segment. For DEXA: total and regional fat percent, fat, lean and bone mass by region (arms, legs, trunk, android, gynoid), A/G ratio, visceral fat (VAT) mass, volume and area, bone density (BMD), T-score and Z-score for every site, ALMI, FFMI, FMI, RSMI.
+2. Standard keys: weight, tbw, icw, ecw, dry_lean, protein, minerals, bmc, fat_mass, lean, ffm, smm, bmi, pbf, whr, vfl, vfa, vat_mass, vat_volume, ecw_tbw, inbody_score, phase_angle, bcm, bmr, smi, almi, ffmi, fmi, target_weight, weight_control, fat_control, lean_control, android_pct, gynoid_pct, ag_ratio, bmd_total, t_score, z_score. Segment items use lean_ra, lean_la, lean_tr, lean_rl, lean_ll (and _pct), fat_ra and so on, imp20_ra, imp100_la and so on.
+3. In sections keep the units printed. Top-level numbers and segments are in lb: convert kg to lb (1 kg = 2.2046 lb), one decimal.
+4. history: earlier results printed on this sheet (e.g. "Body Composition History"), each with its own date, not including this test. Dates like "05. 01. 26" are month, day, year.
+5. Use null for any number that isn't printed. Never guess a number.`;
 const PROTOCOL=`<ul class="clean"><li>Scan fasted, or 2 to 3 hours after eating.</li><li>Same time of day as your last scan.</li><li>No workout before the scan.</li><li>Use the bathroom first; normal water intake the day before.</li></ul>`;
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
  if(!X.loaded){v.innerHTML=`<div class="sheet"><p class="muted">Loading scans…</p></div>`;load(true);return}
@@ -2700,8 +2710,9 @@ window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!
  const due=scanDue();h+=due?`<div class="note gold"><b>Scan due.</b> ${e_(due)} Scan every 4 weeks and at each phase change.${PROTOCOL}</div>`:`<p class="muted small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"")}. Scan every 4 weeks and at each phase change.</p><details><summary class="small">How to scan for a fair comparison</summary>${PROTOCOL}</details>`;
  h+=`</div>`;
  if(last)h+=`<div class="kpis">${[["Weight",last.weight," lb"],["Body fat",last.bf,"%"],["Muscle (SMM)",last.smm," lb"],["Lean mass",last.lean," lb"],["BMR",last.bmr," kcal"]].filter(x=>x[1]!==""&&x[1]!=null).map(x=>`<div class="kpi"><span class="label">${x[0]}</span><b>${e_(x[1])}${x[2]}</b></div>`).join("")}</div>`;
+ if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
  const c=b&&b.cmp;
- if(c){const sg=(x,u,good)=>{const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
+ if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
   h+=`<div class="sheet"><span class="label">Since your last scan (${e_(c.from)} to ${e_(c.to)}, ${c.weeks} week${c.weeks>1?"s":""})</span><div class="kpis">
    <div class="kpi"><span class="label">Weight</span>${sg(c.change.weight," lb",true)}</div><div class="kpi"><span class="label">Body fat</span>${sg(c.change.bf," %",false)}</div>
    <div class="kpi"><span class="label">Muscle (SMM)</span>${sg(c.change.smm," lb",true)}</div><div class="kpi"><span class="label">Lean mass</span>${sg(c.change.lean," lb",true)}</div></div>
@@ -2709,17 +2720,29 @@ window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!
    <h4 class="sect">Training in those weeks</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
    ${(c.strength||[]).length?`<div class="scroll"><table><thead><tr><th>Key lift</th><th>Est. max then</th><th>Now</th><th>Change</th></tr></thead><tbody>${c.strength.map(x=>`<tr><td>${e_(x.lift)}</td><td class="num">${x.from} lb</td><td class="num">${x.to} lb</td><td class="num">${x.pct>0?"+":""}${x.pct}%</td></tr>`).join("")}</tbody></table></div>`:""}</div>`}
  else if(scans.length)h+=`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`;
- if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this scan. Check it, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
+ if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
  if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
  if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
   <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
- if(scans.length)h+=`<details class="sheet"><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
+ if(scans.length)h+=`<details class="sheet"><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}${s.source==="history"?' <span class="muted small">from sheet</span>':""}${s.type==="dexa"?' <span class="muted small">DEXA</span>':""}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
  v.innerHTML=h;
  const f=$("scanFile");if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;const st=$("scanSt");st.textContent="Uploading…";
   try{const id=await upload(file,"inbody__"+(file.name||"scan"));await F2C_submit("inbody",INBODY_PROMPT,{fileIds:[id],meta:{kind:"inbody"}});st.textContent="Sent to your coach.";F2C_rBody()}catch(e){st.textContent=errCopy(e)}};
  const sv=$("scanSave");if(sv)sv.onclick=()=>save(readForm($("scanNew")),sv);
  v.querySelectorAll("[data-scanok]").forEach(btn=>btn.onclick=()=>{const x=readForm(v.querySelector(`[data-scan="${btn.dataset.scanok}"]`));x.id=btn.dataset.scanok;save(x,btn)});
  v.querySelectorAll("[data-scanrm]").forEach(btn=>btn.onclick=()=>save({id:btn.dataset.scanrm,remove:true},btn))};
+const SEG=[["la","Left arm"],["ra","Right arm"],["tr","Trunk"],["ll","Left leg"],["rl","Right leg"]];
+function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||{},sg=d.segments||{},psg=pd.segments||{};
+ const chg=(a,b,u)=>{if(typeof a!=="number"||typeof b!=="number")return "";const n=Math.round((a-b)*100)/100;return `<span class="muted small">${n>0?"+":""}${n}${u||""}</span>`};
+ let h="";
+ const seg=(k,title,note)=>{const m=sg[k];if(!m||!SEG.some(([x])=>m[x]))return "";const pm=psg[k]||{};
+  return `<h4 class="sect">${title}</h4>${note?`<p class="muted small">${note}</p>`:""}<div class="scroll"><table><thead><tr><th>Body part</th><th>lb</th><th>% of ideal</th>${prev?"<th>Change</th>":""}</tr></thead><tbody>${SEG.filter(([x])=>m[x]).map(([x,l])=>{const v=m[x]||{},p=pm[x]||{};return `<tr><td>${l}</td><td class="num">${e_(v.lb==null?"":v.lb)}</td><td class="num">${e_(v.pct==null?"":v.pct+"%")}</td>${prev?`<td class="num">${chg(v.lb,p.lb," lb")}</td>`:""}</tr>`}).join("")}</tbody></table></div>`};
+ h+=seg("lean","Muscle by body part","100% means average for your height. Left and right within about 3% of each other is balanced.");
+ h+=seg("fat","Fat by body part","");
+ const pk={};(pd.sections||[]).forEach(x=>(x.items||[]).forEach(it=>{if(it.key)pk[it.key]=it.value}));
+ const secs=(d.sections||[]).filter(x=>(x.items||[]).length);
+ if(secs.length)h+=`<details><summary class="small">Everything on this scan (${secs.reduce((n,x)=>n+x.items.length,0)} values)${d.device?" · "+e_(d.device):""}</summary>${secs.map(x=>`<h4 class="sect">${e_(x.title||"")}</h4><div class="scroll"><table><tbody>${x.items.map(it=>`<tr><td>${e_(it.label)}${it.range?` <span class="muted small">(${e_(it.range)})</span>`:""}</td><td class="num">${e_(it.value)}${it.unit?" "+e_(it.unit):""}</td>${prev?`<td class="num">${it.key&&it.key in pk?chg(it.value,pk[it.key]):""}</td>`:""}</tr>`).join("")}</tbody></table></div>`).join("")}</details>`;
+ return h?`<div class="sheet"><span class="label">${s.type==="dexa"?"DEXA scan":"Scan"} details · ${e_(s.date)}</span>${h}</div>`:""}
 function formFields(s){return [["date","Date","date"],["weight","Weight (lb)"],["bf","Body fat %"],["smm","Muscle SMM (lb)"],["lean","Lean mass (lb)"],["bmr","BMR (kcal)"]].map(([k,l,t])=>`<label class="field"><span class="flabel">${l}</span><input type="${t||"text"}" ${t?"":'inputmode="decimal"'} data-f="${k}" value="${e_(s[k]==null?"":s[k])}"></label>`).join("")}
 function readForm(el){const o={};el.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return o}
 async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
