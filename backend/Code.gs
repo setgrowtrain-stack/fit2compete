@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.4.0';
+var VERSION = '2.5.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -49,6 +49,7 @@ var REQUEST_TYPES = SERVER_TYPES.concat(['read', 'suppList', 'question']);
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
+  if (p.state && /^wh_/.test(p.state)) return whoopCallback_(p);
   var qs = p.access ? '?access=' + encodeURIComponent(p.access) + '&e=' + encodeURIComponent(p.e || '') + '&s=' + encodeURIComponent(p.s || '') : '';
   var url = APP_URL + qs;
   return HtmlService.createHtmlOutput('<p style="font-family:Arial,sans-serif">Fit 2 Compete has moved. <a href="' + url + '" target="_top">Open the app</a>.</p>' +
@@ -60,7 +61,7 @@ var API = {
   listAthletes: listAthletes, saveAthlete: saveAthlete, deleteAthlete: deleteAthlete,
   uploadFile: uploadFile, getFile: getFile, removeUpload: removeUpload,
   submitRequest: submitRequest, cancelRequest: cancelRequest, markApplied: markApplied, getExtras: getExtras,
-  syncSets: syncSets, syncMeals: syncMeals, saveWearables: saveWearables, saveInBody: saveInBody, markNotesSeen: markNotesSeen,
+  syncSets: syncSets, syncMeals: syncMeals, saveWearables: saveWearables, whoopStatus: whoopStatus, whoopStart: whoopStart, whoopSync: whoopSync, whoopDisconnect: whoopDisconnect, saveInBody: saveInBody, markNotesSeen: markNotesSeen,
   listVideos: listVideos, version: function () { return VERSION; }
 };
 
@@ -500,7 +501,7 @@ function getExtras(token, athleteId) {
   }
   return {
     rec: rec, requests: reqs, prog: progressionFor_(at.id), notes: notesFor_(at.id), body: bodyFor_(at.id),
-    targets: targetsFor_(at.id), meals: mealsFor_(at.id, 7), wear: wearFor_(at.id, 90)
+    targets: targetsFor_(at.id), meals: mealsFor_(at.id, 7), wear: (function () { try { whoopAuto_(at.id); } catch (e) {} return wearFor_(at.id, 90); })(), whoop: (function () { var t = whoopTok_(at.id); return { ready: !!prop_('WHOOP_CLIENT_SECRET'), connected: !!(t && t.refresh), last: t && t.last || null }; })()
   };
 }
 
@@ -820,13 +821,18 @@ function wearSheet_() {
 function saveWearables(token, athleteId, rows, source) {
   var u = auth_(token), at = athlete_(u, athleteId, true);
   source = String(source || 'upload').toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 20) || 'upload';
+  var n = saveWearRows_(at.id, (rows || []).slice(0, 800), source);
+  return { wear: wearFor_(at.id, 90), saved: n };
+}
+function saveWearRows_(athId, rows, source) {
   var clean = {};
-  (rows || []).slice(0, 800).forEach(function (x) {
+  rows.forEach(function (x) {
     var d = String(x.date || '').slice(0, 10); if (!/^\d{4}-\d\d-\d\d$/.test(d)) return;
     var r = clean[d] = clean[d] || { date: d };
     WEAR_KEYS.forEach(function (k) { var n = Number(x[k]); if (x[k] !== '' && x[k] != null && isFinite(n)) r[k] = Math.round(n * 100) / 100; });
   });
-  var dates = Object.keys(clean); if (!dates.length) return { wear: wearFor_(at.id, 90), saved: 0 };
+  var dates = Object.keys(clean); if (!dates.length) return 0;
+  var at = { id: athId };
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     var sh = wearSheet_(), v = sh.getDataRange().getValues(), now = new Date();
@@ -834,8 +840,97 @@ function saveWearables(token, athleteId, rows, source) {
     var add = dates.sort().map(function (d) { var r = clean[d]; return [at.id, d, source].concat(WEAR_KEYS.map(function (k) { return r[k] == null ? '' : r[k]; })).concat([now]); });
     sh.getRange(sh.getLastRow() + 1, 1, add.length, add[0].length).setValues(add);
   } finally { lock.releaseLock(); }
-  return { wear: wearFor_(at.id, 90), saved: dates.length };
+  return dates.length;
 }
+/* ---------- WHOOP live connection (OAuth 2, read only). Client secret lives only in Script Properties as WHOOP_CLIENT_SECRET. ---------- */
+var WHOOP_CLIENT_ID = 'a05d8094-2a52-4982-8c54-d676d259e7bf';
+var WHOOP_SCOPES = 'offline read:recovery read:cycles read:sleep read:workout read:body_measurement';
+function whoopRedirect_() { return ScriptApp.getService().getUrl(); }
+function whoopTok_(id) { var t = prop_('WHOOP_TOK_' + id); try { return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+function whoopStatus(token, athleteId) {
+  var u = auth_(token), at = athlete_(u, athleteId, false), t = whoopTok_(at.id);
+  return { ready: !!prop_('WHOOP_CLIENT_SECRET'), connected: !!(t && t.refresh), last: t && t.last || null, err: t && t.err || null };
+}
+function whoopStart(token, athleteId) {
+  var u = auth_(token), at = athlete_(u, athleteId, true);
+  if (!prop_('WHOOP_CLIENT_SECRET')) throw err_('not_setup', 'WHOOP isn\'t set up yet.');
+  var state = 'wh_' + Utilities.getUuid().replace(/-/g, '').slice(0, 20);
+  CacheService.getScriptCache().put(state, JSON.stringify({ id: at.id, email: u.email }), 900);
+  return { url: 'https://api.prod.whoop.com/oauth/oauth2/auth?response_type=code&client_id=' + WHOOP_CLIENT_ID + '&redirect_uri=' + encodeURIComponent(whoopRedirect_()) +
+    '&scope=' + encodeURIComponent(WHOOP_SCOPES) + '&state=' + state };
+}
+function whoopToken_(params) {
+  params.client_id = WHOOP_CLIENT_ID; params.client_secret = prop_('WHOOP_CLIENT_SECRET');
+  var r = UrlFetchApp.fetch('https://api.prod.whoop.com/oauth/oauth2/token', { method: 'post', payload: params, muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('WHOOP token ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 200));
+  return JSON.parse(r.getContentText());
+}
+function whoopSave_(id, j, old) {
+  var t = { access: j.access_token, refresh: j.refresh_token || (old && old.refresh), exp: Date.now() + (Number(j.expires_in) || 3600) * 1000 - 60000, last: old && old.last || null };
+  PropertiesService.getScriptProperties().setProperty('WHOOP_TOK_' + id, JSON.stringify(t)); return t;
+}
+function whoopCallback_(p) {
+  var page = function (msg) { return HtmlService.createHtmlOutput('<div style="font-family:Arial,sans-serif;padding:24px;font-size:18px">' + msg + '<p><a href="' + APP_URL + '" target="_top">Back to Fit 2 Compete</a></p></div>').setTitle(APP_NAME); };
+  var c = CacheService.getScriptCache(), s = c.get(p.state);
+  if (!s) return page('That link expired. Open Fit 2 Compete and tap Connect WHOOP again.');
+  c.remove(p.state); s = JSON.parse(s);
+  if (p.error || !p.code) return page('WHOOP wasn\'t connected (' + String(p.error || 'no code').replace(/[<>]/g, '') + ').');
+  try {
+    whoopSave_(s.id, whoopToken_({ grant_type: 'authorization_code', code: p.code, redirect_uri: whoopRedirect_() }), null);
+    var n = whoopPull_(s.id, 60);
+    return page('WHOOP is connected. ' + n + ' days of recovery, sleep, strain and steps were added.');
+  } catch (e) { return page('WHOOP connection failed: ' + String(e.message || e).replace(/[<>]/g, '').slice(0, 200)); }
+}
+function whoopAccess_(id) {
+  var t = whoopTok_(id); if (!t || !t.refresh) return null;
+  if (!t.access || Date.now() > t.exp) t = whoopSave_(id, whoopToken_({ grant_type: 'refresh_token', refresh_token: t.refresh, scope: 'offline' }), t);
+  return t.access;
+}
+function whoopGet_(access, path, startIso) {
+  var out = [], next = '', guard = 0;
+  do {
+    var r = UrlFetchApp.fetch('https://api.prod.whoop.com/developer' + path + '?limit=25&start=' + encodeURIComponent(startIso) + (next ? '&nextToken=' + encodeURIComponent(next) : ''), { headers: { Authorization: 'Bearer ' + access }, muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) throw new Error('WHOOP ' + path + ' ' + r.getResponseCode());
+    var j = JSON.parse(r.getContentText()); out = out.concat(j.records || []); next = j.next_token || '';
+  } while (next && ++guard < 20);
+  return out;
+}
+/** Pull the last N days from WHOOP into the Wearables tab (source "whoop api"). Days are the local date you woke up. */
+function whoopPull_(id, days) {
+  var access = whoopAccess_(id); if (!access) return 0;
+  var tz = Session.getScriptTimeZone(), start = new Date(Date.now() - days * 864e5).toISOString(), by = {};
+  var day = function (iso) { return Utilities.formatDate(new Date(iso), tz, 'yyyy-MM-dd'); };
+  var cycles = whoopGet_(access, '/v2/cycle', start), cyDay = {};
+  cycles.forEach(function (c) { var d = day(c.end || new Date().toISOString()); cyDay[c.id] = d; var r = by[d] = by[d] || { date: d };
+    if (c.score) { if (c.score.strain != null) r.strain = c.score.strain; if (c.score.kilojoule != null) r.cal = Math.round(c.score.kilojoule / 4.184); }
+    if (c.step_count != null) r.steps = c.step_count; });
+  whoopGet_(access, '/v2/recovery', start).forEach(function (x) { if (!x.score) return; var d = cyDay[x.cycle_id] || day(x.created_at); var r = by[d] = by[d] || { date: d };
+    r.rec = x.score.recovery_score; r.rhr = x.score.resting_heart_rate; r.hrv = x.score.hrv_rmssd_milli; if (x.score.spo2_percentage != null) r.spo2 = x.score.spo2_percentage; if (x.score.skin_temp_celsius != null) r.temp = x.score.skin_temp_celsius; });
+  whoopGet_(access, '/v2/activity/sleep', start).forEach(function (x) { if (x.nap || !x.score || !x.score.stage_summary) return; var d = day(x.end); var r = by[d] = by[d] || { date: d }, st = x.score.stage_summary;
+    var asleep = (st.total_in_bed_time_milli || 0) - (st.total_awake_time_milli || 0) - (st.total_no_data_time_milli || 0);
+    r.sleep = Math.round(asleep / 36e3) / 100; r.deep = Math.round((st.total_slow_wave_sleep_time_milli || 0) / 6e4); r.rem = Math.round((st.total_rem_sleep_time_milli || 0) / 6e4);
+    if (x.score.sleep_performance_percentage != null) r.perf = x.score.sleep_performance_percentage; if (x.score.respiratory_rate != null) r.resp = x.score.respiratory_rate;
+    if (x.score.sleep_needed && x.score.sleep_needed.need_from_sleep_debt_milli != null) r.debt = Math.round(x.score.sleep_needed.need_from_sleep_debt_milli / 6e4); });
+  var rows = Object.keys(by).map(function (k) { return by[k]; });
+  if (rows.length) saveWearRows_(id, rows, 'whoop api');
+  try { var bm = UrlFetchApp.fetch('https://api.prod.whoop.com/developer/v2/user/measurement/body', { headers: { Authorization: 'Bearer ' + access }, muteHttpExceptions: true });
+    if (bm.getResponseCode() === 200) PropertiesService.getScriptProperties().setProperty('WHOOP_BODY_' + id, bm.getContentText().slice(0, 500)); } catch (e) {}
+  var t = whoopTok_(id); t.last = Date.now(); delete t.err; PropertiesService.getScriptProperties().setProperty('WHOOP_TOK_' + id, JSON.stringify(t));
+  return rows.length;
+}
+function whoopSync(token, athleteId) {
+  var u = auth_(token), at = athlete_(u, athleteId, true);
+  try { var n = whoopPull_(at.id, 14); return { saved: n, wear: wearFor_(at.id, 90) }; }
+  catch (e) { var t = whoopTok_(at.id); if (t) { t.err = String(e.message || e).slice(0, 200); PropertiesService.getScriptProperties().setProperty('WHOOP_TOK_' + at.id, JSON.stringify(t)); } throw err_('whoop', 'WHOOP sync failed. Try again, or reconnect.'); }
+}
+function whoopDisconnect(token, athleteId) {
+  var u = auth_(token), at = athlete_(u, athleteId, true);
+  PropertiesService.getScriptProperties().deleteProperty('WHOOP_TOK_' + at.id); return { connected: false };
+}
+/** Called daily and when the app loads: refresh anyone connected whose last pull is over 4 hours old. */
+function whoopAuto_(id) { var t = whoopTok_(id); if (!t || !t.refresh || (t.last && Date.now() - t.last < 4 * 36e5)) return; try { whoopPull_(id, 4); } catch (e) {} }
+function whoopSyncAll() { var v = sheet_('Athletes').getDataRange().getValues(); for (var i = 1; i < v.length; i++) whoopAuto_(v[i][0]); }
+
 function wearFor_(id, days) {
   if (!SS_) sheet_('Users');
   var sh = SS_.getSheetByName('Wearables'); if (!sh) return [];
@@ -968,6 +1063,7 @@ function migrateV2() {
 
 /** Daily trigger: emails an athlete once a week while a scan is due (every 4 weeks). */
 function dailyReminders() {
+  try { whoopSyncAll(); } catch (e) {}
   var props = PropertiesService.getScriptProperties();
   var v = sheet_('Athletes').getDataRange().getValues(), sent = 0;
   for (var i = 1; i < v.length; i++) {
