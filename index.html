@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795673415";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795702668";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -992,6 +992,7 @@ const SECTIONS=[
  {k:"recovery",t:"Recovery and apps",s:"Sleep, stress and the apps or devices you already use. Bring in their data to make cardio and recovery more accurate.",f:[
   {id:"sleep",l:"Average sleep (hours)",type:"number",lvl:"q"},
   {id:"stress",l:"Life and work stress",type:"select",o:["Low","Moderate","High"],lvl:"q"},
+  {id:"hiit",l:"4x4 interval challenge (VO2 max)",type:"select",o:["No","Once a week","Twice a week","Let my coach decide"],lvl:"q",h:"4 hard 4-minute rounds with 3 minutes easy between, about 40 minutes. Raises VO2 max more than easy cardio."},
   {id:"devices",l:"Apps and devices you use",type:"multi",o:DEVICES,wide:1,lvl:"q"},
   {id:"deviceData",l:"Data from your apps",type:"import",wide:1,lvl:"q"}]},
  {k:"photos",t:"Physique photos",s:"Front, side and back photos help the plan find weak points. They are sent to Claude while building the plan and are not stored.",f:[
@@ -1416,7 +1417,8 @@ TRAINING
 - Give a planned tempo only where it matters (main lifts, eccentric-focused work); leave others blank.
 
 CARDIO AND RECOVERY
-- Aerobic base: 2 to 3 easy sessions a week (can talk in full sentences). For health, longevity or VO2 max goals add one hard interval session such as 4 x 4 min at 85 to 95% of max heart rate with 3 min easy, ramped over 3 to 4 weeks. Count sport practice and sprint sessions as conditioning. When maximizing muscle, prefer rowing or cycling over long-distance running.
+- Aerobic base: 2 to 3 easy sessions a week (can talk in full sentences). For health, longevity or VO2 max goals add one hard interval session such as 4 x 4 min at 85 to 95% of max heart rate with 3 min easy, ramped over 3 to 4 weeks.
+- 4x4 INTERVALS (Norwegian 4x4): follow the athlete's "4x4 interval challenge" answer; "Let my coach decide" = 1 a week when building muscle or in contest prep, 2 a week when heart health or VO2 max is the main goal. Session: 10 min warm-up, 4 x 4 min at 85 to 95% of max heart rate (only a few words possible), 3 min easy at about 60 to 70% between, 5 min cool-down; about 40 min. Week 1: 3 x 4 at 85 to 90%, then 4 x 4. Put it in days[] as its own exercise named like "Rowing machine 4x4 intervals" with sets 4, reps "4 min", rest "3 min" so the app times it. Use the rower or bike when building muscle (less interference and impact than running). Count sprint, track and other hard interval sessions toward a cap of 2 to 3 hard conditioning days a week; never the day before heavy legs or sprints. 3 a week only for a 6 to 8 week VO2 max block with lifting volume cut. Sickle cell trait: cap at about 90% of max heart rate or use 5 x 3 min, hydrate, stop for cramping or "wooden" legs. Known heart disease, chest pain, fainting, or an open doctor question about heart testing: say the doctor should OK interval work first. Count sport practice and sprint sessions as conditioning. When maximizing muscle, prefer rowing or cycling over long-distance running.
 - If app data is provided, use it: resting heart rate and HRV trends, sleep hours and recovery scores to set cardio volume and recovery advice; steps to judge daily activity; food logs to compare their real intake with the targets. Note anything that looks worth watching, without overreading single values.
 
 NUTRITION
@@ -1937,7 +1939,7 @@ function rWorkouts(){const p=rec().plan,v=$("v-workouts"),W=weekCount();
  h+=`<div class="sheet"><div class="sheethead"><div><span class="label">${ui.day} · Week ${w}</span><h3>${e_(d?d.title:(row?row.session:"Rest"))}</h3></div>${row&&row.cardio?`<span class="pill">${e_(row.cardio)}</span>`:""}</div>`;
  if(/deload|peak/i.test(ph))h+=`<div class="note">Deload week: half the sets at your normal weights.</div>`;
  else if(/prep|cut/i.test(ph))h+=`<div class="note">Prep phase: keep the weights heavy; one set less on exercises with 3 or more.</div>`;
- h+=window.F2C_wkStart?F2C_wkStart(w,ui.day):"";const XS=((d&&d.exercises)||[]).concat(window.F2C_added?F2C_added(w,ui.day):[]);if(!XS.length){h+=`<div class="empty">${isRestDay(ui.day)?"Rest day. An easy walk is fine.":"No exercises were written for this day. Use Plan › Ask for a change, or rebuild the plan."}</div>`}
+ h+=(window.F2C_whereBox?F2C_whereBox(w,ui.day):"")+(window.F2C_wkStart?F2C_wkStart(w,ui.day):"");const XS=((d&&d.exercises)||[]).concat(window.F2C_added?F2C_added(w,ui.day):[]);if(!XS.length){h+=`<div class="empty">${isRestDay(ui.day)?"Rest day. An easy walk is fine.":"No exercises were written for this day. Use Plan › Ask for a change, or rebuild the plan."}</div>`}
  else{const L=LOG();h+=XS.map((ex,i)=>exCard(swapped(ex),i,w,L)).join("")}
  h+=`</div>`+(window.F2C_wkTools?F2C_wkTools(w,ui.day):"");v.innerHTML=h;
  $("wPrev").onclick=()=>{ui.week--;saveUI();rWorkouts()};$("wNext").onclick=()=>{ui.week++;saveUI();rWorkouts()};
@@ -1950,20 +1952,19 @@ function rWorkouts(){const p=rec().plan,v=$("v-workouts"),W=weekCount();
   const val=b.dataset.vidclear!=null?"":box.querySelector("input").value;st.textContent="Saving…";const ok=await F2C_videos.setVideo(ex.name,val);
   if(!ok){st.textContent="That isn't a YouTube link. Copy the Short's link from the Share button.";return}rWorkouts()});
  v.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>{const box=b.nextElementSibling;box.hidden=!box.hidden});
- v.querySelectorAll("[data-swapto]").forEach(b=>b.onclick=()=>{const r=rec(),ex=XS[+b.dataset.i],k=`${ui.day}|${slug(ex.name)}`;r.swaps=r.swaps||{};
-  if(b.dataset.swapto)r.swaps[k]=b.dataset.swapto;else delete r.swaps[k];touch();rWorkouts()});
+ v.querySelectorAll("[data-swapto]").forEach(b=>b.onclick=()=>{const r=rec(),ex=XS[+b.dataset.i],k=`${ui.day}|${slug(ex.name)}`;r.swaps=r.swaps||{};r.swapsWk=r.swapsWk||{};const kw=`w${ui.week}|${k}`,today=window.F2C_where&&F2C_where()!=="usual";if(b.dataset.swapto){if(today)r.swapsWk[kw]=b.dataset.swapto;else r.swaps[k]=b.dataset.swapto}else{delete r.swapsWk[kw];delete r.swaps[k]}touch();rWorkouts()});
  v.querySelectorAll(".histbtn").forEach(b=>b.onclick=()=>{const box=b.nextElementSibling;box.hidden=!box.hidden;b.textContent=box.hidden?"History":"Hide history"});
 }
 function shortS(s){return String(s||"").split(/[:(]/)[0].slice(0,22)}
-function swapped(ex){const r=rec(),k=`${ui.day}|${slug(ex.name)}`,alt=r.swaps&&r.swaps[k];return alt?Object.assign({},ex,{name:alt,orig:ex.name}):ex}
-function swapBox(ex,i){if(!window.F2C_swaps)return "";const base=ex.orig?{name:ex.orig,alts:ex.alts}:ex,a=rec().a||{};
+function swapped(ex){const r=rec(),k=`${ui.day}|${slug(ex.name)}`,alt=(r.swapsWk&&r.swapsWk[`w${ui.week}|${k}`])||(r.swaps&&r.swaps[k]);return alt?Object.assign({},ex,{name:alt,orig:ex.name}):ex}
+function swapBox(ex,i){if(!window.F2C_swaps)return "";const base=ex.orig?{name:ex.orig,alts:ex.alts}:ex,a=window.F2C_whereA?F2C_whereA(rec().a||{}):(rec().a||{}),away=window.F2C_where&&F2C_where()!=="usual";
  const opts=F2C_swaps.options(base,a).filter(o=>o.name!==ex.name),note=F2C_swaps.dbNote(base,a);
  if(!opts.length&&!ex.orig)return "";
- return `<div class="swapset"><button type="button" class="linkbtn small" data-swap="${i}">⇄ ${ex.orig?"Swapped. Change":"Swap equipment"}</button><div class="swapbox" hidden>
+ return `<div class="swapset"><button type="button" class="linkbtn small" data-swap="${i}">⇄ ${ex.orig?"Swapped. Change":away?"Options for today ("+opts.length+")":"Swap equipment"}</button><div class="swapbox"${away&&!ex.orig?"":" hidden"}>
   <p class="muted small">Same muscles, different equipment you have. Your logs follow the one you pick.</p>${note?`<p class="small swapnote">${e_(note)}</p>`:""}
   <div class="swapopts">${ex.orig?`<button type="button" class="btn small primary" data-swapto="" data-i="${i}">Switch back to ${e_(ex.orig)}</button>`:""}${opts.map(o=>`<button type="button" class="btn small" data-swapto="${e_(o.name)}" data-i="${i}">${e_(o.name)}</button>`).join("")}</div></div></div>`}
 function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w)+(window.F2C_extra?F2C_extra(w,ui.day,s):0);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n,rest:ex.rest||""};const K=window.F2C_exKind?F2C_exKind(ex):"load";const P=window.F2C_per?F2C_per(ex):{};const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
- let rows="";for(let k=1;k<=n;k++){const key=`w${w}|${ui.day}|${s}|${k}`,v=L[key]||{};let prev=null;for(let pw=w-1;pw>=1&&!prev;pw--){const pv=L[`w${pw}|${ui.day}|${s}|${k}`];if(pv&&(pv.wt||pv.reps))prev=pv}
+ const WR=K==="stretch"&&window.F2C_warmRows?F2C_warmRows(ex,w,ui.day,s,n,L):null;let rows=WR||"";for(let k=1;k<=n&&!WR;k++){const key=`w${w}|${ui.day}|${s}|${k}`,v=L[key]||{};let prev=null;for(let pw=w-1;pw>=1&&!prev;pw--){const pv=L[`w${pw}|${ui.day}|${s}|${k}`];if(pv&&(pv.wt||pv.reps))prev=pv}
   rows+=K==="stretch"?`<div class="setrow simple${v.done?" isdone":""}"><span class="sn">${k}</span><span class="simplelbl">${e_(ex.reps||"")}${ex.tempo?" · "+e_(ex.tempo):""}</span><label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">Set ${k} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label></div>`:`<div class="setrow${v.done?" isdone":""}"><span class="sn">${k}</span>
    <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):(K==="bw"?"BW":P.hand?"lb ea":"lb")}"></label>
    <label><span class="sr">Reps, set ${k}</span><input inputmode="numeric" data-k="${key}" data-f="reps" value="${e_(v.reps||"")}" placeholder="${prev&&prev.reps?e_(prev.reps):(K==="timed"?"sec":"reps")}"></label>
@@ -1974,7 +1975,7 @@ function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w)+(window.F2C
   <a class="demo${V.exact?"":" find"}" href="${e_(V.url)}" target="_blank" rel="noopener">${V.exact?"▶ Watch how":"▶ Find a video"}</a></div>${swapBox(ex,i)}
   ${window.F2C_videos&&F2C_videos.isCoach()?`<div class="vidset"><button type="button" class="linkbtn small" data-vid="${i}">${V.custom?"Change video (you set this one)":"Change video"}</button><div class="vidbox" hidden><label class="sr" for="vid${i}">YouTube Shorts link</label><input id="vid${i}" type="url" inputmode="url" placeholder="Paste a YouTube Shorts link"><div class="nav"><span class="status small"></span>${V.custom?`<button type="button" class="btn small" data-vidclear="${i}">Use the default</button>`:""}<button type="button" class="btn small primary" data-vidsave="${i}">Save video</button></div></div></div>`:""}
   ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span>${F2C_term("setsreps",`<b>${n}</b> × ${e_(ex.reps||"")}`)}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${window.F2C_restSec?`<span class="pertag">Rest ${(r=>r>=60?Math.floor(r/60)+":"+String(r%60).padStart(2,"0"):r+" s")(F2C_restSec(ex.name,ex.rest))}</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
-  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?F2C_term("bw","+ lb"):P.hand?F2C_term("perhand","Each hand"):"Weight"}</span><span>${K==="timed"?"Seconds":P.side?F2C_term("perside","Reps / side"):"Reps"}</span><span>${F2C_term("rir","RIR")}</span><span>${F2C_term("tempo","Tempo used")}</span><span></span></div>`}${rows}</div>${window.F2C_setBtns?F2C_setBtns(w,ui.day,s,ex):""}
+  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?F2C_term("bw","+ lb"):P.hand?F2C_term("perhand","Each hand"):"Weight"}</span><span>${K==="timed"?"Seconds":P.side?F2C_term("perside","Reps / side"):"Reps"}</span><span>${F2C_term("rir","RIR")}</span><span>${F2C_term("tempo","Tempo used")}</span><span></span></div>`}${rows}</div>${(K==="timed"||K==="stretch")&&window.F2C_workBtn?F2C_workBtn(ex,s):""}${window.F2C_setBtns?F2C_setBtns(w,ui.day,s,ex):""}
   <button class="histbtn" type="button">History</button><div class="hist" hidden>${hist(s,w,L)}</div></article>`}
 function hist(s,w,L){const out=[];for(let k=w;k>=1&&out.length<8;k--){const sets=[];for(let n=1;n<=10;n++){const v=L[`w${k}|${ui.day}|${s}|${n}`];if(v&&(v.wt||v.reps))sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}${v.rir?` <em>RIR ${e_(v.rir)}</em>`:""}${v.t?` <em>${e_((TEMPOS.find(t=>t[0]===v.t)||[,v.t])[1])}</em>`:""}`)}
  if(sets.length)out.push(`<li><b>Week ${k}</b> ${sets.join(" · ")}</li>`)}return out.length?`<ul>${out.join("")}</ul>`:`<p class="muted">Nothing logged yet.</p>`}
@@ -2087,7 +2088,7 @@ window.F2C_refreshChecks=()=>{if($("v-plan"))rPlanTab();if(ui.tab==="today"&&$("
 
 /* ---------- shared with the coach ---------- */
 window.F2C_suppText=()=>{try{const E=engineOut();return E?JSON.stringify(E.s.supplements.map(g=>({time:g.time,days:g.days,items:(g.items||[]).map(i=>i.name+(i.dose?" "+i.dose:""))}))):"none"}catch(e){return "none"}};
-window.F2C_T={rec,LOG,DAILY,touch,slug,DAYS7,currentWeek,weekDate,phaseOf,dayPlan,mealDayFor,engineOut,ui,show:t=>{ui.tab=t;saveUI();show()}};
+window.F2C_T={build:(...x)=>build(...x),rec,LOG,DAILY,touch,slug,DAYS7,currentWeek,weekDate,phaseOf,dayPlan,mealDayFor,engineOut,ui,show:t=>{ui.tab=t;saveUI();show()}};
 /* ---------- hook into the app ---------- */
 const _renderPlan=renderPlan;
 renderPlan=function(){_renderPlan();show()};
@@ -2501,11 +2502,15 @@ const t=setInterval(()=>{const app=$("app");if(!app||app.hidden||typeof ME==="un
 (function(){
 // Equipment tags. "Commercial gym" or "Both" means a full gym.
 const TAG={barbell:/barbell/i,rack:/rack|barbell/i,dumbbell:/dumbbell/i,bench:/bench/i,cable:/cable|functional trainer/i,pullup:/pull-up/i,dip:/dip station/i,
- legpress:/leg press/i,legcurl:/leg curl/i,legext:/leg extension/i,smith:/smith/i,kettlebell:/kettlebell/i,band:/band/i,trx:/suspension|trx/i,ghd:/back extension|ghd/i,machine:/plate-loaded|machines/i};
+ legpress:/leg press/i,legcurl:/leg curl/i,legext:/leg extension/i,smith:/smith/i,kettlebell:/kettlebell/i,band:/band/i,trx:/suspension|trx/i,ghd:/back extension|ghd/i,machine:/plate-loaded|machines/i,sled:/sled/i,rower:/rower/i,bike:/bike/i,treadmill:/treadmill/i,track:/track or field/i};
 function have(a){a=a||{};const eq=(a.equip||[]).join(" | ")+" | "+(a.equipNotes||"");const full=/commercial gym|^both$/i.test(a.location||"");
  const h={bodyweight:true};for(const k in TAG)h[k]=full||TAG[k].test(eq);if(full){h.machine=true}return h}
 // Families of interchangeable exercises. [name, equipment needed, YouTube Short id or ""]
 const F=[
+ {re:/acceleration sprint|block start|\bsprints?,? \d+ (to \d+ )?m\b/,not:/fly/,alts:[["Acceleration sprints, 20 to 30 m",["track"],""],["Sprints on a field, park or quiet street, 20 to 30 m",["bodyweight"],""],["Hill sprints, 8 to 10 sec, walk-down rest",["bodyweight"],""],["Sled sprints, 20 m, light sled",["sled"],""],["Air bike sprints, 6 to 8 sec all-out, 2 min easy",["bike"],""]]},
+ {re:/fly sprint|flying sprint|fly zone/,alts:[["Fly sprints, 20 m fly zone",["track"],""],["Fly sprints on a field or street: 20 m build, 20 m fast",["bodyweight"],""],["Air bike fly: 10 sec build, 6 sec max, 2 min easy",["bike"],""],["Rower fly: 10 sec build, 8 sec max, 2 min easy",["rower"],""]]},
+ {re:/\b(150|200|300|400|500)\s*m\b|\bladder\b|speed endurance/,alts:[["Same reps on a flat road, park path or field (measure with your watch)",["bodyweight"],""],["Hill runs, 25 to 35 sec at 90%, walk-down rest",["bodyweight"],""],["Air bike: 30 sec at 90%, 4 min easy",["bike"],""],["Rower: 45 sec hard, 4 min easy",["rower"],""],["Rowing machine 4x4 intervals",["rower"],""],["Air bike 4x4 intervals",["bike"],""]]},
+ {re:/4\s*x\s*4|norwegian 4/,alts:[["Rowing machine 4x4 intervals",["rower"],""],["Air bike 4x4 intervals",["bike"],""],["Uphill treadmill 4x4 intervals",["treadmill"],""],["Hill or track 4x4 run intervals",["bodyweight"],""]]},
  {re:/incline.*(press|bench)|low.?incline/,not:/row|curl|fly|raise/,alts:[["Incline barbell press",["barbell","bench"],"0UT1ZU39lPc"],["Incline dumbbell press",["dumbbell","bench"],"8fXfwG4ftaQ"],["Incline cable press (bench under the cables)",["cable","bench"],""],["Incline Smith machine press",["smith","bench"],""],["Incline machine press",["machine"],""],["Feet-elevated push-up",["bodyweight"],"14D-2c9kvVw"]]},
  {re:/bench press|chest press|floor press|flat (dumbbell|db) press/,alts:[["Barbell bench press",["barbell","bench"],"0cXAp6WhSj4"],["Dumbbell bench press",["dumbbell","bench"],"jAD1Nsuq3lM"],["Standing cable chest press",["cable"],""],["Machine chest press",["machine"],""],["Smith machine bench press",["smith","bench"],""],["Weighted push-up",["bodyweight"],"14D-2c9kvVw"]]},
  {re:/low.?to.?high|cable fly|cable flye|crossover|chest fly|pec deck|dumbbell fly/,alts:[["Low-to-high cable fly",["cable"],"MEZ8UPbOO08"],["Incline dumbbell fly",["dumbbell","bench"],""],["Pec deck",["machine"],""],["Band chest fly",["band"],""]]},
@@ -2533,7 +2538,7 @@ const F=[
  {re:/dead ?bug|pallof|plank/,not:/push.?up plank/,alts:[["Dead bug",["bodyweight"],"XcYtWYMz39w"],["Pallof press",["cable"],"fMAx57Oct1I"],["Band Pallof press",["band"],""],["Plank",["bodyweight"],""]]}
 ];
 const short=id=>"https://www.youtube.com/shorts/"+id;
-function family(name){const n=String(name||"").toLowerCase();if(/warm.?up|sprint|stride|skip|\d+\s*m\b|ladder|row\s*\d|rower|sled/.test(n)&&!/sled push/.test(n))return null;
+function family(name){const n=String(name||"").toLowerCase();if(!/warm.?up/.test(n)){const tr=F.slice(0,4).find(f=>f.re.test(n)&&!(f.not&&f.not.test(n)));if(tr)return tr}if(/warm.?up|sprint|stride|skip|\d+\s*m\b|ladder|row\s*\d|rower|sled/.test(n)&&!/sled push/.test(n))return null;
  return F.find(f=>f.re.test(n)&&!(f.not&&f.not.test(n)))||null}
 const core=x=>String(x).toLowerCase().split(/[(,]| or | superset/)[0].replace(/[^a-z]/g,"");
 const same=(x,y)=>core(x)===core(y);
@@ -3178,6 +3183,10 @@ let wake=null;async function keepAwake(on){try{if(on&&!wake&&navigator.wakeLock)
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ACTIVE){wake=null;keepAwake(true)}});
 
 /* ---------- rest countdown ---------- */
+let WORK=null; // {end,total,key,beeped}
+window.F2C_startWork=function(s,sec,btn){audio();if(!ACTIVE){const k=key(T().ui.week,T().ui.day);start(k)}
+ const card=btn.closest(".excard"),rows=[...card.querySelectorAll('[data-f="done"]')],next=rows.find(x=>!x.checked);
+ REST=null;WORK={end:Date.now()+sec*1000,total:sec,beeped:{},el:next?next.dataset.k:null};beep(660,0.15,0.4);tick()};
 let REST=null; // {end, total, beeped:Set}
 function startRest(sec){REST={end:Date.now()+sec*1000,total:sec,beeped:{}};tick()}
 function endRest(){REST=null;if(ACTIVE){ACTIVE.setStart=Date.now();saveActive()}tick()}
@@ -3192,11 +3201,19 @@ function bar(){let b=$("wkbar");if(!ACTIVE){if(b)b.remove();return null}
    if(t.dataset.r==="skip"){if(REST&&ACTIVE)ACTIVE.lastRest=Math.round((REST.total*1000-(REST.end-Date.now()))/1000);endRest()}
    else if(t.dataset.r==="minus"&&REST){REST.end-=15000;REST.total-=15;tick()}
    else if(t.dataset.r==="plus"&&REST){REST.end+=15000;REST.total+=15;tick()}
+   else if(t.dataset.r==="wstop"){WORK=null;tick()}
    else if(t.dataset.r==="finish")finish()})}
  return b}
 let iv=null;
 function tick(){const b=bar();if(!b){clearInterval(iv);iv=null;return}if(!iv)iv=setInterval(tick,200);
  const el=Math.round((Date.now()-ACTIVE.start)/1000);let rest="";
+ if(WORK){const left=(WORK.end-Date.now())/1000,whole=Math.ceil(left);
+  for(const n of [3,2,1])if(whole===n&&!WORK.beeped[n]){WORK.beeped[n]=1;beep(880,0.12,0.35);navigator.vibrate&&navigator.vibrate(80)}
+  if(left<=0){WORK.beeped[0]=1;beep(1320,0.6,0.9);navigator.vibrate&&navigator.vibrate([200,80,200]);const k=WORK.el;WORK=null;
+   const box=k&&document.querySelector(`[data-k="${CSS.escape(k)}"][data-f="done"]`);if(box&&!box.checked){box.checked=true;box.dispatchEvent(new Event("change",{bubbles:true}))}else tick();return}
+  const pct=Math.max(0,Math.min(100,100*left/WORK.total));
+  const html=`<div class="wktime"><span class="label">Workout</span><b>${mmss(el)}</b></div><div class="rest work"><span class="label">Hard interval</span><b class="${whole<=3?"last":""}">${mmss(left)}</b><div class="restbar"><i style="width:${pct}%"></i></div><button type="button" data-r="wstop">Stop</button></div><button type="button" class="btn small fin" data-r="finish">Finish</button>`;
+  if(b._h!==html){b.innerHTML=html;b._h=html}return}
  if(REST){const left=(REST.end-Date.now())/1000,whole=Math.ceil(left);
   for(const n of [3,2,1])if(whole===n&&!REST.beeped[n]){REST.beeped[n]=1;beep(880,0.12,0.35);navigator.vibrate&&navigator.vibrate(80)}
   if(left<=0){if(!REST.beeped[0]){REST.beeped[0]=1;beep(1320,0.6,0.9);navigator.vibrate&&navigator.vibrate([200,80,200])}ACTIVE.lastRest=REST.total;endRest();b.classList.add("go");setTimeout(()=>b.classList.remove("go"),1500);return}
@@ -3267,7 +3284,7 @@ const st=document.createElement("style");st.textContent=`.setbtns{display:flex;f
 .wkbar2 .label{color:#94a3b8;font-size:11px;display:block}.wkbar2 b{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.1}
 .wkbar2 .rest{display:grid;grid-template-columns:auto auto auto auto;grid-template-areas:"l t t t" "b b b b" "m p s s";gap:4px 6px;align-items:center}.wkbar2 .rest .label{grid-area:l}.wkbar2 .rest b{grid-area:t;font-size:28px}.wkbar2 .rest b.last{color:#fbbf24}
 .wkbar2 .rest.idle{display:grid;grid-template-columns:1fr;grid-template-areas:none}.wkbar2 .rest.idle b{font-size:22px}.wkbar2 .rest.idle .muted{color:#94a3b8}
-.restbar{grid-area:b;height:6px;border-radius:3px;background:#334155;overflow:hidden}.restbar i{display:block;height:100%;background:#22d3ee;transition:width .2s linear}
+.restbar{grid-area:b;height:6px;border-radius:3px;background:#334155;overflow:hidden}.restbar i{display:block;height:100%;background:#22d3ee;transition:width .2s linear}.rest.work .restbar i{background:#f97316}.rest.work [data-r=wstop]{grid-area:s;background:#1e293b;color:#fff;border:0;border-radius:8px;padding:6px 8px;font-weight:600}
 .wkbar2 .rest button{background:#1e293b;color:#f8fafc;border:0;border-radius:8px;padding:6px 8px;font-weight:600}.wkbar2 .rest [data-r=skip]{grid-area:s}
 .wkbar2 .fin{background:#22c55e;color:#04210f;border:0}.wkbar2.go{animation:wkgo 1.5s}@keyframes wkgo{0%,40%{background:#16a34a}100%{background:#0f172a}}
 body:has(#wkbar) main,body:has(#wkbar) #planPanel{padding-bottom:150px}
@@ -3275,6 +3292,70 @@ body:has(#wkbar) main,body:has(#wkbar) #planPanel{padding-bottom:150px}
 .sugex{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line,#e2e8f0)}.sugex p{margin:2px 0}`;document.head.appendChild(st);
 
 addEventListener("load",()=>{setTimeout(()=>{try{load();if(ACTIVE){keepAwake(true);tick()}}catch(e){}},1500)});
+})();
+
+/* ===== KOT warm-ups as separate moves, where you train today, equipment, interval timer ===== */
+(function(){
+const T=()=>window.F2C_T,R=()=>T().rec();
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const yt=q=>"https://www.youtube.com/results?search_query="+encodeURIComponent(q+" shorts");
+/* Knees Over Toes (ATG) routines. Shoulder trio from ATG shoulder ability; knee flow from the ATG group class. */
+const KOT={
+ shoulder:[["External rotation (band or light dumbbell)","Elbow at your side or propped on your knee. Rotate out, take 4 seconds back in.","ATG external rotation"],
+  ["Powell raise","Lie on your side on an incline bench, raise a light dumbbell out and up. Rear shoulder.","Powell raise"],
+  ["Trap-3 raise","Chest on an incline bench, thumbs up, raise both arms at a 45° angle in a Y. Lower traps.","trap 3 raise"]],
+ knee:[["Backward walk (or backward sled)","3 to 5 min, or about 100 m. A hallway, driveway or treadmill at a slow walk works.","backward sled drag"],
+  ["Tibialis raise","Back against a wall, heels 1 to 2 ft out, lift your toes. 15 to 25 reps.","tibialis raise"],
+  ["Calf raise on a step or slant","Full stretch at the bottom, 2-second pause. 15 to 20 reps.","slant calf raise"],
+  ["ATG split squat (bodyweight)","Front foot up on a step, knee travels past the toes, back knee to the floor. 8 each leg.","ATG split squat"],
+  ["Back extension, 2-sec hold","Squeeze glutes at the top. 8 reps. No rounding with weight.","back extension 2 second hold"]]};
+function items(ex){const n=String(ex.name||""),l=n.toLowerCase();
+ if(/kot|knees over toes|atg/.test(l)&&/shoulder/.test(l))return KOT.shoulder.map(x=>({name:x[0],how:x[1],q:x[2]}));
+ if(/kot|knees over toes|atg/.test(l)&&/knee|leg|lower/.test(l))return KOT.knee.map(x=>({name:x[0],how:x[1],q:x[2]}));
+ if(!/warm.?up|cool.?down|mobility/.test(l)||n.indexOf(":")<0)return null;
+ const parts=n.slice(n.indexOf(":")+1).split(/,|;|\band then\b|\bthen\b/i).map(s=>s.trim()).filter(Boolean);
+ return parts.length>1?parts.map(p=>({name:p.charAt(0).toUpperCase()+p.slice(1),how:"",q:p})):null}
+window.F2C_warmRows=function(ex,w,day,s,n,L){const it=items(ex);if(!it)return null;
+ const rounds=Math.max(1,Math.min(6,n));let h=`<p class="muted small warmhint">${rounds>1?rounds+" rounds. Check off each move as you do it.":"Check off each move as you do it."}${ex.reps?" "+esc(ex.reps):""}${ex.tempo?" · "+esc(ex.tempo):""}</p>`;
+ it.forEach((m,i)=>{let boxes="";for(let r=1;r<=rounds;r++){const k=i*rounds+r,key=`w${w}|${day}|${s}|${k}`,v=L[key]||{};(window.F2C_KI=window.F2C_KI||{})[key]={ex:m.name,range:ex.reps||"",sets:rounds,rest:"20 s"};
+   boxes+=`<label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">${esc(m.name)}, round ${r} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label>`}
+  h+=`<div class="warmrow"><div><b>${esc(m.name)}</b> <a class="small" href="${esc(yt(m.q))}" target="_blank" rel="noopener">▶ How</a>${m.how?`<p class="muted small">${esc(m.how)}</p>`:""}</div><div class="warmchk">${boxes}</div></div>`});
+ return h};
+
+/* ---------- where you're training today ---------- */
+const WHERE=[["usual","My usual spot"],["gym","Full gym"],["limited","Hotel or limited"],["notrack","No track today"]];
+const kd=()=>`w${T().ui.week}|${T().ui.day}`;
+window.F2C_where=()=>{const r=R();return (r&&r.where&&r.where[kd()])||"usual"};
+window.F2C_whereA=function(a){const m=F2C_where();a=a||{};
+ if(m==="gym")return Object.assign({},a,{location:"commercial gym"});
+ if(m==="limited")return Object.assign({},a,{location:"home",equip:["Bodyweight only / no equipment","Adjustable dumbbells","Resistance bands"],equipNotes:""});
+ if(m==="notrack")return Object.assign({},a,{equip:(a.equip||[]).filter(x=>!/track/i.test(x))});
+ return a};
+const EQUIP=["Bodyweight only / no equipment","Barbell + plates","Power rack / squat rack","Adjustable dumbbells","Fixed dumbbells","Adjustable bench","Cable machine / functional trainer","Pull-up bar","Dip station","Leg press","Hack squat","Leg curl machine","Leg extension machine","Smith machine","Kettlebells","Resistance bands","Suspension trainer (TRX)","Weighted sled","Rower","Bike / air bike","Treadmill","Track or field access","Back extension / GHD","Plate-loaded machines (general)"];
+window.F2C_whereBox=function(w,day){const r=R();if(!r)return "";const m=F2C_where(),a=r.a||{},d=T().dayPlan(day),track=((d&&d.exercises)||[]).some(x=>/sprint|\b\d{3}\s*m\b|track|ladder|strides/i.test(x.name));
+ const opts=WHERE.filter(([k])=>k!=="notrack"||track);
+ return `<div class="wherebox"><span class="label">Where are you training today?</span><div class="seg">${opts.map(([k,l])=>`<button type="button" data-where="${k}" aria-pressed="${m===k}">${l}</button>`).join("")}</div>
+  ${m!=="usual"?`<p class="small">${m==="gym"?"Every exercise below now shows gym options. Tap one to use it today only; your plan stays the same.":m==="limited"?"Options below use only body weight, dumbbells and bands. Today only.":"Track work below shows options for a field, street, hill, bike or rower. Today only."}</p>`:""}
+  <details class="eqbox"><summary class="small">My equipment (${(a.equip||[]).length} items) · update it</summary><div class="eqgrid">${EQUIP.map(x=>`<label class="small"><input type="checkbox" value="${esc(x)}" ${(a.equip||[]).includes(x)?"checked":""}> ${esc(x)}</label>`).join("")}</div>
+   <label class="field"><span class="flabel">Anything else</span><input name="eqnotes" value="${esc(a.equipNotes||"")}" placeholder="e.g. 50 lb kettlebell, landmine"></label>
+   <div class="nav"><span class="status small"></span><button type="button" class="btn small primary" data-eqsave>Save equipment</button></div>
+   <p class="muted small">Saving updates your swap options right away and asks your coach to adjust (not rewrite) your plan for the change.</p></details></div>`};
+
+/* ---------- interval (work) timer for timed moves like 4 x 4 min ---------- */
+function workSec(reps){const r=String(reps||"").toLowerCase();let m;if((m=r.match(/(\d+(?:\.\d+)?)\s*min/)))return Math.round(+m[1]*60);if((m=r.match(/(\d+)\s*(s|sec)/)))return +m[1];return 0}
+window.F2C_workBtn=(ex,s)=>{const sec=workSec(ex.reps);if(!sec||sec<20)return "";return `<button type="button" class="btn small workgo" data-work="${esc(s)}" data-sec="${sec}">▶ Start ${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")} interval</button>`};
+
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-where],[data-eqsave],[data-work]");if(!t)return;const r=R();
+ if(t.dataset.where){r.where=r.where||{};if(t.dataset.where==="usual")delete r.where[kd()];else r.where[kd()]=t.dataset.where;T().touch();const y=scrollY;T().show("workouts");requestAnimationFrame(()=>scrollTo(0,y));return}
+ if(t.dataset.eqsave!=null){const box=t.closest(".eqbox"),st=box.querySelector(".status");const eq=[...box.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value),notes=box.querySelector('[name=eqnotes]').value.trim();
+  r.a=r.a||{};const changed=JSON.stringify(eq)!==JSON.stringify(r.a.equip||[])||notes!==(r.a.equipNotes||"");if(!changed){st.textContent="No change.";return}
+  r.a.equip=eq;r.a.equipNotes=notes;T().touch();st.textContent="Saved. Asking your coach to adjust your plan…";
+  Promise.resolve(T().build&&T().build(false)).then(()=>{st.textContent="Saved. Your coach will adjust your plan within about 3 hours."}).catch(()=>{st.textContent="Saved. Swap options are updated."});return}
+ if(t.dataset.work){window.F2C_startWork&&F2C_startWork(t.dataset.work,+t.dataset.sec,t)}},true);
+
+const st=document.createElement("style");st.textContent=`.warmrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line,#e2e8f0)}.warmrow p{margin:2px 0 0}.warmchk{display:flex;gap:6px}.warmhint{margin:4px 0}
+.wherebox{display:grid;gap:8px;margin:8px 0 12px}.wherebox .seg{display:flex;flex-wrap:wrap;gap:6px}.wherebox .seg button{border:1px solid var(--line,#cbd5e1);background:#fff;border-radius:999px;padding:6px 12px;font-weight:600}.wherebox .seg button[aria-pressed=true]{background:#0f172a;color:#fff;border-color:#0f172a}
+.eqgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:8px 0}.workgo{margin-top:6px}`;document.head.appendChild(st);
 })();
 
 </script>
