@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795707273";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795708768";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2600,7 +2600,7 @@ let pollT=null,loading=false;
 function schedulePoll(){clearTimeout(pollT);pollT=setTimeout(()=>{if(document.visibilityState==="visible")load(true);else schedulePoll()},open().length?4*60e3:15*60e3)}
 async function load(quiet){if(!TOKEN||!cur||loading)return;const id=cur;loading=true;
  try{const r=await gs("getExtras",TOKEN,id);if(cur!==id)return;
-  Object.assign(X,{for:id,requests:r.requests||[],prog:r.prog||{},notes:r.notes||[],body:r.body||null,targets:r.targets||null,meals:r.meals||[],loaded:true});
+  Object.assign(X,{for:id,requests:r.requests||[],prog:r.prog||{},notes:r.notes||[],body:r.body||null,targets:r.targets||null,meals:r.meals||[],wear:r.wear||[],whoop:r.whoop||{},loaded:true});
   let fresh=false;
   if(r.rec){const old=athletes[id]||{};const hadPlan=!!old.plan;r.rec.owner=old.owner||r.rec.owner;r.rec.saved=true;if(old.familyChild)r.rec.familyChild=true;athletes[id]=r.rec;saveLocal();fresh=true;
    if(!hadPlan&&r.rec.plan){renderAll(true);toast("Your plan is here.")}else{rerender();const ch=r.rec.plan&&r.rec.plan.changes;if(ch&&ch.length&&JSON.stringify(ch)!==JSON.stringify(old.plan&&old.plan.changes))toast("Plan updated: "+String(ch[0]).slice(0,140)+(ch.length>1?" (see Plan for all changes)":""))}}
@@ -3039,7 +3039,11 @@ function reshape(THREE,A,S){const F=factors(S),P=A.pos.slice(),G=A.head.groups;
 let R=null; // {renderer, raf, ro}
 function dispose(){if(!R)return;cancelAnimationFrame(R.raf);try{R.ro&&R.ro.disconnect();R.controls&&R.controls.dispose();R.renderer.dispose()}catch(e){}R=null}
 /* Real surface muscles and skin from BodyParts3D (CC BY 4.0, credited in Terms of Use), baked into vendor/anatomy.bin */
-let ANA=null;
+let ANA=null,ORG=null;
+async function loadOrgans(){if(ORG)return ORG;const buf=await (await fetch("vendor/organs.bin")).arrayBuffer();const hl=new DataView(buf).getUint32(0,true);
+ const head=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,hl)));const o=4+hl;ORG={head,pos:new Float32Array(buf,o,head.nv*3),idx:new Uint32Array(buf,o+head.nv*12,head.ni)};return ORG}
+const ORGC={heart:0xc0392b,liver:0x7b2d26,gallbladder:0x3f8f3a,stomach:0xe59a9a,spleen:0x6d2e5c,pancreas:0xe8c07a,kidney:0x8e2b2b,esophagus:0xd98b8b,intestine:0xf0a8a0,colon:0xd9a07a,bladder:0xe9d7a0};
+const VISC={stomach:1,intestine:1,colon:1,kidney:1,pancreas:1,spleen:.6,liver:.5};
 async function loadAnatomy(){if(ANA)return ANA;const buf=await (await fetch("vendor/anatomy.bin")).arrayBuffer();const hl=new DataView(buf).getUint32(0,true);
  const head=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,hl)));const o=4+hl;
  ANA={head,pos:new Float32Array(buf,o,head.nv*3),fib:new Float32Array(buf,o+head.nv*12,head.nv),idx:new Uint32Array(buf,o+head.nv*16,head.ni)};return ANA}
@@ -3055,6 +3059,7 @@ async function draw(box,V,S){
  const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(30,w/h,.1,50);cam.position.set(0,1.0,4.9);
  const controls=new OC(cam,renderer.domElement);controls.target.set(0,.9,0);controls.enablePan=false;controls.minDistance=1.6;controls.maxDistance=8;controls.autoRotate=true;controls.autoRotateSpeed=1.2;
  controls.addEventListener("start",()=>controls.autoRotate=false);
+ controls.zoomToCursor=true;controls.enablePan=true;controls.minDistance=.3;controls.screenSpacePanning=true;
  const hue=new THREE.Color(UI.color),hsl={};hue.getHSL(hsl);
  const tint=t=>t?new THREE.Color().setHSL(hsl.h,1,.62-.3*t):new THREE.Color().setHSL(hsl.h,.18,.66);
  const IDX={};MUSCLES.forEach(([m],i)=>IDX[m]=i);
@@ -3096,12 +3101,40 @@ async function draw(box,V,S){
     gl_FragColor=vec4(c*(1.+.3*fr),clamp(a,0.,1.));}`});
  const fig=new THREE.Group();const mMesh=new THREE.Mesh(musc,mMat);mMesh.renderOrder=1;const sMesh=new THREE.Mesh(skin,sMat);sMesh.renderOrder=2;fig.add(mMesh,sMesh);
  fig.scale.setScalar(S.hIn*.0254/1.72);scene.add(fig);
+ const LAY=UI.layer||"muscle";
+ if(LAY==="fat"){ // yellow fat under the skin over the muscles
+  const bf=+(S.scan&&S.scan.bf)||S.bf||20,fa=Math.min(.82,.28+bf*.014);
+  sMesh.material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.FrontSide,uniforms:{a:{value:fa}},vertexShader:VS,
+   fragmentShader:`uniform float a;varying vec3 vP;varying vec3 vN;varying vec3 vV;void main(){vec3 n=normalize(vN);float fr=pow(1.-abs(dot(n,normalize(vV))),1.6);
+    float lit=.6+.4*max(dot(n,normalize(vec3(.3,.6,1.))),0.);float b=.5+.5*sin(vP.y*260.+sin(vP.x*180.)*2.);vec3 c=mix(vec3(.98,.8,.28),vec3(1.,.9,.5),b*.35)*lit;
+    gl_FragColor=vec4(c+fr*.25,clamp(a+fr*.25,0.,.95));}`});}
+ if(LAY==="organs"){mMesh.visible=false;
+  try{const O=await loadOrgans();const P=new THREE.BufferAttribute(O.pos,3);
+   const vfl=scanVal(S.scan,"vfl"),lv=vfl!=null?vfl:Math.max(1,Math.round(((+(S.scan&&S.scan.bf)||S.bf||20)-10)/1.5));
+   O.head.groups.forEach(g=>{const geo=new THREE.BufferGeometry();geo.setAttribute("position",P);geo.setIndex(new THREE.BufferAttribute(O.idx.subarray(g.i0,g.i0+g.in),1));geo.computeVertexNormals();
+    const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:ORGC[g.m]||0xcc8888,emissive:ORGC[g.m]||0xcc8888,emissiveIntensity:.35}));m.renderOrder=0;fig.add(m);
+    const w=VISC[g.m];if(w&&lv>0){ // visceral fat: a yellow layer wrapped around the belly organs, thicker with a higher level
+     const n=geo.attributes.normal,src=O.pos,d=(.0015+lv*.0009)*w,arr=new Float32Array(g.vn*3);
+     const ix=O.idx.subarray(g.i0,g.i0+g.in),map=new Map();let k=0;const nI=new Uint32Array(ix.length);
+     for(let i=0;i<ix.length;i++){const v=ix[i];let j=map.get(v);if(j==null){j=k++;map.set(v,j);arr[j*3]=src[v*3]+n.getX(v)*d;arr[j*3+1]=src[v*3+1]+n.getY(v)*d;arr[j*3+2]=src[v*3+2]+n.getZ(v)*d}nI[i]=j}
+     const fg=new THREE.BufferGeometry();fg.setAttribute("position",new THREE.BufferAttribute(arr.subarray(0,k*3),3));fg.setIndex(new THREE.BufferAttribute(nI,1));fg.computeVertexNormals();
+     const fm=new THREE.Mesh(fg,new THREE.MeshLambertMaterial({color:0xf6c945,emissive:0xf6c945,emissiveIntensity:.4,transparent:true,opacity:Math.min(.75,.25+lv*.035),depthWrite:false}));fm.renderOrder=1;fig.add(fm)}});
+   scene.add(new THREE.AmbientLight(0xffffff,.9));const dl=new THREE.DirectionalLight(0xffffff,1.2);dl.position.set(1,2,3);scene.add(dl);
+  }catch(e){console.warn("[F2C] organs",e)}}
  const ringMat=o=>new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:o,side:THREE.DoubleSide});
  const ring=new THREE.Mesh(new THREE.RingGeometry(.3,.315,64),ringMat(.55));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
  const ring2=new THREE.Mesh(new THREE.RingGeometry(.42,.425,64),ringMat(.22));ring2.rotation.x=-Math.PI/2;scene.add(ring2);
  const ro=new ResizeObserver(()=>{const W=box.clientWidth,Hh=box.clientHeight;if(!W||!Hh)return;renderer.setSize(W,Hh);cam.aspect=W/Hh;cam.updateProjectionMatrix()});ro.observe(box);
  R={renderer,controls,ro,raf:0};window.F2C_holoR=R;
- if(UI.view==="pain"){controls.autoRotate=false;controls.enablePan=true;controls.minDistance=.35;controls.zoomToCursor=true;ring.visible=ring2.visible=false;
+ { // double-tap a spot to zoom in on it; double-tap empty space to reset
+  const ray=new THREE.Raycaster();let lastT=0,lx=0,ly=0;const home={p:cam.position.clone(),t:controls.target.clone()};let anim=null;
+  const fly=(tp,cp)=>{const t0=controls.target.clone(),c0=cam.position.clone(),st=performance.now();anim=()=>{const k=Math.min(1,(performance.now()-st)/450),e=k*(2-k);controls.target.lerpVectors(t0,tp,e);cam.position.lerpVectors(c0,cp,e);if(k>=1)anim=null}};
+  renderer.domElement.addEventListener("pointerup",e=>{const now=performance.now();const dbl=now-lastT<320&&Math.hypot(e.clientX-lx,e.clientY-ly)<30;lastT=now;lx=e.clientX;ly=e.clientY;if(!dbl||UI.view==="map")return;lastT=0;
+   const r=renderer.domElement.getBoundingClientRect();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),cam);
+   const h=ray.intersectObject(sMesh,false)[0];controls.autoRotate=false;
+   if(!h){fly(home.t,home.p);return}const dir=cam.position.clone().sub(controls.target).normalize();fly(h.point.clone(),h.point.clone().add(dir.multiplyScalar(.75)))});
+  R.anim=()=>anim&&anim()}
+ if(UI.view==="pain"){controls.autoRotate=false;ring.visible=ring2.visible=false;
   window.F2C_painScene&&window.F2C_painScene({THREE,scene,cam,fig,renderer,controls,mMesh,sMesh,mi,MUSCLES,box})}
  if(UI.view==="map"){ // front and back side by side, no rotation
   controls.enabled=false;controls.autoRotate=false;ring.visible=ring2.visible=false;
@@ -3112,21 +3145,25 @@ async function draw(box,V,S){
    renderer.setScissorTest(true);
    [[0,0],[half,Math.PI]].forEach(([x,ry])=>{fig.rotation.y=ry;oc.position.set(0,0,6);oc.lookAt(0,0,0);renderer.setViewport(x,0,half,Hh);renderer.setScissor(x,0,half,Hh);renderer.render(scene,oc)});
    renderer.setScissorTest(false);R.raf=requestAnimationFrame(tick2)};tick2();return}
- const tick=()=>{if(!box.isConnected){dispose();return}controls.update();ring.rotation.z+=.004;renderer.render(scene,cam);R.raf=requestAnimationFrame(tick)};tick();
+ const tick=()=>{if(!box.isConnected){dispose();return}R.anim&&R.anim();controls.update();ring.rotation.z+=.004;renderer.render(scene,cam);R.raf=requestAnimationFrame(tick)};tick();
 }
 
 /* ---------- panel ---------- */
+function layerNote(S){const sc=S.scan,bf=+(sc&&sc.bf)||S.bf,vfl=scanVal(sc,"vfl");
+ if(UI.layer==="fat")return `Yellow is the fat under your skin, drawn from ${sc?"your scan's":"your profile's"} ${Math.round(bf*10)/10}% body fat. The thicker and more solid the yellow, the more fat. As body fat drops, it thins and the muscle shows through.`;
+ return `Visceral fat is the fat packed around your organs, the kind linked to heart disease and diabetes. ${vfl!=null?`Your InBody visceral fat level is <b>${vfl}</b>. InBody counts under 10 as healthy; the yellow layer around your stomach, intestines and kidneys grows with the level.`:`No visceral fat level on your scans yet, so the yellow layer is estimated from body fat. An InBody scan gives a real level.`} Organs are a standard model, not your own; only the fat layer changes with your numbers.`}
 const LBL={day:"Today",week:"This week",month:"30 days",year:"12 months"};
 function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host=$("holoWrap");
- if(!host){host=document.createElement("div");host.id="holoWrap";v.insertBefore(host,v.firstChild)}
+ if(!host){host=document.createElement("div");host.id="holoWrap";const wb=$("wearBox");v.insertBefore(host,wb?wb.nextSibling:v.firstChild)}
  const V=volume(UI.period),S=shape();
  const lb=n=>Math.round(n).toLocaleString("en-US");const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k],w:V.lbs[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
  const sc=S.scan,fs=S.first;
  host.innerHTML=`<div class="sheet holo"><div class="sheethead"><div><span class="label">Your body</span><h3>Training map</h3></div>
   <span class="seg holoview">${[["3d","3D"],["map","Front & back"],["pain","Pain"]].map(([k,l])=>`<button type="button" data-hv="${k}" aria-pressed="${(UI.view||"3d")===k}">${l}</button>`).join("")}</span><label class="holocol" title="Pick the color">Color <input type="color" id="holoColor" value="${e_(UI.color)}"></label></div>
+  <div class="seg holoseg hololayer">${[["muscle","Muscles"],["fat","Body fat"],["organs","Organs + visceral fat"]].map(([k,l])=>`<button type="button" data-hl="${k}" aria-pressed="${(UI.layer||"muscle")===k}">${l}</button>`).join("")}</div>
   <div class="seg holoseg">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p==="day"?"Day":p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div>
   <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
-  <p class="muted small holohint">${UI.view==="pain"?"Pinch or scroll to zoom in, drag to turn, two fingers to slide. Tap the exact spot that hurts. ":UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn the figure. Pinch to zoom. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
+  ${(UI.layer||"muscle")!=="muscle"?`<p class="small holoLayerNote">${layerNote(S)}</p>`:""}<p class="muted small holohint">${UI.view==="pain"?"Pinch to zoom in on the spot between your fingers, or double-tap a spot to jump to it. Drag to turn, two fingers to slide. Tap the exact spot that hurts. ":UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn. Pinch to zoom in on the spot between your fingers, or double-tap a spot to jump to it (double-tap empty space to reset). Two fingers to slide. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
   ${UI.view==="pain"?`<div id="painBox"></div>`:""}${UI.view!=="pain"&&V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
    <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
    <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:UI.view==="pain"?"":`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
@@ -3134,6 +3171,7 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
   <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets. ${shapeNote(S)}</p></div>`;
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
  host.querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{UI.shapeFrom=b.dataset.hs;saveUI();panel()});
+ host.querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{UI.layer=b.dataset.hl;saveUI();panel()});
  host.querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{UI.view=b.dataset.hv;saveUI();panel()});
  $("holoColor").oninput=e=>{UI.color=e.target.value;saveUI();clearTimeout(panel._t);panel._t=setTimeout(panel,250)};
  draw($("holoStage"),V,S);window.F2C_painPanel&&UI.view==="pain"&&F2C_painPanel()}
@@ -3373,6 +3411,10 @@ const st=document.createElement("style");st.textContent=`.warmrow{display:grid;g
 const T=()=>window.F2C_T,X=()=>window.F2C_X||{},$=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEYS=["rec","hrv","rhr","sleep","perf","deep","rem","debt","strain","steps","cal","spo2","temp","resp"];
+const DEVS=[["whoop","WHOOP"],["oura","Oura Ring"],["garmin","Garmin"],["fitbit","Fitbit / Google"],["apple","Apple Watch / Health"],["samsung","Samsung Health"],["polar","Polar"],["other","Something else"]];
+const HOW={oura:"Oura: open the Oura app or ouraring.com, Membership hub, Export data, choose CSV. Upload the file here.",garmin:"Garmin: on connect.garmin.com open Reports (sleep, steps, HRV, stress), pick the range and export CSV. Upload it here.",
+ fitbit:"Fitbit / Google: go to takeout.google.com, choose Fitbit, export, then upload the zip here.",apple:"Apple Health has no web export for other apps. Take screenshots of Sleep, Heart Rate Variability, Resting Heart Rate and Steps (week view) and upload them; your coach reads them.",
+ samsung:"Samsung Health: Settings, Download personal data, then upload the CSV files here. Or upload screenshots.",polar:"Polar: on flow.polar.com, Settings, Export data, then upload the CSV here.",other:"Upload any CSV export with dates, or screenshots of your sleep, recovery and steps screens."};
 
 /* ---------- reading files ---------- */
 function csv(text){const rows=[];let row=[],f="",q=false;text=text.replace(/^﻿/,"");
@@ -3446,15 +3488,16 @@ window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";cons
  const tiles=["rec","sleep","hrv","rhr","strain","steps"].filter(k=>last[k]!=null).map(k=>`<div class="kpi"><span class="label">${LBL[k]}</span><b class="${k==="rec"?"z-"+zone(last.rec):""}">${fmt[k](last[k])}</b></div>`).join("");
  return `<div class="sheet wearcard"><span class="label">Recovery and sleep · ${last.date===today?"today":esc(last.date)}${last.src?" · "+esc(last.src.join(", ")):""}</span><div class="kpis">${tiles}</div>${stale?`<p class="muted small">No new data for a couple of days. Upload a fresh export or screenshot on the Body tab.</p>`:`<p class="small"><b>${esc(advice(last,base))}</b></p>`}</div>`};
 function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W.slice(-30);
- let h=`<div class="sheet" id="wearBox"><span class="label">Wearable data</span>`;
- if(W.length){const ks=KEYS.filter(k=>X7.some(d=>d[k]!=null));
-  h+=`<div class="scroll"><table><thead><tr><th></th><th>Last 7 days</th><th>Week before</th><th>30 days</th></tr></thead><tbody>${ks.map(k=>{const a=avg(X7,k),b=avg(P7,k),c=avg(X30,k);let ch="";if(a!=null&&b!=null&&GOOD[k]){const up=a>b,better=(up?1:-1)*GOOD[k]>0,diff=Math.abs(a-b);if(diff/(Math.abs(b)||1)>0.03)ch=` <span class="${better?"wgood":"wbad"}">${up?"▲":"▼"}</span>`}
-   return `<tr><td>${LBL[k]}</td><td class="num">${a!=null?fmt[k](a):""}${ch}</td><td class="num">${b!=null?fmt[k](b):""}</td><td class="num">${c!=null?fmt[k](c):""}</td></tr>`}).join("")}</tbody></table></div>
-   <p class="muted small">${W.length} days on file, ${esc(W[0].date)} to ${esc(W[W.length-1].date)}. Your coach uses these in weekly check-ins and the monthly review, and Today adjusts how hard to push.</p>`}
- else h+=`<p class="small">Bring in sleep, recovery, HRV, resting heart rate, strain and steps from your watch or ring. Your coach uses them to set how hard to push and when to back off.</p>`;
+ let h=`<div class="sheet" id="wearBox"><span class="label">Connected devices</span>`;
  const wh=X().whoop||{};
- h+=`<div class="whoopbox">${wh.connected?`<p class="small"><b>WHOOP connected.</b> Syncs on its own every few hours${wh.last?" · last "+esc(new Date(wh.last).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})):""}.</p><div class="row"><button type="button" class="btn small" data-whoop="sync">Sync now</button><button type="button" class="linkbtn small" data-whoop="off">Disconnect</button></div>`:wh.ready?`<button type="button" class="btn small primary" data-whoop="on">Connect WHOOP</button><p class="muted small">Pulls recovery, HRV, resting heart rate, sleep, strain and steps automatically. Read only.</p>`:""}</div>`;
- h+=`<details${W.length?"":" open"}><summary class="small"><b>Add data</b></summary>
+ h+=`<div class="whoopbox">${wh.connected?`<p class="small"><b>WHOOP connected.</b> Syncs on its own every few hours${wh.last?" · last "+esc(new Date(wh.last).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})):""}.</p><div class="row"><button type="button" class="btn small" data-whoop="sync">Sync now</button><button type="button" class="linkbtn small" data-whoop="off">Disconnect</button></div>`:`<button type="button" class="btn primary" data-dev="open">Connect a device</button>
+  <div class="devpick" id="devPick" hidden><p class="small">Pick your device:</p><div class="devlist">${DEVS.map(d=>`<button type="button" class="btn small" data-dev="${d[0]}">${esc(d[1])}</button>`).join("")}</div><div id="devHow"></div></div>`}</div>`;
+ if(W.length){const ks=KEYS.filter(k=>X7.some(d=>d[k]!=null));
+  h+=`<details><summary class="small"><b>Your numbers</b>: last 7 days vs the week before</summary><div class="scroll"><table><thead><tr><th></th><th>Last 7 days</th><th>Week before</th><th>30 days</th></tr></thead><tbody>${ks.map(k=>{const a=avg(X7,k),b=avg(P7,k),c=avg(X30,k);let ch="";if(a!=null&&b!=null&&GOOD[k]){const up=a>b,better=(up?1:-1)*GOOD[k]>0,diff=Math.abs(a-b);if(diff/(Math.abs(b)||1)>0.03)ch=` <span class="${better?"wgood":"wbad"}">${up?"▲":"▼"}</span>`}
+   return `<tr><td>${LBL[k]}</td><td class="num">${a!=null?fmt[k](a):""}${ch}</td><td class="num">${b!=null?fmt[k](b):""}</td><td class="num">${c!=null?fmt[k](c):""}</td></tr>`}).join("")}</tbody></table></div>
+   <p class="muted small">${W.length} days on file, ${esc(W[0].date)} to ${esc(W[W.length-1].date)}. Your coach uses these in weekly check-ins and the monthly review, and Today adjusts how hard to push.</p></details>`}
+ else h+=`<p class="small">Bring in sleep, recovery, HRV, resting heart rate, strain and steps from your watch or ring. Your coach uses them to set how hard to push and when to back off.</p>`;
+ h+=`<details><summary class="small"><b>Other devices</b>: upload a file or screenshots (Oura, Garmin, Apple, Fitbit)</summary>
   <div class="wearup"><p class="small"><b>Export file (best):</b> WHOOP: More → App Settings → Data Export, then upload the zip from the email. Oura: Membership hub → Export data (CSV). Fitbit or Google: Google Takeout. Garmin Connect: export a report to CSV. Any CSV with dates works.</p>
   <label class="btn small"><input type="file" id="wearFile" accept=".zip,.csv,text/csv,application/zip" multiple hidden>Upload export (zip or CSV)</label>
   <p class="small"><b>Or screenshots:</b> Apple Health, Samsung Health or any app. Your coach reads them, usually within 3 hours.</p>
@@ -3463,7 +3506,7 @@ function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W
  const pend=(X().requests||[]).filter(r=>r.type==="question"&&r.meta&&r.meta.kind==="wear"&&(r.status==="new"||r.status==="working"));
  if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length===1?"your screenshots":pend.length+" uploads"}. They'll show up here.</div>`;
  return h+`</div>`}
-function render(){const v=$("v-body");if(!v)return;const old=$("wearBox");const html=wearHtml();if(old)old.outerHTML=html;else v.insertAdjacentHTML("beforeend",html);wire()}
+function render(){const v=$("v-body");if(!v)return;const old=$("wearBox");const html=wearHtml();if(old)old.outerHTML=html;else v.insertAdjacentHTML("afterbegin",html);wire()}
 function wire(){const f=$("wearFile"),s=$("wearShot"),st=$("wearSt");
  if(f)f.onchange=async()=>{const files=[...f.files];if(!files.length)return;st.textContent="Reading your file…";
   try{const r=await readFiles(files);if(!r.days.length){st.textContent="Couldn't find daily numbers in that file. Try the screenshots button instead.";return}
@@ -3476,12 +3519,16 @@ function wire(){const f=$("wearFile"),s=$("wearShot"),st=$("wearSt");
 const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{render();applyCoachReads()}catch(e){console.warn("[F2C] wear",e)}return r};
 const _te=window.F2C_todayExtras;window.F2C_todayExtras=function(){let h="";try{h=F2C_wearToday()}catch(e){}return h+(_te?_te.apply(this,arguments):"")};
 window.F2C_wearRead=readFiles;
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-dev]");if(!t)return;const d=t.dataset.dev,pk=$("devPick"),how=$("devHow");
+ if(d==="open"){if(pk)pk.hidden=!pk.hidden;return}
+ if(d==="whoop"){const wh=X().whoop||{};if(wh.ready){const b=document.createElement("button");b.dataset.whoop="on";b.hidden=true;document.body.appendChild(b);b.click();b.remove()}else if(how)how.innerHTML=`<p class="small">WHOOP sign-in isn't switched on yet. Upload your WHOOP data export instead (WHOOP app: More, App Settings, Data Export).</p>`;return}
+ if(how){how.innerHTML=`<p class="small"><b>${esc((DEVS.find(x=>x[0]===d)||[])[1]||"")}</b> doesn't offer a sign-in other apps can use yet, so it comes in by file. ${esc(HOW[d]||"")}</p><div class="row"><button type="button" class="btn small" onclick="document.getElementById('wearFile').click()">Upload export</button><button type="button" class="btn small" onclick="document.getElementById('wearShot').click()">Upload screenshots</button></div>`}},true);
 document.addEventListener("click",async e=>{const t=e.target.closest&&e.target.closest("[data-whoop]");if(!t)return;const m=t.dataset.whoop,st=$("wearSt");
  try{if(m==="on"){t.disabled=true;const r=await F2C_call("whoopStart");location.href=r.url;return}
   if(m==="sync"){t.disabled=true;t.textContent="Syncing…";const r=await F2C_call("whoopSync");X().wear=r.wear;X().whoop=Object.assign({},X().whoop,{last:Date.now()});render();return}
   if(m==="off"){if(!confirm("Disconnect WHOOP? Data already saved stays."))return;await F2C_call("whoopDisconnect");X().whoop=Object.assign({},X().whoop,{connected:false});render()}}
  catch(err){t.disabled=false;if(st)st.textContent=err&&err.message?err.message:"Couldn't reach WHOOP. Try again."}},true);
-const st=document.createElement("style");st.textContent=`.wearcard .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wearcard .kpi b{font-size:20px;white-space:nowrap}.z-green{color:#16a34a}.z-yellow{color:#ca8a04}.z-red{color:#dc2626}.wgood{color:#16a34a}.wbad{color:#dc2626}.wearup{display:grid;gap:8px;margin-top:8px}.wearup .btn{justify-self:start;cursor:pointer}`;document.head.appendChild(st);
+const st=document.createElement("style");st.textContent=`.wearcard .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wearcard .kpi b{font-size:20px;white-space:nowrap}.z-green{color:#16a34a}.z-yellow{color:#ca8a04}.z-red{color:#dc2626}.wgood{color:#16a34a}.wbad{color:#dc2626}.wearup{display:grid;gap:8px;margin-top:8px}.wearup .btn{justify-self:start;cursor:pointer}.devlist{display:flex;flex-wrap:wrap;gap:6px}.devpick{margin-top:8px;display:grid;gap:8px}`;document.head.appendChild(st);
 })();
 
 /* ===== Supplement review: the coach checks whether each supplement is needed; times always come from the fixed rules ===== */
@@ -3570,7 +3617,7 @@ function region(p,musc){const x=p.x,y=p.y,z=p.z,ax=Math.abs(x),side=ax<.03?"":(x
 /* called by the 3D view each time it draws in Pain mode */
 window.F2C_painScene=function(ctx){S=ctx;markers=[];const {THREE,renderer,cam,fig,box}=ctx;
  const btn=document.createElement("button");btn.type="button";btn.className="btn small painfull";btn.textContent="Full screen";
- btn.onclick=()=>{box.classList.toggle("full");btn.textContent=box.classList.contains("full")?"Done":"Full screen"};box.appendChild(btn);
+ btn.onclick=()=>{box.classList.toggle("full");btn.textContent=box.classList.contains("full")?"Done":"Full screen"};box.appendChild(btn);const tag=document.createElement("div");tag.className="paintag";tag.id="painTag";tag.textContent=pick?pick.area:"Tap where it hurts";box.appendChild(tag);
  const ray=new THREE.Raycaster();let d0=null;
  renderer.domElement.addEventListener("pointerdown",e=>{d0={x:e.clientX,y:e.clientY,t:Date.now()}});
  renderer.domElement.addEventListener("pointerup",e=>{if(!d0)return;const mv=Math.hypot(e.clientX-d0.x,e.clientY-d0.y),dt=Date.now()-d0.t;d0=null;if(mv>7||dt>600)return;
@@ -3578,7 +3625,7 @@ window.F2C_painScene=function(ctx){S=ctx;markers=[];const {THREE,renderer,cam,fi
   ray.setFromCamera(v,cam);const hit=ray.intersectObjects([ctx.sMesh,ctx.mMesh],false)[0];if(!hit)return;
   const mh=ray.intersectObject(ctx.mMesh,false)[0];let musc="";if(mh){const k=ctx.mi[mh.face.a];if(k>-.5)musc=ctx.MUSCLES[Math.round(k)][1]}
   const lp=fig.worldToLocal(hit.point.clone());pick=Object.assign({p:[+lp.x.toFixed(4),+lp.y.toFixed(4),+lp.z.toFixed(4)]},region(lp,musc));
-  drawMarkers();window.F2C_painPanel&&F2C_painPanel(true);if(box.classList.contains("full")){box.classList.remove("full");btn.textContent="Full screen"}});
+  drawMarkers();const tg=$("painTag");if(tg)tg.textContent=pick.area+(pick.muscle?" · "+pick.muscle:"")+"  (tap again to move it)";window.F2C_painPanel&&F2C_painPanel(false);});
  drawMarkers()};
 function drawMarkers(){if(!S)return;const {THREE,fig}=S;markers.forEach(m=>fig.remove(m));markers=[];
  const add=(p,c,big)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(big?.016:.012,16,12),new THREE.MeshBasicMaterial({color:c,depthTest:false,transparent:true,opacity:.95}));m.renderOrder=9;m.position.set(p[0],p[1],p[2]);fig.add(m);markers.push(m)};
@@ -3631,7 +3678,7 @@ const chips=(name,list,sel)=>`<div class="chips">${list.map(v=>`<label class="ch
 
 window.F2C_painPanel=function(scroll){const box=$("painBox");if(!box||!T())return;const r=R(),list=(r.pain||[]).slice().reverse(),open=list.filter(x=>x.status!=="better"),old=list.filter(x=>x.status==="better");
  let h=`<div class="sheet painsheet"><span class="label">Pain map</span>`;
- if(pick)h+=`<div class="painform"><h4>Where: <input name="area" value="${e_(pick.area)}" class="painarea"></h4>${pick.muscle?`<p class="muted small">Closest muscle: ${e_(pick.muscle)}</p>`:""}
+ if(pick)h+=`<div class="painform"><p class="muted small">Red dot on the body is your spot. Wrong spot? Tap the body again. Scroll down when it's right.</p><h4>Where: <input name="area" value="${e_(pick.area)}" class="painarea"></h4>${pick.muscle?`<p class="muted small">Closest muscle: ${e_(pick.muscle)}</p>`:""}
   <span class="label">What it feels like</span>${chips("types",TYPES)}
   <label class="field"><span class="flabel">How bad, 0 to 10: <b id="painLv">4</b></span><input type="range" name="level" min="0" max="10" value="4" oninput="document.getElementById('painLv').textContent=this.value"></label>
   <span class="label">Does it travel? Tap everywhere it goes</span>${chips("spread",SPREAD)}
@@ -3647,7 +3694,7 @@ window.F2C_painPanel=function(scroll){const box=$("painBox");if(!box||!T())retur
  h+=DISC+`<p class="small painStatus muted"></p></div>`;box.innerHTML=h;if(scroll)box.scrollIntoView({behavior:"smooth",block:"start"})};
 
 document.addEventListener("click",async e=>{const t=e.target.closest&&e.target.closest("[data-pain]");if(!t)return;const r=R(),m=t.dataset.pain,id=t.dataset.id,x=(r.pain||[]).find(p=>p.id===id),st=document.querySelector(".painStatus");
- if(m==="cancel"){pick=null;drawMarkers();F2C_painPanel();return}
+ if(m==="cancel"){pick=null;drawMarkers();const tg=$("painTag");if(tg)tg.textContent="Tap where it hurts";F2C_painPanel();return}
  if(m==="save"){const f=t.closest(".painform"),q=s=>[...f.querySelectorAll(`[name="${s}"]:checked`)].map(i=>i.value);
   const n={id:"p"+Date.now().toString(36),at:new Date().toISOString(),area:f.querySelector('[name="area"]').value.trim()||pick.area,side:pick.side,muscle:pick.muscle,p:pick.p,types:q("types"),level:+f.querySelector('[name="level"]').value,spread:q("spread"),when:q("when"),since:f.querySelector('[name="since"]').value,desc:f.querySelector('[name="desc"]').value.trim().slice(0,1500),status:"open"};
   r.pain=(r.pain||[]).concat([n]).slice(-60);pick=null;window.F2C_painOpen=n.id;T().touch();drawMarkers();F2C_painPanel();return}
@@ -3662,7 +3709,7 @@ ATHLETE: age ${a.age||"?"}, sex ${a.sex||"?"}, goals ${a.goals||a.goal||"?"}, in
 Reply with ONLY JSON: {"likely":"one line: the most likely explanation, worded as 'often' or 'may be'","why":"2 sentences on why the pattern fits and what else it could be","try":["3 to 5 specific things that often help"],"avoid":["2 to 4 things to ease off"],"training":"how to change their current plan this week, naming exercises","doctor":"who to see (doctor, physical therapist, ER) and how soon, plus any warning signs"}`;
   try{const q=await F2C_submit("question",prompt,{meta:{kind:"pain",area:x.area}});x.req=q&&q.id||x.req;T().touch();F2C_painPanel()}catch(err){t.disabled=false;if(st)st.textContent=err&&err.code==="read_only"?"Only the athlete or parent can ask.":"Couldn't send. Try again."}}},true);
 
-const st=document.createElement("style");st.textContent=`.painfull{position:absolute;top:8px;right:8px;z-index:2}.painsheet{display:grid;gap:10px}.painform{display:grid;gap:8px}.painarea{font:inherit;font-weight:700;border:1px solid var(--line,#ccc);border-radius:8px;padding:4px 8px;width:min(100%,320px)}
+const st=document.createElement("style");st.textContent=`.painfull{position:absolute;top:8px;right:8px;z-index:2}.paintag{position:absolute;left:8px;right:110px;top:8px;z-index:2;background:rgba(0,0,0,.6);color:#fff;font-weight:700;font-size:.85rem;padding:6px 10px;border-radius:8px;pointer-events:none}.painsheet{display:grid;gap:10px}.painform{display:grid;gap:8px}.painarea{font:inherit;font-weight:700;border:1px solid var(--line,#ccc);border-radius:8px;padding:4px 8px;width:min(100%,320px)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chip{display:inline-flex}.chip input{position:absolute;opacity:0;width:0;height:0}.chip span{border:1px solid var(--line,#ccc);border-radius:999px;padding:6px 10px;font-size:.85rem;cursor:pointer}.chip input:checked+span{background:#ff2d55;border-color:#ff2d55;color:#fff}
 .painitem{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px}.painidea{border-left:3px solid #ff8a00;padding-left:10px}.painidea ul{margin:4px 0 8px 18px}.note.red{background:#fde2e2;border-left:4px solid #d11;padding:10px;border-radius:8px}`;document.head.appendChild(st);
 })();
