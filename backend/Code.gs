@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.3.0';
+var VERSION = '2.4.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -37,7 +37,8 @@ var TABS = {
   Supplements: ['Athlete Id', 'Name', 'Dose', 'Time', 'Category', 'With food', 'Status', 'Notes', 'Updated'],
   Targets:     ['Athlete Id', 'Phase', 'From', 'To', 'Calories', 'Protein g', 'Carbs g', 'Fat g', 'Bodyweight target', 'Set by', 'Why', 'Updated'],
   Requests:    ['Id', 'Athlete Id', 'Athlete', 'Type', 'Details', 'File link', 'Status', 'Created', 'Requested by', 'Answered', 'Answer'],
-  CoachNotes:  ['Athlete Id', 'Athlete', 'Date', 'Type', 'Note', 'Request Id', 'By', 'Seen']
+  CoachNotes:  ['Athlete Id', 'Athlete', 'Date', 'Type', 'Note', 'Request Id', 'By', 'Seen'],
+  Wearables:   ['Athlete Id', 'Date', 'Source', 'Recovery %', 'HRV ms', 'Resting HR', 'Sleep hours', 'Sleep performance %', 'Deep min', 'REM min', 'Sleep debt min', 'Strain', 'Steps', 'Calories', 'SpO2 %', 'Skin temp C', 'Resp rate', 'Updated']
 };
 
 // Request types the server applies to the athlete record itself. "read" and "suppList" are applied by the screens.
@@ -59,7 +60,7 @@ var API = {
   listAthletes: listAthletes, saveAthlete: saveAthlete, deleteAthlete: deleteAthlete,
   uploadFile: uploadFile, getFile: getFile, removeUpload: removeUpload,
   submitRequest: submitRequest, cancelRequest: cancelRequest, markApplied: markApplied, getExtras: getExtras,
-  syncSets: syncSets, syncMeals: syncMeals, saveInBody: saveInBody, markNotesSeen: markNotesSeen,
+  syncSets: syncSets, syncMeals: syncMeals, saveWearables: saveWearables, saveInBody: saveInBody, markNotesSeen: markNotesSeen,
   listVideos: listVideos, version: function () { return VERSION; }
 };
 
@@ -494,12 +495,12 @@ function getExtras(token, athleteId) {
     var d = String(v[i][4]);
     if (/^META /.test(d)) { try { q.meta = JSON.parse(d.split('\n')[0].slice(5)); } catch (e) {} }
     if (st === 'answered' && (q.type === 'read' || q.type === 'suppList')) q.answer = answerOf_(v[i][10]);
-    if (st === 'answered' && q.type === 'question') q.answer = (q.meta && q.meta.kind === 'suggest') ? answerOf_(v[i][10]) : String(v[i][10]).slice(0, 4000);
+    if (st === 'answered' && q.type === 'question') q.answer = (q.meta && (q.meta.kind === 'suggest' || q.meta.kind === 'wear')) ? answerOf_(v[i][10]) : String(v[i][10]).slice(0, 4000);
     reqs.push(q);
   }
   return {
     rec: rec, requests: reqs, prog: progressionFor_(at.id), notes: notesFor_(at.id), body: bodyFor_(at.id),
-    targets: targetsFor_(at.id), meals: mealsFor_(at.id, 7)
+    targets: targetsFor_(at.id), meals: mealsFor_(at.id, 7), wear: wearFor_(at.id, 90)
   };
 }
 
@@ -805,6 +806,46 @@ function syncMeals(token, athleteId, date, rows, removeEst) {
     if (add.length) sh.getRange(sh.getLastRow() + 1, 1, add.length, add[0].length).setValues(add);
   } finally { lock.releaseLock(); }
   return { meals: mealsFor_(at.id, 7), targets: targetsFor_(at.id) };
+}
+
+/* ---------- wearable data (uploaded exports, screenshots read by the coach, or a live connection) ---------- */
+var WEAR_KEYS = ['rec', 'hrv', 'rhr', 'sleep', 'perf', 'deep', 'rem', 'debt', 'strain', 'steps', 'cal', 'spo2', 'temp', 'resp'];
+function wearSheet_() {
+  if (!SS_) sheet_('Users');
+  var sh = SS_.getSheetByName('Wearables');
+  if (!sh) { sh = SS_.insertSheet('Wearables'); sh.getRange(1, 1, 1, TABS.Wearables.length).setValues([TABS.Wearables]).setFontWeight('bold').setBackground('#141414').setFontColor('#ffffff'); sh.setFrozenRows(1); }
+  return sh;
+}
+/** Adds or replaces one row per date and source. rows: [{date, rec, hrv, rhr, sleep, perf, deep, rem, debt, strain, steps, cal, spo2, temp, resp}] */
+function saveWearables(token, athleteId, rows, source) {
+  var u = auth_(token), at = athlete_(u, athleteId, true);
+  source = String(source || 'upload').toLowerCase().replace(/[^a-z0-9 ]/g, '').slice(0, 20) || 'upload';
+  var clean = {};
+  (rows || []).slice(0, 800).forEach(function (x) {
+    var d = String(x.date || '').slice(0, 10); if (!/^\d{4}-\d\d-\d\d$/.test(d)) return;
+    var r = clean[d] = clean[d] || { date: d };
+    WEAR_KEYS.forEach(function (k) { var n = Number(x[k]); if (x[k] !== '' && x[k] != null && isFinite(n)) r[k] = Math.round(n * 100) / 100; });
+  });
+  var dates = Object.keys(clean); if (!dates.length) return { wear: wearFor_(at.id, 90), saved: 0 };
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = wearSheet_(), v = sh.getDataRange().getValues(), now = new Date();
+    for (var i = v.length - 1; i >= 1; i--) if (v[i][0] === at.id && String(v[i][2]) === source && clean[dateStr_(v[i][1])]) sh.deleteRow(i + 1);
+    var add = dates.sort().map(function (d) { var r = clean[d]; return [at.id, d, source].concat(WEAR_KEYS.map(function (k) { return r[k] == null ? '' : r[k]; })).concat([now]); });
+    sh.getRange(sh.getLastRow() + 1, 1, add.length, add[0].length).setValues(add);
+  } finally { lock.releaseLock(); }
+  return { wear: wearFor_(at.id, 90), saved: dates.length };
+}
+function wearFor_(id, days) {
+  if (!SS_) sheet_('Users');
+  var sh = SS_.getSheetByName('Wearables'); if (!sh) return [];
+  var from = dateStr_(new Date(Date.now() - days * 864e5)), v = sh.getDataRange().getValues(), by = {};
+  for (var i = 1; i < v.length; i++) {
+    var d = dateStr_(v[i][1]); if (v[i][0] !== id || d < from) continue;
+    var r = by[d] = by[d] || { date: d, src: [] }; r.src.push(String(v[i][2]));
+    WEAR_KEYS.forEach(function (k, j) { var x = v[i][3 + j]; if (x !== '' && x != null && r[k] == null) r[k] = Number(x); });
+  }
+  return Object.keys(by).sort().map(function (k) { return by[k]; });
 }
 
 function mealsFor_(id, days) {
