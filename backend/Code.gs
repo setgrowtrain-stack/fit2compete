@@ -496,7 +496,7 @@ function getExtras(token, athleteId) {
     var d = String(v[i][4]);
     if (/^META /.test(d)) { try { q.meta = JSON.parse(d.split('\n')[0].slice(5)); } catch (e) {} }
     if (st === 'answered' && (q.type === 'read' || q.type === 'suppList')) q.answer = answerOf_(v[i][10]);
-    if (st === 'answered' && q.type === 'question') q.answer = (q.meta && (q.meta.kind === 'suggest' || q.meta.kind === 'wear' || q.meta.kind === 'suppReview')) ? answerOf_(v[i][10]) : String(v[i][10]).slice(0, 4000);
+    if (st === 'answered' && q.type === 'question') q.answer = (q.meta && (q.meta.kind === 'suggest' || q.meta.kind === 'wear' || q.meta.kind === 'suppReview' || q.meta.kind === 'pain')) ? answerOf_(v[i][10]) : String(v[i][10]).slice(0, 4000);
     reqs.push(q);
   }
   return {
