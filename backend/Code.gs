@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.5.0';
+var VERSION = '2.6.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -38,7 +38,7 @@ var TABS = {
   Targets:     ['Athlete Id', 'Phase', 'From', 'To', 'Calories', 'Protein g', 'Carbs g', 'Fat g', 'Bodyweight target', 'Set by', 'Why', 'Updated'],
   Requests:    ['Id', 'Athlete Id', 'Athlete', 'Type', 'Details', 'File link', 'Status', 'Created', 'Requested by', 'Answered', 'Answer'],
   CoachNotes:  ['Athlete Id', 'Athlete', 'Date', 'Type', 'Note', 'Request Id', 'By', 'Seen'],
-  Wearables:   ['Athlete Id', 'Date', 'Source', 'Recovery %', 'HRV ms', 'Resting HR', 'Sleep hours', 'Sleep performance %', 'Deep min', 'REM min', 'Sleep debt min', 'Strain', 'Steps', 'Calories', 'SpO2 %', 'Skin temp C', 'Resp rate', 'Updated']
+  Wearables:   ['Athlete Id', 'Date', 'Source', 'Recovery %', 'HRV ms', 'Resting HR', 'Sleep hours', 'Sleep performance %', 'Deep min', 'REM min', 'Sleep debt min', 'Strain', 'Steps', 'Calories', 'SpO2 %', 'Skin temp C', 'Resp rate', 'Updated', 'Light min', 'Awake min', 'Sleep efficiency %', 'Sleep consistency %', 'Sleep need min', 'In bed min', 'Disturbances', 'Avg HR', 'Max HR', 'Kilojoules', 'Workouts', 'Workout min']
 };
 
 // Request types the server applies to the athlete record itself. "read" and "suppList" are applied by the screens.
@@ -811,10 +811,13 @@ function syncMeals(token, athleteId, date, rows, removeEst) {
 
 /* ---------- wearable data (uploaded exports, screenshots read by the coach, or a live connection) ---------- */
 var WEAR_KEYS = ['rec', 'hrv', 'rhr', 'sleep', 'perf', 'deep', 'rem', 'debt', 'strain', 'steps', 'cal', 'spo2', 'temp', 'resp'];
+/* Added in 2.6: stored after the Updated column so older rows keep their layout. */
+var WEAR_X = ['light', 'awake', 'eff', 'cons', 'need', 'bed', 'dist', 'hravg', 'hrmax', 'kj', 'wkn', 'wkmin'];
 function wearSheet_() {
   if (!SS_) sheet_('Users');
   var sh = SS_.getSheetByName('Wearables');
   if (!sh) { sh = SS_.insertSheet('Wearables'); sh.getRange(1, 1, 1, TABS.Wearables.length).setValues([TABS.Wearables]).setFontWeight('bold').setBackground('#141414').setFontColor('#ffffff'); sh.setFrozenRows(1); }
+  else if (sh.getLastColumn() < TABS.Wearables.length) sh.getRange(1, 1, 1, TABS.Wearables.length).setValues([TABS.Wearables]).setFontWeight('bold').setBackground('#141414').setFontColor('#ffffff');
   return sh;
 }
 /** Adds or replaces one row per date and source. rows: [{date, rec, hrv, rhr, sleep, perf, deep, rem, debt, strain, steps, cal, spo2, temp, resp}] */
@@ -829,7 +832,7 @@ function saveWearRows_(athId, rows, source) {
   rows.forEach(function (x) {
     var d = String(x.date || '').slice(0, 10); if (!/^\d{4}-\d\d-\d\d$/.test(d)) return;
     var r = clean[d] = clean[d] || { date: d };
-    WEAR_KEYS.forEach(function (k) { var n = Number(x[k]); if (x[k] !== '' && x[k] != null && isFinite(n)) r[k] = Math.round(n * 100) / 100; });
+    WEAR_KEYS.concat(WEAR_X).forEach(function (k) { var n = Number(x[k]); if (x[k] !== '' && x[k] != null && isFinite(n)) r[k] = Math.round(n * 100) / 100; });
   });
   var dates = Object.keys(clean); if (!dates.length) return 0;
   var at = { id: athId };
@@ -837,7 +840,7 @@ function saveWearRows_(athId, rows, source) {
   try {
     var sh = wearSheet_(), v = sh.getDataRange().getValues(), now = new Date();
     for (var i = v.length - 1; i >= 1; i--) if (v[i][0] === at.id && String(v[i][2]) === source && clean[dateStr_(v[i][1])]) sh.deleteRow(i + 1);
-    var add = dates.sort().map(function (d) { var r = clean[d]; return [at.id, d, source].concat(WEAR_KEYS.map(function (k) { return r[k] == null ? '' : r[k]; })).concat([now]); });
+    var add = dates.sort().map(function (d) { var r = clean[d]; return [at.id, d, source].concat(WEAR_KEYS.map(function (k) { return r[k] == null ? '' : r[k]; })).concat([now]).concat(WEAR_X.map(function (k) { return r[k] == null ? '' : r[k]; })); });
     sh.getRange(sh.getLastRow() + 1, 1, add.length, add[0].length).setValues(add);
   } finally { lock.releaseLock(); }
   return dates.length;
@@ -902,7 +905,8 @@ function whoopPull_(id, days) {
   var day = function (iso) { return Utilities.formatDate(new Date(iso), tz, 'yyyy-MM-dd'); };
   var cycles = whoopGet_(access, '/v2/cycle', start), cyDay = {};
   cycles.forEach(function (c) { var d = day(c.end || new Date().toISOString()); cyDay[c.id] = d; var r = by[d] = by[d] || { date: d };
-    if (c.score) { if (c.score.strain != null) r.strain = c.score.strain; if (c.score.kilojoule != null) r.cal = Math.round(c.score.kilojoule / 4.184); }
+    if (c.score) { if (c.score.strain != null) r.strain = c.score.strain; if (c.score.kilojoule != null) { r.cal = Math.round(c.score.kilojoule / 4.184); r.kj = Math.round(c.score.kilojoule); }
+      if (c.score.average_heart_rate != null) r.hravg = c.score.average_heart_rate; if (c.score.max_heart_rate != null) r.hrmax = c.score.max_heart_rate; }
     if (c.step_count != null) r.steps = c.step_count; });
   whoopGet_(access, '/v2/recovery', start).forEach(function (x) { if (!x.score) return; var d = cyDay[x.cycle_id] || day(x.created_at); var r = by[d] = by[d] || { date: d };
     r.rec = x.score.recovery_score; r.rhr = x.score.resting_heart_rate; r.hrv = x.score.hrv_rmssd_milli; if (x.score.spo2_percentage != null) r.spo2 = x.score.spo2_percentage; if (x.score.skin_temp_celsius != null) r.temp = x.score.skin_temp_celsius; });
@@ -910,7 +914,13 @@ function whoopPull_(id, days) {
     var asleep = (st.total_in_bed_time_milli || 0) - (st.total_awake_time_milli || 0) - (st.total_no_data_time_milli || 0);
     r.sleep = Math.round(asleep / 36e3) / 100; r.deep = Math.round((st.total_slow_wave_sleep_time_milli || 0) / 6e4); r.rem = Math.round((st.total_rem_sleep_time_milli || 0) / 6e4);
     if (x.score.sleep_performance_percentage != null) r.perf = x.score.sleep_performance_percentage; if (x.score.respiratory_rate != null) r.resp = x.score.respiratory_rate;
-    if (x.score.sleep_needed && x.score.sleep_needed.need_from_sleep_debt_milli != null) r.debt = Math.round(x.score.sleep_needed.need_from_sleep_debt_milli / 6e4); });
+    if (x.score.sleep_needed && x.score.sleep_needed.need_from_sleep_debt_milli != null) r.debt = Math.round(x.score.sleep_needed.need_from_sleep_debt_milli / 6e4);
+    r.light = Math.round((st.total_light_sleep_time_milli || 0) / 6e4); r.awake = Math.round((st.total_awake_time_milli || 0) / 6e4); r.bed = Math.round((st.total_in_bed_time_milli || 0) / 6e4);
+    if (st.disturbance_count != null) r.dist = st.disturbance_count;
+    if (x.score.sleep_efficiency_percentage != null) r.eff = x.score.sleep_efficiency_percentage; if (x.score.sleep_consistency_percentage != null) r.cons = x.score.sleep_consistency_percentage;
+    var sn = x.score.sleep_needed; if (sn && sn.baseline_milli != null) r.need = Math.round(((sn.baseline_milli || 0) + (sn.need_from_sleep_debt_milli || 0) + (sn.need_from_recent_strain_milli || 0) - (sn.need_from_recent_nap_milli || 0)) / 6e4); });
+  try { whoopGet_(access, '/v2/activity/workout', start).forEach(function (x) { if (!x.start || !x.end) return; var d = day(x.end); var r = by[d] = by[d] || { date: d };
+    r.wkn = (r.wkn || 0) + 1; r.wkmin = (r.wkmin || 0) + Math.round((new Date(x.end) - new Date(x.start)) / 6e4); }); } catch (e) {}
   var rows = Object.keys(by).map(function (k) { return by[k]; });
   if (rows.length) saveWearRows_(id, rows, 'whoop api');
   try { var bm = UrlFetchApp.fetch('https://api.prod.whoop.com/developer/v2/user/measurement/body', { headers: { Authorization: 'Bearer ' + access }, muteHttpExceptions: true });
@@ -928,7 +938,9 @@ function whoopDisconnect(token, athleteId) {
   PropertiesService.getScriptProperties().deleteProperty('WHOOP_TOK_' + at.id); return { connected: false };
 }
 /** Called daily and when the app loads: refresh anyone connected whose last pull is over 4 hours old. */
-function whoopAuto_(id) { var t = whoopTok_(id); if (!t || !t.refresh || (t.last && Date.now() - t.last < 4 * 36e5)) return; try { whoopPull_(id, 4); } catch (e) {} }
+function whoopAuto_(id) { var t = whoopTok_(id); if (!t || !t.refresh) return;
+  if (!t.v26) { try { whoopPull_(id, 60); t = whoopTok_(id); t.v26 = 1; PropertiesService.getScriptProperties().setProperty('WHOOP_TOK_' + id, JSON.stringify(t)); } catch (e) {} return; }
+  if (t.last && Date.now() - t.last < 4 * 36e5) return; try { whoopPull_(id, 4); } catch (e) {} }
 function whoopSyncAll() { var v = sheet_('Athletes').getDataRange().getValues(); for (var i = 1; i < v.length; i++) whoopAuto_(v[i][0]); }
 
 function wearFor_(id, days) {
@@ -939,6 +951,7 @@ function wearFor_(id, days) {
     var d = dateStr_(v[i][1]); if (v[i][0] !== id || d < from) continue;
     var r = by[d] = by[d] || { date: d, src: [] }; r.src.push(String(v[i][2]));
     WEAR_KEYS.forEach(function (k, j) { var x = v[i][3 + j]; if (x !== '' && x != null && r[k] == null) r[k] = Number(x); });
+    WEAR_X.forEach(function (k, j) { var x = v[i][4 + WEAR_KEYS.length + j]; if (x !== '' && x != null && x !== undefined && r[k] == null) r[k] = Number(x); });
   }
   return Object.keys(by).sort().map(function (k) { return by[k]; });
 }

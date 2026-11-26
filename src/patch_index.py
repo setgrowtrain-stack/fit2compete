@@ -196,9 +196,10 @@ rep('window.F2C_T={rec,LOG,DAILY,touch,slug,DAYS7,currentWeek,weekDate,phaseOf,d
     'window.F2C_suppText=()=>{try{const E=engineOut();return E?JSON.stringify(E.s.supplements.map(g=>({time:g.time,days:g.days,items:(g.items||[]).map(i=>i.name+(i.dose?" "+i.dose:""))}))):"none"}catch(e){return "none"}};\nwindow.F2C_T={rec,LOG,DAILY,touch,slug,DAYS7,currentWeek,weekDate,phaseOf,dayPlan,mealDayFor,engineOut,ui,')
 
 exec(open('/home/claude/v2/patch_extra.py',encoding='utf-8').read())
+exec(open('/home/claude/v2/patch_fast.py',encoding='utf-8').read())
 
 # ---------- v2 module, loaded before the service worker line ----------
-mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read()
+mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/cards.js', encoding='utf-8').read()
 rep('<script>if("serviceWorker" in navigator)', '<script>\n' + mod + '\n</script>\n<script>if("serviceWorker" in navigator)')
 
 open(dst, 'w', encoding='utf-8').write(s)

@@ -81,13 +81,14 @@ window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";cons
  const ring=v=>{const r=42,c=2*Math.PI*r,p=Math.max(0,Math.min(100,v||0));return `<svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 50 50)"/></svg>`};
  const I={hrv:'<path d="M2 12h4l2-5 3 10 3-7 2 2h6"/>',rhr:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',steps:'<path d="M7 14c-1.5 0-2.5 1.5-2.5 3S5.5 20 7 20s2-1.5 2-3-0.5-3-2-3zM15 4c-1.5 0-2.5 1.5-2.5 3s1 3 2.5 3 2-1.5 2-3-.5-3-2-3zM6 12c0-2 .5-4 1.5-4S9 10 8.5 12M14 13c.5 2 1 4 2 4s1.5-2 1-4"/>',cal:'<path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/>',debt:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>'};
  const ic=k=>`<svg viewBox="0 0 24 24" class="wic">${I[k]||""}</svg>`;
- const small=["hrv","rhr","steps","cal"].filter(k=>last[k]!=null).map(k=>`<div class="wt wsm">${ic(k)}<b>${fmt[k](last[k])}</b><span>${k==="hrv"?"HRV":k==="rhr"?"RESTING HR":k==="steps"?"STEPS":"CALORIES"}</span></div>`).join("");
+ const small=["hrv","rhr","steps","cal"].filter(k=>last[k]!=null).map(k=>`<div class="wt wsm" data-wd="${k==="hrv"||k==="rhr"?"rec":"strain"}" role="button" tabindex="0">${ic(k)}<b>${fmt[k](last[k])}</b><span>${k==="hrv"?"HRV":k==="rhr"?"RESTING HR":k==="steps"?"STEPS":"CALORIES"}</span></div>`).join("");
  const src=(last.src||[]).some(x=>/whoop/.test(x))?"WHOOP":(last.src||[]).join(", ").toUpperCase();
  return `<div class="sheet wearcard"><div class="whead"><span>${esc(src||"WEARABLE")}</span><span>${last.date===today?"TODAY":esc(last.date)}</span></div>
-  <div class="wtop"><div class="wt wrec">${ring(last.rec)}<div class="wrecv"><b style="color:${rc}">${last.rec!=null?Math.round(last.rec)+"%":"–"}</b><span style="color:${rc}">RECOVERY</span></div></div>
-   <div class="wcol"><div class="wt wmid"><b style="color:#8fb3cc">${last.perf!=null?Math.round(last.perf)+"%":last.sleep!=null?fmt.sleep(last.sleep):"–"}</b><span style="color:#8fb3cc">SLEEP${last.perf!=null&&last.sleep!=null?" · "+fmt.sleep(last.sleep):""}</span></div>
-   <div class="wt wmid"><b style="color:#1e9bff">${last.strain!=null?(+last.strain).toFixed(1):"–"}</b><span style="color:#1e9bff">STRAIN</span></div></div></div>
+  <div class="wtop"><div class="wt wrec" data-wd="rec" role="button" tabindex="0" aria-label="Recovery details">${ring(last.rec)}<div class="wrecv"><b style="color:${rc}">${last.rec!=null?Math.round(last.rec)+"%":"–"}</b><span style="color:${rc}">RECOVERY</span></div></div>
+   <div class="wcol"><div class="wt wmid" data-wd="sleep" role="button" tabindex="0" aria-label="Sleep details"><b style="color:#8fb3cc">${last.perf!=null?Math.round(last.perf)+"%":last.sleep!=null?fmt.sleep(last.sleep):"–"}</b><span style="color:#8fb3cc">SLEEP${last.perf!=null&&last.sleep!=null?" · "+fmt.sleep(last.sleep):""}</span></div>
+   <div class="wt wmid" data-wd="strain" role="button" tabindex="0" aria-label="Strain details"><b style="color:#1e9bff">${last.strain!=null?(+last.strain).toFixed(1):"–"}</b><span style="color:#1e9bff">STRAIN</span></div></div></div>
   ${small?`<div class="wsmall">${small}</div>`:""}
+  <p class="wtap">Tap Recovery, Sleep or Strain for the details</p>
   ${stale?`<p class="wadv">No new data for a couple of days. Sync or upload on the Body tab.</p>`:`<p class="wadv">${esc(advice(last,base))}</p>`}</div>`};
 function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W.slice(-30);
  let h=`<div class="sheet" id="wearBox"><span class="label">Connected devices</span>`;
@@ -120,7 +121,7 @@ function wire(){const f=$("wearFile"),s=$("wearShot"),st=$("wearSt");
   try{await sendShots(files.slice(0,10));render();const s2=$("wearSt");if(s2)s2.textContent="Sent. Your coach will read it, usually within 3 hours."}catch(e){st.textContent="Couldn't send. Try again."}}}
 const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{render();applyCoachReads()}catch(e){console.warn("[F2C] wear",e)}return r};
 const _te=window.F2C_todayExtras;window.F2C_todayExtras=function(){let h="";try{h=F2C_wearToday()}catch(e){}return h+(_te?_te.apply(this,arguments):"")};
-window.F2C_wearRead=readFiles;window.F2C_wearRender=()=>render();
+window.F2C_wearRead=readFiles;window.F2C_wearAdvice=advice;window.F2C_wearRender=()=>render();
 document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-dev]");if(!t)return;const d=t.dataset.dev,pk=$("devPick"),how=$("devHow");
  if(d==="open"){if(pk)pk.hidden=!pk.hidden;return}
  if(d==="whoop"){const wh=X().whoop||{};if(wh.ready){const b=document.createElement("button");b.dataset.whoop="on";b.hidden=true;document.body.appendChild(b);b.click();b.remove()}else if(how)how.innerHTML=`<p class="small">WHOOP sign-in isn't switched on yet. Upload your WHOOP data export instead (WHOOP app: More, App Settings, Data Export).</p>`;return}

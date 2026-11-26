@@ -36,8 +36,10 @@ window.F2C_planFiles=function(rec){const out=[],lines=[];rec=rec||athletes[cur];
 let pollT=null,loading=false;
 function schedulePoll(){clearTimeout(pollT);pollT=setTimeout(()=>{if(document.visibilityState==="visible")load(true);else schedulePoll()},open().length?4*60e3:15*60e3)}
 async function load(quiet){if(!TOKEN||!cur||loading)return;const id=cur;loading=true;
+ if(!X.loaded){try{const c=JSON.parse(localStorage.getItem("f2c-x-"+id)||"null");if(c&&c.for===id){Object.assign(X,c,{requests:[],loaded:true,cached:true});rerender(true)}}catch(e){}}
  try{const r=await gs("getExtras",TOKEN,id);if(cur!==id)return;
-  Object.assign(X,{for:id,requests:r.requests||[],prog:r.prog||{},notes:r.notes||[],body:r.body||null,targets:r.targets||null,meals:r.meals||[],wear:r.wear||[],whoop:r.whoop||{},loaded:true});
+  Object.assign(X,{for:id,requests:r.requests||[],prog:r.prog||{},notes:r.notes||[],body:r.body||null,targets:r.targets||null,meals:r.meals||[],wear:r.wear||[],whoop:r.whoop||{},loaded:true,cached:false});
+  try{localStorage.setItem("f2c-x-"+id,JSON.stringify({for:id,prog:X.prog,notes:X.notes,body:X.body,targets:X.targets,meals:X.meals,wear:X.wear,whoop:X.whoop}))}catch(e){}
   let fresh=false;
   if(r.rec){const old=athletes[id]||{};const hadPlan=!!old.plan;r.rec.owner=old.owner||r.rec.owner;r.rec.saved=true;if(old.familyChild)r.rec.familyChild=true;athletes[id]=r.rec;saveLocal();fresh=true;
    if(!hadPlan&&r.rec.plan){renderAll(true);toast("Your plan is here.")}else{rerender();const ch=r.rec.plan&&r.rec.plan.changes;if(ch&&ch.length&&JSON.stringify(ch)!==JSON.stringify(old.plan&&old.plan.changes))toast("Plan updated: "+String(ch[0]).slice(0,140)+(ch.length>1?" (see Plan for all changes)":""))}}
@@ -174,11 +176,9 @@ window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!
  if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
  const c=b&&b.cmp;
  if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
-  h+=`<div class="sheet"><span class="label">Since your last scan (${e_(c.from)} to ${e_(c.to)}, ${c.weeks} week${c.weeks>1?"s":""})</span><div class="kpis">
-   <div class="kpi"><span class="label">Weight</span>${sg(c.change.weight," lb",true)}</div><div class="kpi"><span class="label">Body fat</span>${sg(c.change.bf," %",false)}</div>
-   <div class="kpi"><span class="label">Muscle (SMM)</span>${sg(c.change.smm," lb",true)}</div><div class="kpi"><span class="label">Lean mass</span>${sg(c.change.lean," lb",true)}</div></div>
-   <h4 class="sect">Food in those weeks</h4>${c.food?`<p>Average <b>${c.food.cal} kcal</b> and <b>${c.food.protein} g protein</b> a day, from ${c.food.days} day${c.food.days>1?"s":""} of meals checked off.</p>`:`<p class="muted small">No meals were checked off in this window, so food can't be compared. Tap "Ate it" on Today to track it.</p>`}
-   <h4 class="sect">Training in those weeks</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
+  h+=(window.F2C_sinceCard?F2C_sinceCard(c,scans.filter(x=>x.confirmed)):"")+`<div class="sheet"><span class="label">Food and training in those ${c.weeks} week${c.weeks>1?"s":""}</span>
+   <h4 class="sect">Food</h4>${c.food?`<p>Average <b>${c.food.cal} kcal</b> and <b>${c.food.protein} g protein</b> a day, from ${c.food.days} day${c.food.days>1?"s":""} of meals checked off.</p>`:`<p class="muted small">No meals were checked off in this window, so food can't be compared. Tap "Ate it" on Today to track it.</p>`}
+   <h4 class="sect">Training</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
    ${(c.strength||[]).length?`<div class="scroll"><table><thead><tr><th>Key lift</th><th>Est. max then</th><th>Now</th><th>Change</th></tr></thead><tbody>${c.strength.map(x=>`<tr><td>${e_(x.lift)}</td><td class="num">${x.from} lb</td><td class="num">${x.to} lb</td><td class="num">${x.pct>0?"+":""}${x.pct}%</td></tr>`).join("")}</tbody></table></div>`:""}</div>`}
  else if(scans.length)h+=`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`;
  if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
@@ -197,13 +197,15 @@ function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||
  const chg=(a,b,u)=>{if(typeof a!=="number"||typeof b!=="number")return "";const n=Math.round((a-b)*100)/100;return `<span class="muted small">${n>0?"+":""}${n}${u||""}</span>`};
  let h="";
  const seg=(k,title,note)=>{const m=sg[k];if(!m||!SEG.some(([x])=>m[x]))return "";const pm=psg[k]||{};
+  if(window.F2C_segCard)return F2C_segCard(k,title,m,prev?pm:null,SEG);
   return `<h4 class="sect">${title}</h4>${note?`<p class="muted small">${note}</p>`:""}<div class="scroll"><table><thead><tr><th>Body part</th><th>lb</th><th>% of ideal</th>${prev?"<th>Change</th>":""}</tr></thead><tbody>${SEG.filter(([x])=>m[x]).map(([x,l])=>{const v=m[x]||{},p=pm[x]||{};return `<tr><td>${l}</td><td class="num">${e_(v.lb==null?"":v.lb)}</td><td class="num">${e_(v.pct==null?"":v.pct+"%")}</td>${prev?`<td class="num">${chg(v.lb,p.lb," lb")}</td>`:""}</tr>`}).join("")}</tbody></table></div>`};
  h+=seg("lean",F2C_term("segment","Muscle by body part"),"100% means average for your height. Left and right within about 3% of each other is balanced.");
  h+=seg("fat","Fat by body part","");
  const pk={};(pd.sections||[]).forEach(x=>(x.items||[]).forEach(it=>{if(it.key)pk[it.key]=it.value}));
  const secs=(d.sections||[]).filter(x=>(x.items||[]).length);
  if(secs.length)h+=`<details><summary class="small">Everything on this scan (${secs.reduce((n,x)=>n+x.items.length,0)} values)${d.device?" · "+e_(d.device):""}</summary>${secs.map(x=>`<h4 class="sect">${e_(x.title||"")}</h4><div class="scroll"><table><tbody>${x.items.map(it=>`<tr><td>${e_(it.label)}${it.range?` <span class="muted small">(${e_(it.range)})</span>`:""}</td><td class="num">${e_(it.value)}${it.unit?" "+e_(it.unit):""}</td>${prev?`<td class="num">${it.key&&it.key in pk?chg(it.value,pk[it.key]):""}</td>`:""}</tr>`).join("")}</tbody></table></div>`).join("")}</details>`;
- return h?`<div class="sheet"><span class="label">${s.type==="dexa"?"DEXA scan":"Scan"} details · ${e_(s.date)}</span>${h}</div>`:""}
+ if(!h)return "";const parts=h.split("<!--segend-->"),segs=parts.slice(0,-1).join(""),rest=parts[parts.length-1];
+ return segs+(rest?`<div class="sheet"><span class="label">${s.type==="dexa"?"DEXA scan":"Scan"} details · ${e_(s.date)}</span>${rest}</div>`:"")}
 function formFields(s){return [["date","Date","date"],["weight","Weight (lb)"],["bf","Body fat %"],["smm","Muscle SMM (lb)"],["lean","Lean mass (lb)"],["bmr","BMR (kcal)"]].map(([k,l,t])=>`<label class="field"><span class="flabel">${l}</span><input type="${t||"text"}" ${t?"":'inputmode="decimal"'} data-f="${k}" value="${e_(s[k]==null?"":s[k])}"></label>`).join("")}
 function readForm(el){const o={};el.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return o}
 async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
