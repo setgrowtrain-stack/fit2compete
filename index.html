@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795704322";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795705736";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -442,7 +442,7 @@ html{-webkit-text-size-adjust:100%} body{overflow-x:hidden}
    ONE source: the app's scheduler, the AI prompts, the tests and the review page all read this file.
    Change a rule here, and everything that uses it changes with it. */
 (function(root){
-const VERSION="2026-11-09.1";
+const VERSION="2026-11-26.1";
 
 /* place: where the scheduler puts an item when the person's own time breaks the rule (or none was given)
      wake | pre | post | firstMeal | fatMeal | fiberMeal | lastMeal | evening | bed | spread | keep
@@ -457,7 +457,7 @@ const CATS={
   why:"Timing doesn't matter; taking it every day keeps muscles saturated.",evidence:"strong",
   src:["Kreider et al. 2017, ISSN position stand: creatine supplementation"],
   match:/creatine|creapure/i},
- citrulline:{label:"L-citrulline / citrulline malate",place:"pre",pre:[45,90],food:false,rest:"firstMeal",
+ citrulline:{label:"L-citrulline / citrulline malate",place:"pre",pre:[45,90],food:false,rest:"firstMeal",kcal:true,
   why:"Raises blood arginine and nitric oxide, peaking 1 to 2 hours after taking it; studies dosed it about 60 minutes before training.",evidence:"moderate",
   src:["Pérez-Guisado & Jakeman 2010, J Strength Cond Res (8 g citrulline malate 1 h before)","Moinard et al. 2008, Br J Nutr (citrulline pharmacokinetics)"],
   match:/citrulline/i},
@@ -469,7 +469,7 @@ const CATS={
   why:"Peaks 30 to 60 minutes after taking. Taken within about 8 to 9 hours of bed it cuts sleep time.",evidence:"strong",
   src:["Guest et al. 2021, ISSN position stand: caffeine and exercise performance","Gardiner et al. 2023, Sleep Med Rev (caffeine and sleep meta-analysis)"],
   match:/caffeine|pre-?workout|c4\b|ghost legend|preworkout/i},
- nitrate:{label:"Beetroot / nitrate",place:"pre",pre:[120,180],food:"either",rest:"skip",
+ nitrate:{label:"Beetroot / nitrate",place:"pre",pre:[120,180],food:"either",rest:"skip",kcal:true,
   why:"Blood nitrite peaks 2 to 3 hours after taking it.",evidence:"moderate",
   src:["Jones et al. 2018, Annu Rev Nutr (dietary nitrate and exercise)"],
   match:/beet|nitrate/i},
@@ -477,11 +477,11 @@ const CATS={
   why:"Works by daily build-up, not timing. With a meal and split doses cut the tingling.",evidence:"strong",
   src:["Trexler et al. 2015, ISSN position stand: beta-alanine"],
   match:/beta-?alanine/i},
- protein:{label:"Protein powder or shake",place:"post",food:"either",rest:"keep",
+ protein:{label:"Protein powder or shake",place:"post",food:"either",rest:"keep",kcal:true,
   why:"Total daily protein matters most; after training is a convenient time.",evidence:"moderate",
   src:["Jäger et al. 2017, ISSN position stand: protein and exercise","Schoenfeld et al. 2013, JISSN (protein timing meta-analysis)"],
   match:/protein|whey|casein|owyn|collagen/i},
- fish_oil:{label:"Fish oil / omega-3",place:"fatMeal",food:true,
+ fish_oil:{label:"Fish oil / omega-3",place:"fatMeal",food:true,kcal:true,
   why:"Absorbed much better with a meal that contains fat.",evidence:"moderate",
   src:["Lawson & Hughes 1988, Biochem Biophys Res Commun (omega-3 absorption with fat)","NIH Office of Dietary Supplements: omega-3 fact sheet"],
   match:/fish oil|omega|epa|dha|krill|cod liver/i},
@@ -509,15 +509,19 @@ const CATS={
   why:"Evening is common and practical; glycinate is gentle on the stomach.",evidence:"limited",
   src:["NIH Office of Dietary Supplements: magnesium fact sheet"],
   match:/magnesium|\bzma\b/i},
- gel_fiber:{label:"Gel-forming fiber (psyllium, beta-glucan powder, glucomannan)",place:"fiberMeal",food:true,
+ gel_fiber:{label:"Gel-forming fiber (psyllium, beta-glucan powder, glucomannan)",place:"fiberMeal",food:true,kcal:true,
   apart:[{cats:["multivitamin","fat_soluble","iron","calcium","zinc","magnesium","medication"],gap:120}],
   why:"Taken at the start of a meal it binds the bile acids that meal releases (lowers LDL) and slows the sugar rise. Keep it 2 hours from vitamins, minerals and medications.",evidence:"strong",
   src:["Metamucil label (take 2 h before or after medications)","Jovanovski et al. 2018, Am J Clin Nutr (psyllium and LDL meta-analysis)","FDA 21 CFR 101.81 (soluble fiber health claim)"],
   match:/psyllium|metamucil|beta-?glucan|oat fiber|glucomannan|guar/i},
- nongel_fiber:{label:"Non-gel fiber (wheat dextrin, inulin)",place:"keep",food:"either",
-  why:"Dissolves without gelling; timing doesn't matter.",evidence:"limited",
-  src:["Product label"],
+ nongel_fiber:{label:"Non-gel fiber (wheat dextrin, inulin)",place:"firstMeal",food:"either",kcal:true,
+  why:"Dissolves without gelling, so timing doesn't matter for how it works. It has calories (Benefiber: 15 per 2 tsp), so it goes inside your eating window.",evidence:"limited",
+  src:["Benefiber label: 2 tsp = 15 calories, 4 g carbohydrate"],
   match:/benefiber|wheat dextrin|inulin/i},
+ urolithin:{label:"Urolithin A (Mitopure)",place:"keep",food:"either",
+  why:"The maker says it can be taken any time, with or without food; take it at the same time every day.",evidence:"limited",
+  src:["Timeline FAQ: Mitopure can be taken any time, with or without food; 2 softgels (500 mg) a day"],
+  match:/urolithin|mitopure/i},
  ashwagandha:{label:"Ashwagandha",place:"bed",food:"either",
   why:"Sleep studies dosed it at night.",evidence:"limited",
   src:["Langade et al. 2019, Cureus (ashwagandha and sleep)","NIH LiverTox: ashwagandha"],
@@ -531,8 +535,8 @@ const CATS={
   src:["No timing studies in humans"],
   match:/\bnmn\b|nicotinamide|\bnr\b|niagen|nad\+?/i},
  nac:{label:"NAC",place:"keep",food:"either",
-  why:"No meaningful timing data; keep your usual time.",evidence:"none",
-  src:["NIH LiverTox / product label"],
+  why:"No good evidence that food changes how much you absorb, and labels like NOW's give no food direction. Upset stomach is its most common side effect: if it bothers you on an empty stomach, take it with a meal.",evidence:"limited",
+  src:["NOW NAC 600 mg label: take 1 capsule twice daily","Papi et al. 2021, Adv Ther (oral NAC peaks 1 to 2 h, half-life about 6 h)"],
   match:/\bnac\b|acetyl.?cysteine/i},
  electrolytes:{label:"Electrolytes",place:"keep",food:false,
   why:"Around training and heat, or while fasting; use as needed.",evidence:"moderate",
@@ -741,6 +745,7 @@ function check(it,t,ctx,day){const c=C[it.cat]||C.other,meals=ctx.meals[day],tr=
  if(it.cat==="multivitamin"&&isPM(it)&&m&&m!==meals[meals.length-1]&&meals.indexOf(m)<meals.length-2)fails.push("PM tablet goes with a later meal");
  if(c.bedGap&&t>ctx.bed-c.bedGap)fails.push(`should be at least ${Math.round(c.bedGap/60)} hours before bed`);
  if(t<ctx.eatStart&&c.food===true)fails.push("needs food, and this is before your first meal");
+ if(c.kcal&&(t<ctx.eatStart-5||t>ctx.eatEnd+30))fails.push("has calories, so it would break your fast; it goes inside your eating window");
  return fails}
 
 function defaultTime(it,ctx,day){const c=C[it.cat]||C.other,meals=ctx.meals[day],tr=day==="train"&&ctx.train!=null;
@@ -764,6 +769,7 @@ function scheduleDay(items,ctx,day){const placed=[],skipped=[];const meals=ctx.m
  // pass 1: everything except gel fiber
  order.forEach(({it,i})=>{const c=C[it.cat]||C.other;if(c.place==="fiberMeal")return;
   const their=theirTime(it.time,ctx,day);
+  if(their&&their.spread&&c.kcal){placed.push({i,it,t:ctx.eatStart,why:c.why,moved:`Moved from ${it.time}: it has calories, so sip it during your eating window, not while fasting.`,from:ctx.wake});return}
   if(their&&their.spread){placed.push({i,it,spread:true,t:ctx.wake,why:c.why});return}
   if(it.cat==="medication"){placed.push({i,it,t:their?their.t:null,why:c.why,fixed:true});return}
   if(their&&their.t!=null){const f=check(it,their.t,ctx,day);
@@ -3481,10 +3487,11 @@ function reviewPrompt(a){const RU=window.F2C_RULES||{},cats=(RU.CAT_IDS||[]).fil
 ATHLETE: age ${a.age||"?"}, sex ${a.sex||"?"}, goals: ${[].concat(a.goals||a.goal||[]).join(", ")||"?"}${a.showDate?", show date "+a.showDate:""}${a.drugTested?", drug-tested competition":""}.
 HEALTH AND LABS: ${String(a.health||a.conditions||"").slice(0,600)} ${a.labValues?JSON.stringify(a.labValues).slice(0,1500):""}
 DIET NOTES: ${String(a.diet||a.dietNotes||"").slice(0,400)}
+EATING WINDOW / FASTING: ${String(a.eating||"not given").slice(0,120)}. Wake ${a.wakeTime||"?"}, bed ${a.bedTime||"?"}, trains ${a.timeOfDay||"?"}.
 LIST (name | amount | type | status):
 ${list}
-Reply with ONLY JSON: {"items":[{"name":"exact name from the list","need":"keep" or "not-needed" or "optional" or "restart","why":"one plain sentence with the main reason","dose":"better amount if the current one is wrong, else empty","cat":"one of: ${cats}, only if the listed type is wrong, else empty"}],"add":[{"name":"product","dose":"amount","cat":"type","why":"one sentence"}],"note":"one or two sentences"}
-Use "not-needed" when evidence is weak for their goal, it duplicates another item, or it adds risk (lead, drug-test risk before a tested show, interactions). Use "restart" for a paused item that is worth taking again. Only add something when there is a clear, specific reason.`}
+Reply with ONLY JSON: {"items":[{"name":"exact name from the list","need":"keep" or "not-needed" or "optional" or "restart","why":"one plain sentence with the main reason","dose":"better amount if the current one is wrong, else empty","cat":"one of: ${cats}, only if the listed type is wrong, else empty","label":"only if there is a real conflict: what the product label or the research says about food, timing, splitting the dose, calories during a fast, or spacing from other items, in one sentence; else empty"}],"add":[{"name":"product","dose":"amount","cat":"type","why":"one sentence"}],"note":"one or two sentences"}
+Use "not-needed" when evidence is weak for their goal, it duplicates another item, or it adds risk (lead, drug-test risk before a tested show, interactions). Use "restart" for a paused item that is worth taking again. Only add something when there is a clear, specific reason. Check each product's actual label directions (search for them) and say where the athlete's current use differs. Anything with calories (fiber powders, protein, amino acids in grams, fish oil) breaks a fast. Never guess: if you could not find the label, say so in "label".`}
 async function askReview(){const a=R().a||{};if(!(a.suppItems||[]).some(x=>!isRx(x)))return;
  const names=(a.suppItems||[]).filter(x=>!isRx(x)).map(x=>norm(x.name)).sort().join("|");
  a.suppReviewKey=names;T().touch();return F2C_submit("question",reviewPrompt(a),{meta:{kind:"suppReview"}})}
@@ -3492,13 +3499,13 @@ window.F2C_suppSaved=function(a){const names=(a.suppItems||[]).filter(x=>!isRx(x
 /* Apply an answered review: not needed -> stopped (with the reason), restart -> taking, dose and type fixes, additions. Medications are never touched. */
 function apply(ans,id){const a=R().a||{},items=a.suppItems=a.suppItems||[],date=new Date().toISOString().slice(0,10);let n=0;
  (ans.items||[]).forEach(v=>{const it=items.find(x=>same(x.name,v.name));if(!it||isRx(it))return;
-  it.verdict={need:v.need,why:String(v.why||"").slice(0,300),date,req:id};
+  it.verdict={need:v.need,why:String(v.why||"").slice(0,300),date,req:id};if(v.label)it.labelNote=String(v.label).slice(0,300);if(v.time)it.time=String(v.time).slice(0,80);
   if(v.need==="not-needed"&&it.status!=="stopped"&&!it.keepAnyway){it.prevStatus=it.status;it.status="stopped";it.stoppedBy="coach";n++}
   if(v.need==="restart"&&(it.status==="paused"||it.status==="stopped")){it.status="taking";n++}
   if(v.dose&&String(v.dose).trim()&&v.dose!==it.dose){it.prevDose=it.dose;it.dose=String(v.dose).slice(0,80);n++}
   const RU=window.F2C_RULES||{};if(v.cat&&RU.CATS&&RU.CATS[v.cat]&&v.cat!=="medication"&&v.cat!==it.cat){it.cat=v.cat;n++}});
  (ans.add||[]).forEach(v=>{if(!v.name||items.some(x=>same(x.name,v.name)))return;const RU=window.F2C_RULES||{};
-  items.push({name:String(v.name).slice(0,80),dose:String(v.dose||"").slice(0,80),time:"",cat:RU.CATS&&RU.CATS[v.cat]&&v.cat!=="medication"?v.cat:(window.F2C_ENGINE?F2C_ENGINE.guessCat(v.name):"other"),status:"taking",verdict:{need:"add",why:String(v.why||"").slice(0,300),date,req:id}});n++});
+  items.push({name:String(v.name).slice(0,80),dose:String(v.dose||"").slice(0,80),time:String(v.time||"").slice(0,80),cat:RU.CATS&&RU.CATS[v.cat]&&v.cat!=="medication"?v.cat:(window.F2C_ENGINE?F2C_ENGINE.guessCat(v.name):"other"),status:"taking",verdict:{need:"add",why:String(v.why||"").slice(0,300),date,req:id}});n++});
  a.suppReviewNote=ans.note?{text:String(ans.note).slice(0,400),date}:a.suppReviewNote;a.suppReviewKey=items.filter(x=>!isRx(x)).map(x=>norm(x.name)).sort().join("|");
  return n}
 async function applyAnswered(){const q=(X().requests||[]).filter(r=>r.type==="question"&&r.meta&&r.meta.kind==="suppReview"&&r.status==="answered"&&r.answer&&(Array.isArray(r.answer.items)||Array.isArray(r.answer.add)));
@@ -3512,6 +3519,7 @@ window.F2C_suppReviewHtml=function(){setTimeout(()=>applyAnswered().catch(()=>{}
  if(off.length)h+=`<h4 class="sect">Taken off your schedule</h4>${off.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b><p class="small">${esc(x.verdict&&x.verdict.why||"")}</p></div><button type="button" class="btn small" data-keepsupp="${esc(x.name)}">Keep taking it</button></div>`).join("")}`;
  if(added.length)h+=`<h4 class="sect">Started or restarted</h4>${added.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b>${x.dose?` <span class="muted small">${esc(x.dose)}</span>`:""}<p class="small">${esc(x.verdict.why)}</p></div></div>`).join("")}`;
  if(opt.length)h+=`<h4 class="sect">Optional</h4>${opt.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b><p class="small">${esc(x.verdict.why)}</p></div></div>`).join("")}`;
+ const lab=items.filter(x=>x.labelNote&&x.status!=="stopped");if(lab.length)h+=`<h4 class="sect">Label and timing checks</h4>${lab.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b><p class="small">${esc(x.labelNote)}</p></div></div>`).join("")}`;
  if(pend)h+=`<div class="note gold">Your coach is checking your list. Results show up here, usually within 3 hours.</div>`;
  else if(!off.length&&!added.length&&!opt.length&&!a.suppReviewNote)h+=`<p class="small">Your coach can check whether each supplement is worth taking for your goals and labs. Prescription medicines are never changed.</p>`;
  h+=`<div class="nav"><span class="muted small">Times are always set by the fixed rules. Prescriptions stay as your doctor wrote them.</span><button type="button" class="btn small" data-suppreview>${a.suppReviewNote||off.length?"Review again":"Review my list"}</button></div></div>`;
