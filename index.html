@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795725470";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795727202";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -356,7 +356,42 @@ html{-webkit-text-size-adjust:100%} body{overflow-x:hidden}
 .photo,.dropzone,.photos>*{min-width:0} .photo .dropzone{width:100%;box-sizing:border-box} .filepick{width:100%;min-width:0;overflow:hidden}
 @media (max-width:640px){.photos{grid-template-columns:1fr 1fr}}
 </style>
-</head><body>
+</head><body><div id="bootSplash" role="status" aria-live="polite"><div class="bsbox">
+<svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/>
+<g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g>
+<g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g>
+<path class="bsground" d="M2 58H62"/></svg>
+<b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></div></div>
+<style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#060a14;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
+#bootSplash.gone{opacity:0;pointer-events:none}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:#e8edf2;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
+.bsrun{width:96px;height:96px;fill:none;stroke:#22d3ee;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:#22d3ee;stroke:none}
+.bsbody{animation:bsbob .32s ease-in-out infinite alternate}.bsa1,.bsa2{transform-origin:33px 19px}.bsl1,.bsl2{transform-origin:30px 33px}
+.bsa1,.bsl2{animation:bssw .64s ease-in-out infinite alternate}.bsa2,.bsl1{animation:bssw .64s ease-in-out infinite alternate-reverse}
+.bsground{stroke:rgba(255,255,255,.35);stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
+@keyframes bssw{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}@keyframes bsbob{from{transform:translateY(0)}to{transform:translateY(-2px)}}@keyframes bsgr{to{stroke-dashoffset:12}}
+@media (prefers-reduced-motion:reduce){.bsbody,.bsa1,.bsa2,.bsl1,.bsl2,.bsground{animation:none}}</style>
+<script>(function(){var t0=Date.now(),checked=false;
+ function el(){return document.getElementById("bootSplash")}
+ function ready(){var a=document.getElementById("app"),l=document.getElementById("login");return !!((a&&!a.hidden)||(l&&!l.hidden))}
+ function hide(){var s=el();if(!s||s.classList.contains("gone"))return;s.classList.add("gone");setTimeout(function(){var x=el();if(x&&x.classList.contains("gone"))x.remove()},350)}
+ function tick(){if((checked&&ready())||Date.now()-t0>20000){hide();return}setTimeout(tick,50)}
+ window.F2C_freshShell=function(){if(!window.caches)return Promise.resolve();var root=new URL("./",location.href).href;
+  return fetch(root,{cache:"no-store"}).then(function(fresh){if(!fresh.ok)return;return caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k.indexOf("f2c-shell")===0}).map(function(k){return caches.open(k).then(function(c){return c.put(root,fresh.clone())})}))})}).catch(function(){})};
+ window.F2C_updateNow=function(){var sw=new Promise(function(res){var n=navigator.serviceWorker;if(!n||!n.controller)return res();var done=false;function fin(){if(!done){done=true;res()}}
+   n.addEventListener("controllerchange",fin,{once:true});n.getRegistration().then(function(r){if(r)return r.update().then(function(){if(!r.installing&&!r.waiting)fin()})}).catch(fin);setTimeout(fin,4000)});
+  return Promise.all([sw,window.F2C_freshShell()]).then(function(){return window.F2C_freshShell()})};
+ window.F2C_splash=function(text){var s=el();if(!s){document.body.insertAdjacentHTML("afterbegin",'<div id="bootSplash" role="status" aria-live="polite"><div class="bsbox">'+document.querySelector("#bsTpl").innerHTML+'</div></div>');s=el()}
+  s.classList.remove("gone");var m=document.getElementById("bootMsg");if(m)m.textContent=text||"Loading…"};
+ var sw=navigator.serviceWorker&&navigator.serviceWorker.controller;
+ if(!sw){checked=true}else{var done=false,to=setTimeout(function(){if(!done){done=true;checked=true}},1500);
+  fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(done)return;done=true;clearTimeout(to);
+   if(j&&j.v&&String(j.v)!==String(window.F2C_BUILD)){var last=0;try{last=+sessionStorage.getItem("f2c-upd")||0}catch(e){}
+    if(Date.now()-last>60000){try{sessionStorage.setItem("f2c-upd",String(Date.now()))}catch(e){}var m=document.getElementById("bootMsg");if(m)m.textContent="Updating to the newest version…";
+     window.F2C_updateNow().then(function(){location.reload()});return}}
+   checked=true}).catch(function(){if(!done){done=true;clearTimeout(to);checked=true}})}
+ tick()})();</script>
+<template id="bsTpl"><svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/><g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g><g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g><path class="bsground" d="M2 58H62"/></svg><b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></template>
 
 <div class="appbar"><div class="in">
   <div class="brand">Fit <span>2</span> Compete<small>A CREATURES OF HEALTHY HABITS PROGRAM</small></div>
@@ -1264,7 +1299,8 @@ async function appOutdated(){if(!window.F2C_BUILD)return false;
  try{const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"});const j=await r.json();
   if(j&&j.v&&String(j.v)!==String(window.F2C_BUILD)){try{readStep();saveLocal()}catch(e){}const bar=$("busyBar");bar.hidden=false;bar.textContent="Updating the app to the newest version…";
    try{const last=+sessionStorage.getItem("f2c-upd")||0;if(Date.now()-last<60000){bar.hidden=true;return false}sessionStorage.setItem("f2c-upd",String(Date.now()))}catch(e){}
-   try{if(window.caches){const root=new URL("./",location.href).href,fresh=await fetch(root,{cache:"no-store"});if(fresh.ok){for(const k of await caches.keys())if(k.startsWith("f2c-shell"))await (await caches.open(k)).put(root,fresh.clone())}}}catch(e){}
+   if(window.F2C_splash)F2C_splash("Updating to the newest version…");
+   try{if(window.F2C_updateNow)await F2C_updateNow()}catch(e){}
    location.reload();return true}}catch(e){}return false}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&!BUSY)appOutdated()});
 // Fills About-you fields from a scan or lab report. A field is filled when it is empty or still holds a value
