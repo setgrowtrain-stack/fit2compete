@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795670412";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795671037";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2900,17 +2900,23 @@ function range(period){const end=new Date();end.setHours(23,59,59,999);const sta
  else if(period==="month")start.setDate(start.getDate()-29);
  else if(period==="year")start.setDate(start.getDate()-364);
  return [start,end]}
-function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={};
+/* pounds moved in one set: load x reps. Bodyweight moves count the share of body weight the move lifts, plus any added weight. */
+const BWF=[[/push.?up/,.64],[/pull.?up|chin.?up|\bdip|muscle.?up/,1],[/inverted row/,.5],[/calf raise/,1],[/pistol|split squat|lunge|step.?up|air squat|squat/,.7]];
+function setLoad(name,v,bw){const reps=parseFloat(v.reps)||0;if(!reps)return 0;const kind=window.F2C_exKind?F2C_exKind({name}):"load";
+ if(kind==="stretch"||kind==="timed")return 0;const add=parseFloat(String(v.wt||"").replace(/[^\d.]/g,""))||0;
+ if(kind==="bw"){const n=String(name).toLowerCase(),f=(BWF.find(([re])=>re.test(n))||[0,0])[1];return Math.round((bw*f+add)*reps)}
+ return Math.round(add*reps)}
+function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={},bw=shape().wt;
  ((r.plan||{}).days||[]).forEach(d=>(d.exercises||[]).forEach(x=>names[t.slug(x.name)]=x.name));
  Object.values(r.swaps||{}).forEach(n=>names[t.slug(n)]=n);
- const [a,b]=range(period),vol={},sets={};MUSCLES.forEach(([k])=>{vol[k]=0;sets[k]=0});let total=0,days=new Set();
+ const [a,b]=range(period),vol={},sets={},lbs={};MUSCLES.forEach(([k])=>{vol[k]=0;sets[k]=0;lbs[k]=0});let total=0,lbTotal=0,days=new Set();
  for(const key in L){const p=key.split("|"),v=L[key]||{};if(p.length!==4||!(v.wt||v.reps||v.done))continue;
   const w=+String(p[0]).slice(1),di=t.DAYS7.indexOf(p[1]);if(!w||di<0)continue;
   const d=new Date(t.weekDate(w));d.setDate(d.getDate()+di);if(d<a||d>b)continue;
-  const m=musclesOf(names[p[2]]||p[2].replace(/-/g," "));if(!Object.keys(m).length)continue;
-  total++;days.add(d.toDateString());for(const k in m){vol[k]+=m[k];if(m[k]>=.5)sets[k]++}}
+  const nm=names[p[2]]||p[2].replace(/-/g," "),m=musclesOf(nm),ld=setLoad(nm,v,bw);lbTotal+=ld;if(!Object.keys(m).length)continue;
+  total++;days.add(d.toDateString());for(const k in m){vol[k]+=m[k];if(m[k]>=.5){sets[k]++;lbs[k]+=ld}}}
  const max=Math.max(0,...Object.values(vol));
- return {vol,sets,max,total,days:days.size}}
+ return {vol,sets,lbs,lbTotal,max,total,days:days.size}}
 
 /* ---------- body shape from height, weight, sex and the latest InBody ---------- */
 function shape(){const t=T(),a=t.rec().a||{},X=window.F2C_X||{},scans=((X.body||{}).scans||[]).filter(s=>s.confirmed);const last=scans[scans.length-1];
@@ -3007,15 +3013,16 @@ const LBL={day:"Today",week:"This week",month:"30 days",year:"12 months"};
 function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host=$("holoWrap");
  if(!host){host=document.createElement("div");host.id="holoWrap";v.insertBefore(host,v.firstChild)}
  const V=volume(UI.period),S=shape();
- const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+ const lb=n=>Math.round(n).toLocaleString("en-US");const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k],w:V.lbs[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
  const sc=S.scan,fs=S.first;
  host.innerHTML=`<div class="sheet holo"><div class="sheethead"><div><span class="label">Your body</span><h3>Training map</h3></div>
   <span class="seg holoview">${[["3d","3D"],["map","Front & back"]].map(([k,l])=>`<button type="button" data-hv="${k}" aria-pressed="${(UI.view||"3d")===k}">${l}</button>`).join("")}</span><label class="holocol" title="Pick the color">Color <input type="color" id="holoColor" value="${e_(UI.color)}"></label></div>
   <div class="seg holoseg">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p==="day"?"Day":p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div>
   <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
   <p class="muted small holohint">${UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn the figure. Pinch to zoom. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
-  ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} sets</b></div>`).join("")}</div>
-   <p class="muted small">${LBL[UI.period]}: ${V.total} sets logged on ${V.days} day${V.days===1?"":"s"}.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
+  ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
+   <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total weight lifted · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
+   <p class="muted small">Weight lifted = weight × reps for every set, added up. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
   <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets.</p></div>`;
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
  host.querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{UI.view=b.dataset.hv;saveUI();panel()});
@@ -3025,7 +3032,7 @@ const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(th
 const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:10px}.holostage{height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
 .holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
-.holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}`;document.head.appendChild(st);
+.holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}`;document.head.appendChild(st);
 })();
 
 </script>
