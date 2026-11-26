@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795709972";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795710582";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -3523,7 +3523,7 @@ function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W
    return `<tr><td>${LBL[k]}</td><td class="num">${a!=null?fmt[k](a):""}${ch}</td><td class="num">${b!=null?fmt[k](b):""}</td><td class="num">${c!=null?fmt[k](c):""}</td></tr>`}).join("")}</tbody></table></div>
    <p class="muted small">${W.length} days on file, ${esc(W[0].date)} to ${esc(W[W.length-1].date)}. Your coach uses these in weekly check-ins and the monthly review, and Today adjusts how hard to push.</p></details>`}
  else h+=`<p class="small">Bring in sleep, recovery, HRV, resting heart rate, strain and steps from your watch or ring. Your coach uses them to set how hard to push and when to back off.</p>`;
- h+=`<details><summary class="small"><b>Other devices</b>: upload a file or screenshots (Oura, Garmin, Apple, Fitbit)</summary>
+ h+=`<details><summary class="small"><b>Other devices</b>: upload a file or screenshots from any watch or ring</summary>
   <div class="wearup"><p class="small"><b>Export file (best):</b> WHOOP: More → App Settings → Data Export, then upload the zip from the email. Oura: Membership hub → Export data (CSV). Fitbit or Google: Google Takeout. Garmin Connect: export a report to CSV. Any CSV with dates works.</p>
   <label class="btn small"><input type="file" id="wearFile" accept=".zip,.csv,text/csv,application/zip" multiple hidden>Upload export (zip or CSV)</label>
   <p class="small"><b>Or screenshots:</b> Apple Health, Samsung Health or any app. Your coach reads them, usually within 3 hours.</p>
