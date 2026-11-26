@@ -1,5 +1,5 @@
 // Fit 2 Compete service worker: keeps the app shell for fast starts. Never caches data or AI requests.
-const SHELL="f2c-shell-1795658881
+const SHELL="f2c-shell-1795661989
 1795641449";
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(SHELL).then(c=>c.addAll(["./","manifest.webmanifest","icons/icon-192.png"])))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

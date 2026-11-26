@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795658881";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795661989";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1478,18 +1478,38 @@ async function build(regen){
  const a=A();const btns=[document.getElementById("build"),document.getElementById("regen")].filter(Boolean);btns.forEach(b=>b.disabled=true);
  try{
   if(st)st.textContent="Sending your answers to your coach…";
-  const rec=athletes[cur];await persistNow(cur);
-  const files=F2C_planFiles(rec);
+  const rec=athletes[cur];const files=F2C_planFiles(rec);const now=intakeNow(a);
+  const supp=window.F2C_suppText?"\n\nAPP SUPPLEMENT SCHEDULE (built from fixed rules; treat as correct and do not change)\n"+F2C_suppText(a):"";
+  if(rec.plan&&!regen){
+   // Existing plan: adjust it for what changed instead of writing a new one.
+   const before=String(rec.planIntake||"").split("\n"),after=now.split("\n");
+   const added=after.filter(l=>l&&!before.includes(l)),removed=rec.planIntake?before.filter(l=>l&&!after.includes(l)):[];
+   if(rec.planIntake&&!added.length&&!removed.length){if(st)st.textContent="Nothing changed since your plan was written, so your plan stays the same.";return}
+   const prog=window.F2C_progressText?F2C_progressText():"";
+   const prompt=METHOD+"\n\nATHLETE INTAKE (current)\n"+intakeText(a)+(rec.planIntake?"\n\nWHAT CHANGED IN THE ATHLETE'S ANSWERS SINCE THE PLAN WAS WRITTEN\nNew or changed:\n"+(added.join("\n")||"none")+"\nNo longer true:\n"+(removed.join("\n")||"none"):"\n\nThe athlete updated their answers; compare the intake with the current plan to find what changed.")+
+    "\n\nCURRENT PLAN (JSON, with workouts)\n"+JSON.stringify(rec.plan)+(prog?"\n\nPROGRESS FROM THE APP\n"+prog:"")+supp+"\n\n"+files.text+"\n\n"+ADJUST_RULES;
+   await persistNow(cur);
+   rec.planIntake=now;rec.updated=Date.now();persist(cur);
+   await F2C_submit("revise",prompt,{fileIds:files.ids.slice(0,12),meta:{kind:"update"}});
+   if(st)st.textContent="Sent to your coach as an update to your current plan (only what your new answers affect will change). "+errCopy({code:"queued"}).replace(/^Sent to your coach\. /,"");
+   return}
   const full=a.mealPlanType==="Full 7-day meal plan";
   const want=full?"Write 7 meal days (Mon to Sun), labeling training and rest days to match the training week.":"Write two meal days: one training day and one rest day.";
-  const prompt=METHOD+PLAN_V2+"\n\nMEAL PLAN RULES (for the \"meals\" part)\n"+MEAL_PROMPT+"\n"+want+
-   "\n\nATHLETE INTAKE\n"+intakeText(a)+"\n\n"+files.text+
-   (window.F2C_suppText?"\n\nAPP SUPPLEMENT SCHEDULE (built from fixed rules; treat as correct and do not change)\n"+F2C_suppText(a):"");
+  const prompt=METHOD+PLAN_V2+"\n\nMEAL PLAN RULES (for the \"meals\" part)\n"+MEAL_PROMPT+"\n"+want+"\n\nATHLETE INTAKE\n"+intakeText(a)+"\n\n"+files.text+supp;
+  rec.planIntake=now;rec.updated=Date.now();await persistNow(cur);
   await F2C_submit("plan",prompt,{fileIds:files.ids,meta:{kind:"plan"}});
   if(st)st.textContent=errCopy({code:"queued"});
  }catch(e){if(st)st.textContent=errCopy(e)}
  finally{BUSY=false;st.done();btns.forEach(b=>b.disabled=false);const bb=$("build");if(bb)bb.disabled=false}
 }
+function intakeNow(a){return intakeText(a).split("\n").filter(l=>!/^Today's date:/.test(l)).join("\n")}
+const ADJUST_RULES=`HOW TO CHANGE AN EXISTING PLAN (the athlete asked that new information adjusts their plan, not replaces it):
+- Keep the plan. Change only what the new or changed information actually affects. Keep the week layout, exercise names and order, sets, rep ranges and tempos the same unless the change requires otherwise, because the athlete's progress tracking follows exercise names.
+- Never swap exercises for variety. When an exercise must change (injury, equipment), pick the closest replacement for the same muscles and keep its sets and reps.
+- Adjust nutrition numbers only if the new information changes them (weight, goal, labs, schedule).
+- Write a new plan from scratch ONLY when the change makes the current plan wrong or unsafe as a whole: a different main goal or sport, a new injury that rules out much of the plan, a big change in training days or equipment, or a new show date that changes the phases. Then set "rebuilt":true and say why first in "changes".
+- Add "changes":["what changed and why, one line each"]. If nothing needs to change, return the plan unchanged with "changes":["Your new information doesn't change the plan: <one line why>"].
+Reply with ONLY one JSON object: {"plan": <the full plan in the OUTPUT shape, including every day in "days">}. Add "meals": <a new meal plan in the app's meal plan shape> only if calories or foods changed.`;
 const PLAN_V2=`\n\nTHIS REQUEST (Fit 2 Compete v2, answered by the coach's scheduled run): write the COMPLETE plan in the OUTPUT shape, INCLUDING "days": one entry for every non-rest day in "week", each with at most 9 exercises including one short warm-up item, no cool-down item; for each exercise give name, sets, reps (a range such as "8-10" for lifts), tempo where it matters, notes of at most 12 words (include the rest time, for example "rest 2 min"), and "alts": 1 or 2 short names of exercises for the same muscles using DIFFERENT equipment they have ([] for warm-ups and cardio). The "week" list names every day Mon to Sun ("Rest" for rest days). Leave "supplements" as an empty list and write no supplement or medication timing. Repeat every stop and caution item from the CODE CHECKS in safety. Look at every attached Drive file (photos, lab reports, scans, equipment) before writing. Before you answer, check the plan against the intake, the safety rules and the app supplement schedule, and fix anything that conflicts.\nReply with ONLY one JSON object: {"plan": <the plan in the OUTPUT shape with days>, "meals": <the meal plan in the meal plan shape below>}.`;
 function errCopy(e){const c=e&&e.code;if(c==="queued")return "Sent to your coach. The answer arrives on the next coach run, usually within 3 hours. This page updates on its own.";if(c==="later")return "Your coach handles this on the next run.";if(c==="read_only")return "Only the athlete can send this.";if(c==="signed_out"){showLogin(e.message);return "Please sign in again."}
  if(c==="no_key")return "The AI isn't connected yet. The coach needs to add the API key.";
@@ -1523,7 +1543,7 @@ document.getElementById("reviseBtn").onclick=async()=>{
   const old=athletes[cur].plan;
   const prog=window.F2C_progressText?F2C_progressText():"";
   const prompt=METHOD+"\n\nATHLETE INTAKE\n"+intakeText(A())+"\n\nCURRENT PLAN (JSON, with workouts)\n"+JSON.stringify(old)+(prog?"\n\nPROGRESS FROM THE APP\n"+prog:"")+"\n\nREQUESTED CHANGE\n"+req+
-   "\n\nApply the change if it is safe and sensible; if it conflicts with the rules or the evidence, keep the plan sound and explain why in summary. Keep everything else the same, including the workouts that don't need to change. Add a field \"changes\":[\"what changed and why\"]. Reply with ONLY one JSON object: {\"plan\": <the full updated plan in the OUTPUT shape, including every day in \"days\">}. Add \"meals\": <a new meal plan in the app's meal plan shape> only if calories or foods changed.";
+   "\n\nApply the change if it is safe and sensible; if it conflicts with the rules or the evidence, keep the plan sound and explain why in summary.\n\n"+ADJUST_RULES;
   await F2C_submit("revise",prompt,{fileIds:F2C_planFiles().ids.slice(0,10),meta:{kind:"revise"}});
   document.getElementById("reviseText").value="";st.textContent=errCopy({code:"queued"});
  }catch(e){st.textContent=errCopy(e)}finally{b.disabled=false}};
@@ -1574,7 +1594,7 @@ function renderAll(showPlan){
  if(showPlan&&rec&&rec.plan){pp.hidden=false;ip.hidden=true;renderPlan()}else{pp.hidden=true;ip.hidden=false;renderStep()}
 }
 document.getElementById("editIntake").onclick=()=>{step=0;renderAll(false)};
-document.getElementById("regen").onclick=()=>{if(!A().mode)A().mode="full";step=SECTIONS.length-1;renderAll(false);setTimeout(()=>build(true),0)};
+document.getElementById("regen").onclick=()=>{if(athletes[cur]&&athletes[cur].plan&&!confirm("Start over with a brand-new plan?\n\nTo keep your plan and only adjust it for new answers, tap Cancel, then use Edit answers or Add new info instead."))return;if(!A().mode)A().mode="full";step=SECTIONS.length-1;renderAll(false);setTimeout(()=>build(true),0)};
 
 // Drag and drop onto any upload box: hand the files to its file field.
 document.addEventListener("dragover",e=>{const z=e.target.closest&&e.target.closest(".dropzone");if(!z)return;e.preventDefault();z.classList.add("over")});
@@ -2568,7 +2588,7 @@ async function load(quiet){if(!TOKEN||!cur||loading)return;const id=cur;loading=
   Object.assign(X,{for:id,requests:r.requests||[],prog:r.prog||{},notes:r.notes||[],body:r.body||null,targets:r.targets||null,meals:r.meals||[],loaded:true});
   let fresh=false;
   if(r.rec){const old=athletes[id]||{};const hadPlan=!!old.plan;r.rec.owner=old.owner||r.rec.owner;r.rec.saved=true;if(old.familyChild)r.rec.familyChild=true;athletes[id]=r.rec;saveLocal();fresh=true;
-   if(!hadPlan&&r.rec.plan){renderAll(true);toast("Your plan is here.")}else rerender();}
+   if(!hadPlan&&r.rec.plan){renderAll(true);toast("Your plan is here.")}else{rerender();const ch=r.rec.plan&&r.rec.plan.changes;if(ch&&ch.length&&JSON.stringify(ch)!==JSON.stringify(old.plan&&old.plan.changes))toast("Plan updated: "+String(ch[0]).slice(0,140)+(ch.length>1?" (see Plan for all changes)":""))}}
   await applyClient();
   if(!fresh)rerender(true);
  }catch(e){if(!quiet)console.warn("[F2C v2] extras",e)}finally{loading=false;bar();schedulePoll()}}
