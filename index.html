@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795672535";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795673415";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1937,20 +1937,20 @@ function rWorkouts(){const p=rec().plan,v=$("v-workouts"),W=weekCount();
  h+=`<div class="sheet"><div class="sheethead"><div><span class="label">${ui.day} · Week ${w}</span><h3>${e_(d?d.title:(row?row.session:"Rest"))}</h3></div>${row&&row.cardio?`<span class="pill">${e_(row.cardio)}</span>`:""}</div>`;
  if(/deload|peak/i.test(ph))h+=`<div class="note">Deload week: half the sets at your normal weights.</div>`;
  else if(/prep|cut/i.test(ph))h+=`<div class="note">Prep phase: keep the weights heavy; one set less on exercises with 3 or more.</div>`;
- if(!d||!(d.exercises||[]).length){h+=`<div class="empty">${isRestDay(ui.day)?"Rest day. An easy walk is fine.":"No exercises were written for this day. Use Plan › Ask for a change, or rebuild the plan."}</div>`}
- else{const L=LOG();h+=d.exercises.map((ex,i)=>exCard(swapped(ex),i,w,L)).join("")}
- h+=`</div>`;v.innerHTML=h;
+ h+=window.F2C_wkStart?F2C_wkStart(w,ui.day):"";const XS=((d&&d.exercises)||[]).concat(window.F2C_added?F2C_added(w,ui.day):[]);if(!XS.length){h+=`<div class="empty">${isRestDay(ui.day)?"Rest day. An easy walk is fine.":"No exercises were written for this day. Use Plan › Ask for a change, or rebuild the plan."}</div>`}
+ else{const L=LOG();h+=XS.map((ex,i)=>exCard(swapped(ex),i,w,L)).join("")}
+ h+=`</div>`+(window.F2C_wkTools?F2C_wkTools(w,ui.day):"");v.innerHTML=h;
  $("wPrev").onclick=()=>{ui.week--;saveUI();rWorkouts()};$("wNext").onclick=()=>{ui.week++;saveUI();rWorkouts()};
  v.querySelectorAll(".dchip").forEach(b=>b.onclick=()=>{ui.day=b.dataset.day;saveUI();rWorkouts()});
  v.querySelectorAll("[data-k]").forEach(el=>el.addEventListener(el.type==="checkbox"?"change":"input",()=>{const L=LOG(),k=el.dataset.k,f=el.dataset.f;L[k]=L[k]||{};L[k][f]=el.type==="checkbox"?el.checked:el.value.trim();
   if(!L[k].wt&&!L[k].reps&&!L[k].t&&!L[k].done&&!L[k].rir)delete L[k];if(el.tagName==="SELECT")el.classList.toggle("on",!!el.value);window.F2C_setChanged&&F2C_setChanged(k);
-  const row=el.closest(".setrow");if(row&&f==="done")row.classList.toggle("isdone",el.checked);touch()}));
+  const row=el.closest(".setrow");if(row&&f==="done")row.classList.toggle("isdone",el.checked);touch();if(f==="done"&&window.F2C_setDone)F2C_setDone(k,el.checked)}));
  v.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>{const box=b.nextElementSibling;box.hidden=!box.hidden;if(!box.hidden)box.querySelector("input").focus()});
- v.querySelectorAll("[data-vidsave],[data-vidclear]").forEach(b=>b.onclick=async()=>{const i=+(b.dataset.vidsave??b.dataset.vidclear),ex=d.exercises[i],box=b.closest(".vidbox"),st=box.querySelector(".status");
+ v.querySelectorAll("[data-vidsave],[data-vidclear]").forEach(b=>b.onclick=async()=>{const i=+(b.dataset.vidsave??b.dataset.vidclear),ex=XS[i],box=b.closest(".vidbox"),st=box.querySelector(".status");
   const val=b.dataset.vidclear!=null?"":box.querySelector("input").value;st.textContent="Saving…";const ok=await F2C_videos.setVideo(ex.name,val);
   if(!ok){st.textContent="That isn't a YouTube link. Copy the Short's link from the Share button.";return}rWorkouts()});
  v.querySelectorAll("[data-swap]").forEach(b=>b.onclick=()=>{const box=b.nextElementSibling;box.hidden=!box.hidden});
- v.querySelectorAll("[data-swapto]").forEach(b=>b.onclick=()=>{const r=rec(),ex=d.exercises[+b.dataset.i],k=`${ui.day}|${slug(ex.name)}`;r.swaps=r.swaps||{};
+ v.querySelectorAll("[data-swapto]").forEach(b=>b.onclick=()=>{const r=rec(),ex=XS[+b.dataset.i],k=`${ui.day}|${slug(ex.name)}`;r.swaps=r.swaps||{};
   if(b.dataset.swapto)r.swaps[k]=b.dataset.swapto;else delete r.swaps[k];touch();rWorkouts()});
  v.querySelectorAll(".histbtn").forEach(b=>b.onclick=()=>{const box=b.nextElementSibling;box.hidden=!box.hidden;b.textContent=box.hidden?"History":"Hide history"});
 }
@@ -1962,7 +1962,7 @@ function swapBox(ex,i){if(!window.F2C_swaps)return "";const base=ex.orig?{name:e
  return `<div class="swapset"><button type="button" class="linkbtn small" data-swap="${i}">⇄ ${ex.orig?"Swapped. Change":"Swap equipment"}</button><div class="swapbox" hidden>
   <p class="muted small">Same muscles, different equipment you have. Your logs follow the one you pick.</p>${note?`<p class="small swapnote">${e_(note)}</p>`:""}
   <div class="swapopts">${ex.orig?`<button type="button" class="btn small primary" data-swapto="" data-i="${i}">Switch back to ${e_(ex.orig)}</button>`:""}${opts.map(o=>`<button type="button" class="btn small" data-swapto="${e_(o.name)}" data-i="${i}">${e_(o.name)}</button>`).join("")}</div></div></div>`}
-function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n};const K=window.F2C_exKind?F2C_exKind(ex):"load";const P=window.F2C_per?F2C_per(ex):{};const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
+function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w)+(window.F2C_extra?F2C_extra(w,ui.day,s):0);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n,rest:ex.rest||""};const K=window.F2C_exKind?F2C_exKind(ex):"load";const P=window.F2C_per?F2C_per(ex):{};const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
  let rows="";for(let k=1;k<=n;k++){const key=`w${w}|${ui.day}|${s}|${k}`,v=L[key]||{};let prev=null;for(let pw=w-1;pw>=1&&!prev;pw--){const pv=L[`w${pw}|${ui.day}|${s}|${k}`];if(pv&&(pv.wt||pv.reps))prev=pv}
   rows+=K==="stretch"?`<div class="setrow simple${v.done?" isdone":""}"><span class="sn">${k}</span><span class="simplelbl">${e_(ex.reps||"")}${ex.tempo?" · "+e_(ex.tempo):""}</span><label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">Set ${k} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label></div>`:`<div class="setrow${v.done?" isdone":""}"><span class="sn">${k}</span>
    <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):(K==="bw"?"BW":P.hand?"lb ea":"lb")}"></label>
@@ -1973,8 +1973,8 @@ function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1
  return `<article class="excard"><div class="exhead"><div><h4>${e_(ex.name)}</h4>${ex.orig?`<p class="swapped small">In place of ${e_(ex.orig)}</p>`:""}${ex.notes?`<p class="exnote">${e_(ex.notes)}</p>`:""}</div>
   <a class="demo${V.exact?"":" find"}" href="${e_(V.url)}" target="_blank" rel="noopener">${V.exact?"▶ Watch how":"▶ Find a video"}</a></div>${swapBox(ex,i)}
   ${window.F2C_videos&&F2C_videos.isCoach()?`<div class="vidset"><button type="button" class="linkbtn small" data-vid="${i}">${V.custom?"Change video (you set this one)":"Change video"}</button><div class="vidbox" hidden><label class="sr" for="vid${i}">YouTube Shorts link</label><input id="vid${i}" type="url" inputmode="url" placeholder="Paste a YouTube Shorts link"><div class="nav"><span class="status small"></span>${V.custom?`<button type="button" class="btn small" data-vidclear="${i}">Use the default</button>`:""}<button type="button" class="btn small primary" data-vidsave="${i}">Save video</button></div></div></div>`:""}
-  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span>${F2C_term("setsreps",`<b>${n}</b> × ${e_(ex.reps||"")}`)}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
-  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?F2C_term("bw","+ lb"):P.hand?F2C_term("perhand","Each hand"):"Weight"}</span><span>${K==="timed"?"Seconds":P.side?F2C_term("perside","Reps / side"):"Reps"}</span><span>${F2C_term("rir","RIR")}</span><span>${F2C_term("tempo","Tempo used")}</span><span></span></div>`}${rows}</div>
+  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span>${F2C_term("setsreps",`<b>${n}</b> × ${e_(ex.reps||"")}`)}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${window.F2C_restSec?`<span class="pertag">Rest ${(r=>r>=60?Math.floor(r/60)+":"+String(r%60).padStart(2,"0"):r+" s")(F2C_restSec(ex.name,ex.rest))}</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
+  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?F2C_term("bw","+ lb"):P.hand?F2C_term("perhand","Each hand"):"Weight"}</span><span>${K==="timed"?"Seconds":P.side?F2C_term("perside","Reps / side"):"Reps"}</span><span>${F2C_term("rir","RIR")}</span><span>${F2C_term("tempo","Tempo used")}</span><span></span></div>`}${rows}</div>${window.F2C_setBtns?F2C_setBtns(w,ui.day,s,ex):""}
   <button class="histbtn" type="button">History</button><div class="hist" hidden>${hist(s,w,L)}</div></article>`}
 function hist(s,w,L){const out=[];for(let k=w;k>=1&&out.length<8;k--){const sets=[];for(let n=1;n<=10;n++){const v=L[`w${k}|${ui.day}|${s}|${n}`];if(v&&(v.wt||v.reps))sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}${v.rir?` <em>RIR ${e_(v.rir)}</em>`:""}${v.t?` <em>${e_((TEMPOS.find(t=>t[0]===v.t)||[,v.t])[1])}</em>`:""}`)}
  if(sets.length)out.push(`<li><b>Week ${k}</b> ${sets.join(" · ")}</li>`)}return out.length?`<ul>${out.join("")}</ul>`:`<p class="muted">Nothing logged yet.</p>`}
@@ -2556,6 +2556,7 @@ const $=id=>document.getElementById(id),e_=s=>esc(s==null?"":String(s));
 const T=()=>window.F2C_T;
 const X={for:null,requests:[],prog:{},notes:[],body:null,targets:null,meals:[],loaded:false};
 window.F2C_X=X;
+window.F2C_markApplied=async id=>{try{await gs("markApplied",TOKEN,id);const q=X.requests.find(x=>x.id===id);if(q)q.status="applied"}catch(e){}};
 const RUN_NOTE="Your coach answers on the next run, usually within 3 hours. This page updates on its own.";
 const LABEL={food:"Meal estimate",plan:"New plan",revise:"Plan change",meals:"Meal plan",coach:"Coach question",checkin:"Weekly check-in",inbody:"InBody scan reading",read:"File reading",suppList:"Supplement list reading",question:"Question"};
 const fmt=t=>new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
@@ -2720,7 +2721,7 @@ window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!
    <h4 class="sect">Training in those weeks</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
    ${(c.strength||[]).length?`<div class="scroll"><table><thead><tr><th>Key lift</th><th>Est. max then</th><th>Now</th><th>Change</th></tr></thead><tbody>${c.strength.map(x=>`<tr><td>${e_(x.lift)}</td><td class="num">${x.from} lb</td><td class="num">${x.to} lb</td><td class="num">${x.pct>0?"+":""}${x.pct}%</td></tr>`).join("")}</tbody></table></div>`:""}</div>`}
  else if(scans.length)h+=`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`;
- if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
+ if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
  if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
  if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
   <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
@@ -2808,6 +2809,7 @@ window.F2C_per=function(ex){const n=String(ex.name||"").toLowerCase(),r=String(e
  return {hand,side,mult:(hand?2:1)*(side?2:1),tag,tip}};
 window.F2C_exKind=function(ex){const n=String(ex.name||"").toLowerCase(),r=String(ex.reps||"").toLowerCase();
  const loaded=/dumbbell|barbell|\bdb\b|kettlebell|cable|machine|weighted|plate|sled|carry|vest|med(icine)? ball/.test(n);
+ if(/warm.?up|cool.?down|mobility|foam roll/.test(n))return "stretch";
  if(/stretch|foam|mobility|warm.?up|cool.?down|ankle rock|hip switch|90\/90|breath|cat.?cow|child'?s pose|yoga|massage|lacrosse ball|walkover|drill|activation/.test(n)&&!loaded)return "stretch";
  if(/sprint|stride|ladder|\brun\b|jog|\d+\s*m\b|meters?\b|\bzone\s*2|interval|rower|rowing|bike|cycling|treadmill|elliptical|swim/.test(n)&&!/sled|sandbag/.test(n))return "stretch";
  const timed=/\bsec|\d\s*s\b|min|hold|yd|yard|meter|\d\s*m\b/.test(r);
@@ -2972,6 +2974,7 @@ function setLoad(name,v,bw,range){const reps=parseFloat(v.reps)||0;if(!reps)retu
  const P=window.F2C_per?F2C_per({name,reps:range||""}):{mult:1};
  if(kind==="bw"){const n=String(name).toLowerCase(),f=(BWF.find(([re])=>re.test(n))||[0,0])[1];return Math.round((bw*f+add)*reps*(P.side?2:1))}
  return Math.round(add*reps*P.mult)}
+window.F2C_setLoad=(name,v,range)=>setLoad(name,v,shape().wt,range);
 function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={},bw=shape().wt;
  const ranges={};((r.plan||{}).days||[]).forEach(d=>(d.exercises||[]).forEach(x=>{names[t.slug(x.name)]=x.name;ranges[t.slug(x.name)]=x.reps||""}));
  Object.values(r.swaps||{}).forEach(n=>names[t.slug(n)]=n);
@@ -2985,7 +2988,7 @@ function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={},bw=shape().wt
  return {vol,sets,lbs,lbTotal,max,total,days:days.size}}
 
 /* ---------- body shape from height, weight, sex and the latest InBody ---------- */
-function shape(){const t=T(),a=t.rec().a||{},X=window.F2C_X||{},scans=((X.body||{}).scans||[]).filter(s=>s.confirmed);const last=scans[scans.length-1];
+function shape(){const t=T(),a=t.rec().a||{},X=window.F2C_X||{},scans=((X.body||{}).scans||[]).filter(s=>s.confirmed);const last=(UI.shapeFrom==="first"&&scans.length>1)?scans[0]:scans[scans.length-1];
  const female=/^f/i.test(a.sex||"");
  let hIn=0;const hs=String(a.height||"");let m=hs.match(/(\d)\s*['’ ]\s*(\d{1,2})/);if(m)hIn=+m[1]*12+ +m[2];else if((m=hs.match(/(\d{3})\s*cm/i)))hIn=+m[1]/2.54;else if((m=hs.match(/^(\d{2})$/)))hIn=+m[1];
  if(!hIn)hIn=female?64:69;
@@ -2994,7 +2997,31 @@ function shape(){const t=T(),a=t.rec().a||{},X=window.F2C_X||{},scans=((X.body||
  const smm=+(last&&last.smm)||0;
  const bmi=703*wt/(hIn*hIn);
  const musc=smm?Math.min(1.5,Math.max(.6,(smm/wt)/(female?.38:.45))):1; // muscle mass vs typical for the sex
- return {female,hIn,wt,bf,bmi,musc,scan:last,first:scans[0]}}
+ return {female,hIn,wt,bf,bmi,musc,scan:last,first:scans[0],latest:scans[scans.length-1],count:scans.length}}
+
+/* ---------- reshape the figure from the scan: muscle per body part, body fat, visceral fat ---------- */
+const ARM=["shoulders","biceps","triceps","forearms"],LEG=["quads","hamstrings","calves","glutes"];
+function scanVal(sc,key){const d=sc&&sc.details;if(!d||!d.sections)return null;for(const x of d.sections)for(const it of (x.items||[]))if(it.key===key&&typeof it.value==="number")return it.value;return null}
+function factors(S){const sc=S.scan,sg=sc&&sc.details&&sc.details.segments&&sc.details.segments.lean,base=1+(S.musc-1)*.5;
+ const f=k=>sg&&sg[k]&&sg[k].pct?Math.max(.8,Math.min(1.3,1+(sg[k].pct-100)*.006)):base;
+ const bf=+(sc&&sc.bf)||S.bf,vfl=scanVal(sc,"vfl");
+ return {la:f("la"),ra:f("ra"),ll:f("ll"),rl:f("rl"),tr:f("tr"),bf,vis:vfl!=null?Math.max(0,vfl-8)*.004:Math.max(0,bf-20)*.0018,real:!!sg}}
+function shapeNote(S){const F=factors(S),pc=v=>{const n=Math.round(100*v-100);return (n>=0?"+":"")+n+"%"};
+ return F.real?`Muscle size follows the scan's muscle by body part (arms ${pc((F.la+F.ra)/2)}, legs ${pc((F.ll+F.rl)/2)}, trunk ${pc(F.tr)} vs. average) and the outer layer follows body fat${F.vis>0?" and visceral fat":""}.`
+  :"The figure's muscle size and body fat follow your scans. Scans that show muscle by body part shape each arm, leg and the trunk."}
+function reshape(THREE,A,S){const F=factors(S),P=A.pos.slice(),G=A.head.groups;
+ const segOf=(m,x,y)=>ARM.includes(m)?(x>0?"la":"ra"):LEG.includes(m)?(x>0?"ll":"rl"):(m&&m!=="other"&&m!=="skin")?"tr":(Math.abs(x)>.19&&y>.72?(x>0?"la":"ra"):y<.93?(x>0?"ll":"rl"):"tr");
+ G.forEach(g=>{if(g.m==="skin")return;let cx=0,cy=0,cz=0;for(let i=g.v0;i<g.v0+g.vn;i++){cx+=P[3*i];cy+=P[3*i+1];cz+=P[3*i+2]}cx/=g.vn;cy/=g.vn;cz/=g.vn;
+  const f=F[segOf(g.m,cx,cy)],fy=1+(f-1)*.25;if(Math.abs(f-1)<.003)return;
+  for(let i=g.v0;i<g.v0+g.vn;i++){P[3*i]=cx+(P[3*i]-cx)*f;P[3*i+1]=cy+(P[3*i+1]-cy)*fy;P[3*i+2]=cz+(P[3*i+2]-cz)*f}});
+ const sk=G.find(g=>g.m==="skin");if(sk){const tmp=new THREE.BufferGeometry();tmp.setAttribute("position",new THREE.BufferAttribute(A.pos,3));tmp.setIndex(new THREE.BufferAttribute(A.idx.subarray(sk.i0,sk.i0+sk.in),1));tmp.computeVertexNormals();const N=tmp.getAttribute("normal").array;
+  const fat=r=>Math.max(-.004,(F.bf-15)/100*.08*r);
+  for(let i=sk.v0;i<sk.v0+sk.vn;i++){const x=A.pos[3*i],y=A.pos[3*i+1],seg=segOf(null,x,y),leg=seg==="ll"||seg==="rl";
+   const ref=seg==="tr"?.11:leg?.065:.035,reg=seg==="tr"?1:leg?.8:.6;
+   let d=(F[seg]-1)*ref+fat(reg);
+   const nz=N[3*i+2];if(F.vis>0&&nz>.15&&y>.93&&y<1.22&&Math.abs(x)<.17){const t=Math.exp(-Math.pow((y-1.06)/.08,2))*Math.max(0,1-Math.abs(x)/.17);d+=F.vis*t*nz*6}
+   P[3*i]+=N[3*i]*d;P[3*i+1]+=N[3*i+1]*d;P[3*i+2]+=N[3*i+2]*d}}
+ return {P,F}}
 
 /* ---------- 3D ---------- */
 let R=null; // {renderer, raf, ro}
@@ -3023,7 +3050,7 @@ async function draw(box,V,S){
  // split the baked file into the muscle layer and the skin
  const G=A.head.groups,skinG=G.find(g=>g.m==="skin");
  const mi=new Float32Array(A.head.nv).fill(-1);G.forEach(g=>{const k=g.m==="other"||g.m==="skin"?-1:IDX[g.m];mi.fill(k,g.v0,g.v0+g.vn)});
- const all=new THREE.BufferAttribute(A.pos,3);
+ const RS=reshape(THREE,A,S),all=new THREE.BufferAttribute(RS.P,3);
  const musc=new THREE.BufferGeometry();musc.setAttribute("position",all);musc.setAttribute("mi",new THREE.BufferAttribute(mi,1));musc.setAttribute("fb",new THREE.BufferAttribute(A.fib,1));musc.setIndex(new THREE.BufferAttribute(A.idx.subarray(0,skinG.i0),1));musc.computeVertexNormals();
  const skin=new THREE.BufferGeometry();skin.setAttribute("position",all);skin.setIndex(new THREE.BufferAttribute(A.idx.subarray(skinG.i0,skinG.i0+skinG.in),1));skin.computeVertexNormals();
  const U={mc:{value:mcol},mh:{value:mheat},paleC:{value:tint(0)},hueC:{value:hue},latsH:{value:0},absH:{value:0},absI:{value:IDX.abs},latC:{value:mcol[IDX.lats]},absC:{value:mcol[IDX.abs]}};
@@ -3089,8 +3116,10 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
   ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
    <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
    <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
-  <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets.</p></div>`;
+  ${S.count>1?`<div class="seg holoseg">${[["latest","Now"],["first","First scan"]].map(([k,l])=>`<button type="button" data-hs="${k}" aria-pressed="${(UI.shapeFrom||"latest")===k}">${l}${k==="first"?" ("+e_(fs.date)+")":""}</button>`).join("")}</div>`:""}
+  <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets. ${shapeNote(S)}</p></div>`;
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
+ host.querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{UI.shapeFrom=b.dataset.hs;saveUI();panel()});
  host.querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{UI.view=b.dataset.hv;saveUI();panel()});
  $("holoColor").oninput=e=>{UI.color=e.target.value;saveUI();clearTimeout(panel._t);panel._t=setTimeout(panel,250)};
  draw($("holoStage"),V,S)}
@@ -3099,6 +3128,153 @@ const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:
  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
 .holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
 .holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}.pertag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2,#eef2f7);color:var(--ink2,#334155)}`;document.head.appendChild(st);
+})();
+
+/* ===== Workout timer, rest countdown with beeps, extra sets, added exercises, coach suggestions ===== */
+(function(){
+const T=()=>window.F2C_T,$=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const R=()=>T().rec();
+const mmss=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")};
+function redraw(){const y=scrollY;try{T().show("workouts")}catch(e){}requestAnimationFrame(()=>scrollTo(0,y))}
+
+/* ---------- rest time: the plan's rest if written, else by exercise type ---------- */
+window.F2C_restSec=function(name,rest){const r=String(rest||"").toLowerCase();let m;
+ if((m=r.match(/(\d+(?:\.\d+)?)\s*(?:-|to|–)\s*(\d+(?:\.\d+)?)\s*(min|m\b|minutes?)/)))return Math.round((+m[1]+ +m[2])/2*60);
+ if((m=r.match(/(\d+(?:\.\d+)?)\s*(?:-|to|–)\s*(\d+)\s*(s|sec|seconds?)?/))&&!/min/.test(r))return Math.round((+m[1]+ +m[2])/2);
+ if((m=r.match(/(\d+(?:\.\d+)?)\s*(min|m\b|minutes?)/)))return Math.round(+m[1]*60);
+ if((m=r.match(/(\d+)\s*(s|sec|seconds?)\b/)))return +m[1];
+ if((m=r.match(/^\s*(\d+(?:\.\d+)?)\s*$/)))return +m[1]<=10?Math.round(+m[1]*60):+m[1];
+ const n=String(name||"").toLowerCase(),k=window.F2C_exKind?F2C_exKind({name}):"load";
+ if(k==="stretch"||k==="timed")return 30;
+ if(/squat|deadlift|\brdl\b|bench|overhead press|military|leg press|hip thrust|clean|barbell row|pendlay|t.?bar|pull.?up|chin.?up|\bdip/.test(n))return 150;
+ if(k==="bw")return 75;
+ return 90};
+
+/* ---------- extra sets and added exercises ---------- */
+window.F2C_extra=(w,day,s)=>((R().extraSets||{})[`w${w}|${day}|${s}`])||0;
+window.F2C_added=function(w,day){const a=R().addEx||{};
+ return [...((a.all||{})[day]||[]).map(x=>Object.assign({},x,{added:"all"})),...((a.wk||{})[`w${w}|${day}`]||[]).map(x=>Object.assign({},x,{added:"wk"}))]};
+window.F2C_setBtns=function(w,day,s,ex){const n=F2C_extra(w,day,s);
+ return `<div class="setbtns"><button type="button" class="linkbtn small" data-addset="${esc(s)}">+ Add a set</button>${n>0?`<button type="button" class="linkbtn small" data-rmset="${esc(s)}">− Remove the added set</button>`:""}${ex.added?`<button type="button" class="linkbtn small danger" data-rmex="${esc(ex.addId)}" data-scope="${ex.added}">Remove this exercise</button><span class="muted small">${ex.added==="all"?"Added every week":"Added this week"}${ex.why?" · "+esc(ex.why):""}</span>`:""}</div>`};
+
+/* ---------- the workout session for a day ---------- */
+const key=(w,day)=>`w${w}|${day}`;
+function S(){const r=R();r.wk=r.wk||{};return r.wk}
+let ACTIVE=null; // {k, start} mirrored in rec.wk[k]
+function load(){try{const a=JSON.parse(localStorage.getItem("f2c_active")||"null");if(a&&R()&&S()[a.k]&&!S()[a.k].end)ACTIVE=a;else ACTIVE=null}catch(e){ACTIVE=null}}
+function saveActive(){try{ACTIVE?localStorage.setItem("f2c_active",JSON.stringify(ACTIVE)):localStorage.removeItem("f2c_active")}catch(e){}}
+window.F2C_wkStart=function(w,day){if(!R())return "";load();const k=key(w,day),s=S()[k];
+ if(s&&s.end)return `<div class="wkdone"><b>Workout time ${mmss(s.sec)}</b><span class="muted small">${s.sets||0} sets${s.lb?" · "+Math.round(s.lb).toLocaleString("en-US")+" lb lifted":""}${s.avgRest?" · average rest "+mmss(s.avgRest):""}</span><button type="button" class="linkbtn small" data-wkreset="${k}">Start over</button></div>`;
+ if(ACTIVE&&ACTIVE.k===k)return `<div class="wkdone run"><b>Workout running</b><span class="muted small">The timer is at the bottom of the screen. Check off each set when you finish it and your rest starts on its own.</span></div>`;
+ if(ACTIVE)return `<p class="muted small">Another workout is running (${esc(ACTIVE.k.replace("|"," · ").replace(/^w/,"Week "))}). Finish it first.</p>`;
+ return `<button type="button" class="btn primary wkgo" data-wkstart="${k}">▶ Start workout</button><p class="muted small">Times the whole workout and each set, and counts down your rest after every set you check off.</p>`};
+
+/* ---------- sound ---------- */
+let AC=null;function audio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}return AC}
+function beep(freq,dur,vol){const a=audio();if(!a)return;const o=a.createOscillator(),g=a.createGain();o.type="square";o.frequency.value=freq;o.connect(g);g.connect(a.destination);
+ const t=a.currentTime;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.02)}
+let wake=null;async function keepAwake(on){try{if(on&&!wake&&navigator.wakeLock)wake=await navigator.wakeLock.request("screen");if(!on&&wake){wake.release();wake=null}}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ACTIVE){wake=null;keepAwake(true)}});
+
+/* ---------- rest countdown ---------- */
+let REST=null; // {end, total, beeped:Set}
+function startRest(sec){REST={end:Date.now()+sec*1000,total:sec,beeped:{}};tick()}
+function endRest(){REST=null;if(ACTIVE){ACTIVE.setStart=Date.now();saveActive()}tick()}
+window.F2C_setDone=function(k,checked){if(!ACTIVE||!checked)return;const L=T().LOG(),v=L[k];if(!v)return;const now=Date.now(),info=(window.F2C_KI||{})[k]||{};
+ v.sec=Math.round((now-(ACTIVE.setStart||ACTIVE.start))/1000);v.at=now;
+ const s=S()[ACTIVE.k];if(s){s.done=(s.done||0)+1;if(ACTIVE.lastRest)s.rests=(s.rests||[]).concat([ACTIVE.lastRest]).slice(-60)}
+ T().touch();const sec=F2C_restSec(info.ex,info.rest);ACTIVE.restFor=k;saveActive();startRest(sec);
+ const row=document.querySelector(`[data-k="${CSS.escape(k)}"][data-f="done"]`);const sr=row&&row.closest(".setrow");if(sr){let t=sr.querySelector(".settime");if(!t){t=document.createElement("span");t.className="settime";sr.appendChild(t)}t.textContent=mmss(v.sec)}};
+function bar(){let b=$("wkbar");if(!ACTIVE){if(b)b.remove();return null}
+ if(!b){b=document.createElement("div");b.id="wkbar";b.className="wkbar2";document.body.appendChild(b);
+  b.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;audio();
+   if(t.dataset.r==="skip"){if(REST&&ACTIVE)ACTIVE.lastRest=Math.round((REST.total*1000-(REST.end-Date.now()))/1000);endRest()}
+   else if(t.dataset.r==="minus"&&REST){REST.end-=15000;REST.total-=15;tick()}
+   else if(t.dataset.r==="plus"&&REST){REST.end+=15000;REST.total+=15;tick()}
+   else if(t.dataset.r==="finish")finish()})}
+ return b}
+let iv=null;
+function tick(){const b=bar();if(!b){clearInterval(iv);iv=null;return}if(!iv)iv=setInterval(tick,200);
+ const el=Math.round((Date.now()-ACTIVE.start)/1000);let rest="";
+ if(REST){const left=(REST.end-Date.now())/1000,whole=Math.ceil(left);
+  for(const n of [3,2,1])if(whole===n&&!REST.beeped[n]){REST.beeped[n]=1;beep(880,0.12,0.35);navigator.vibrate&&navigator.vibrate(80)}
+  if(left<=0){if(!REST.beeped[0]){REST.beeped[0]=1;beep(1320,0.6,0.9);navigator.vibrate&&navigator.vibrate([200,80,200])}ACTIVE.lastRest=REST.total;endRest();b.classList.add("go");setTimeout(()=>b.classList.remove("go"),1500);return}
+  const pct=Math.max(0,Math.min(100,100*left/REST.total));
+  rest=`<div class="rest"><span class="label">Rest</span><b class="${whole<=3?"last":""}">${mmss(left)}</b><div class="restbar"><i style="width:${pct}%"></i></div><button type="button" data-r="minus" aria-label="15 seconds less">−15</button><button type="button" data-r="plus" aria-label="15 seconds more">+15</button><button type="button" data-r="skip">Skip</button></div>`}
+ else{const setT=Math.round((Date.now()-(ACTIVE.setStart||ACTIVE.start))/1000);rest=`<div class="rest idle"><span class="label">This set</span><b>${mmss(setT)}</b><span class="muted small">Check off the set when you finish it.</span></div>`}
+ const html=`<div class="wktime"><span class="label">Workout</span><b>${mmss(el)}</b></div>${rest}<button type="button" class="btn small fin" data-r="finish">Finish</button>`;
+ if(b._h!==html){b.innerHTML=html;b._h=html}}
+function start(k){audio();beep(660,0.08,0.2);const now=Date.now();S()[k]={start:now};ACTIVE={k,start:now,setStart:now};saveActive();T().touch();keepAwake(true);tick();redraw()}
+function finish(){if(!ACTIVE)return;if(!confirm("Finish this workout?"))return;const s=S()[ACTIVE.k]||{},now=Date.now(),L=T().LOG();
+ const keys=Object.keys(L).filter(k=>k.startsWith(ACTIVE.k+"|")&&L[k].done);let lb=0;
+ keys.forEach(k=>{const info=(window.F2C_KI||{})[k]||{};lb+=window.F2C_setLoad?F2C_setLoad(info.ex||k.split("|")[2],L[k],info.range):0});
+ const rests=s.rests||[];Object.assign(s,{start:ACTIVE.start,end:now,sec:Math.round((now-ACTIVE.start)/1000),sets:keys.length,lb:Math.round(lb),avgRest:rests.length?Math.round(rests.reduce((a,b)=>a+b,0)/rests.length):0});
+ S()[ACTIVE.k]=s;ACTIVE=null;REST=null;saveActive();keepAwake(false);T().touch();tick();redraw()}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-wkstart],[data-wkreset],[data-addset],[data-rmset],[data-rmex],[data-addex],[data-addsug],[data-sugdone],[data-asksug]");if(!t)return;
+ const r=R(),w=T().ui.week,day=T().ui.day;
+ if(t.dataset.wkstart){start(t.dataset.wkstart);return}
+ if(t.dataset.wkreset){if(confirm("Clear the time for this workout and start over?")){delete S()[t.dataset.wkreset];T().touch();redraw()}return}
+ if(t.dataset.addset){r.extraSets=r.extraSets||{};const k=`w${w}|${day}|${t.dataset.addset}`;r.extraSets[k]=(r.extraSets[k]||0)+1;T().touch();redraw();return}
+ if(t.dataset.rmset){const k=`w${w}|${day}|${t.dataset.rmset}`;r.extraSets[k]=Math.max(0,(r.extraSets[k]||0)-1);if(!r.extraSets[k])delete r.extraSets[k];T().touch();redraw();return}
+ if(t.dataset.rmex){if(!confirm("Remove this exercise?"))return;const a=r.addEx||{},id=t.dataset.rmex;
+  if(t.dataset.scope==="all")a.all[day]=(a.all[day]||[]).filter(x=>x.addId!==id);else a.wk[`w${w}|${day}`]=(a.wk[`w${w}|${day}`]||[]).filter(x=>x.addId!==id);T().touch();redraw();return}
+ if(t.dataset.addex!=null){const f=t.closest(".addex"),g=n=>(f.querySelector(`[name="${n}"]`)||{}).value||"";const name=g("name").trim();if(!name){f.querySelector('[name="name"]').focus();return}
+  addEx({name,sets:+g("sets")||3,reps:g("reps").trim()||"10",rest:g("rest").trim(),notes:""},f.querySelector('[name="scope"]:checked').value);return}
+ if(t.dataset.addsug!=null){const q=(window.F2C_X||{}).requests||[];const req=q.find(x=>x.id===t.dataset.req);const ex=req&&req.answer&&(req.answer.exercises||[])[+t.dataset.addsug];if(ex){addEx({name:ex.name,sets:+ex.sets||3,reps:String(ex.reps||"10"),rest:String(ex.rest||""),notes:ex.how||"",why:ex.why||""},t.dataset.scope||"all");t.disabled=true;t.textContent="Added"}return}
+ if(t.dataset.sugdone){window.F2C_markApplied&&F2C_markApplied(t.dataset.sugdone);r.sugSeen=(r.sugSeen||[]).concat([t.dataset.sugdone]).slice(-30);T().touch();redraw();return}
+ if(t.dataset.asksug!=null){const f=t.closest(".asksug"),txt=f.querySelector("textarea").value.trim(),st=f.querySelector(".status");if(!txt){f.querySelector("textarea").focus();return}
+  st.textContent="Sending…";askSug(txt,w,day).then(()=>{st.textContent="Sent to your coach.";redraw()}).catch(e=>{st.textContent=e&&e.code==="read_only"?"Only the athlete or parent can ask.":"Couldn't send. Try again."})}},true);
+function addEx(ex,scope){const r=R(),w=T().ui.week,day=T().ui.day;r.addEx=r.addEx||{all:{},wk:{}};r.addEx.all=r.addEx.all||{};r.addEx.wk=r.addEx.wk||{};
+ ex.addId="x"+Date.now().toString(36);if(scope==="all")(r.addEx.all[day]=r.addEx.all[day]||[]).push(ex);else (r.addEx.wk[`w${w}|${day}`]=r.addEx.wk[`w${w}|${day}`]||[]).push(ex);T().touch();redraw()}
+
+/* ---------- ask the coach what to add ---------- */
+async function askSug(goal,w,day){const r=R(),a=r.a||{},d=T().dayPlan(day),p=r.plan||{};
+ const today=((d&&d.exercises)||[]).map(x=>`${x.name} ${x.sets}x${x.reps}`).join("; ")||"rest day";
+ const week=(p.days||[]).map(x=>`${x.day||x.title}: ${(x.exercises||[]).map(e=>e.name).join(", ")}`).join("\n").slice(0,2500);
+ const prompt=`An athlete wants to add something to their training. Suggest 1 to 3 exercises they can add.
+WHAT THEY WANT TO WORK ON: ${goal}
+DAY: ${day}, week ${w}. TODAY'S PLAN: ${today}
+THEIR WEEK:\n${week}
+ATHLETE: age ${a.age||"?"}, sex ${a.sex||"?"}, goals ${a.goals||a.goal||"?"}, equipment ${a.equipment||"?"}, injuries ${a.injuries||"none listed"}, phase ${T().phaseOf(w)||"?"}.
+Pick moves that fit their equipment and injuries, don't wreck recovery for the rest of the week, and match the goal (for VO2 max: intervals such as 4 x 4 min hard / 3 min easy, or Zone 2). Say how hard to go in plain words.
+Reply with ONLY JSON: {"exercises":[{"name":"short exercise name (put the machine in the name, e.g. Rowing machine intervals)","sets":n,"reps":"reps, or time like 4 min","rest":"rest between sets, e.g. 90 s or 3 min","how":"one line: how to do it and how hard","why":"one short line tied to their goal","when":"which day or days to do it"}],"note":"one or two sentences of advice"}`;
+ return F2C_submit("question",prompt,{meta:{kind:"suggest",goal:goal.slice(0,200),day,w}})}
+
+/* ---------- add-exercise tools under the day ---------- */
+const COMMON=["Rowing machine intervals","Rowing machine steady (Zone 2)","Assault bike intervals","Incline treadmill walk","Stair climber","Jump rope","Sled push","Farmer's carry","Dumbbell bench press","Incline dumbbell press","Cable row","Lat pulldown","Pull-up","Push-up","Dumbbell curl","Cable triceps pushdown","Lateral raise","Face pull","Leg press","Romanian deadlift","Bulgarian split squat","Hip thrust","Leg curl","Calf raise","Hanging leg raise","Plank","Pallof press"];
+window.F2C_wkTools=function(w,day){const X=window.F2C_X||{},r=R(),seen=r.sugSeen||[];
+ const sug=(X.requests||[]).filter(q=>q.type==="question"&&q.meta&&q.meta.kind==="suggest"&&!seen.includes(q.id));
+ const pend=sug.filter(q=>q.status==="new"||q.status==="working"),ans=sug.filter(q=>q.status==="answered"&&q.answer&&Array.isArray(q.answer.exercises));
+ let h=ans.map(q=>`<div class="sheet sugbox"><span class="label">Coach suggestions · ${esc(q.meta.goal||"")}</span>${q.answer.note?`<p>${esc(q.answer.note)}</p>`:""}
+  ${q.answer.exercises.map((x,i)=>`<div class="sugex"><div><b>${esc(x.name)}</b> <span class="muted">${esc(x.sets||"")} × ${esc(x.reps||"")}${x.rest?" · rest "+esc(x.rest):""}${x.when?" · "+esc(x.when):""}</span>${x.how?`<p class="small">${esc(x.how)}</p>`:""}${x.why?`<p class="muted small">${esc(x.why)}</p>`:""}</div>
+   <div class="row"><button type="button" class="btn small primary" data-addsug="${i}" data-req="${esc(q.id)}" data-scope="all">Add every ${esc(day)}</button><button type="button" class="btn small" data-addsug="${i}" data-req="${esc(q.id)}" data-scope="wk">Just this week</button></div></div>`).join("")}
+  <div class="nav"><span></span><button type="button" class="linkbtn small" data-sugdone="${esc(q.id)}">Done with these</button></div></div>`).join("");
+ if(pend.length)h+=`<div class="note gold">Your coach is picking exercises for "${esc(pend[0].meta.goal||"")}". Usually within 3 hours; they'll show up here.</div>`;
+ h+=`<details class="sheet addbox"><summary><b>+ Add an exercise</b> <span class="muted small">or ask your coach what to add</span></summary>
+  <div class="addex"><datalist id="exlist">${COMMON.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+   <label class="field"><span class="flabel">Exercise</span><input name="name" list="exlist" placeholder="e.g. Rowing machine intervals"></label>
+   <div class="row3"><label class="field"><span class="flabel">Sets</span><input name="sets" inputmode="numeric" value="3"></label><label class="field"><span class="flabel">Reps or time</span><input name="reps" placeholder="10 or 4 min"></label><label class="field"><span class="flabel">Rest</span><input name="rest" placeholder="90 s"></label></div>
+   <div class="row"><label class="small"><input type="radio" name="scope" value="all" checked> Every ${esc(day)}</label><label class="small"><input type="radio" name="scope" value="wk"> Just this week</label></div>
+   <div class="nav"><span></span><button type="button" class="btn primary small" data-addex>Add</button></div></div>
+  <div class="asksug"><h4 class="sect">Not sure what to add?</h4><label class="field"><span class="flabel">What do you want to work on?</span><textarea rows="2" placeholder="e.g. More cardio to raise my VO2 max"></textarea></label><div class="nav"><span class="status small"></span><button type="button" class="btn small" data-asksug>Ask my coach</button></div></div></details>`;
+ return h};
+
+const st=document.createElement("style");st.textContent=`.setbtns{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}.linkbtn.danger{color:#b91c1c}
+.wkgo{width:100%;font-size:17px;padding:14px}.wkdone{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:#ecfdf5}.wkdone.run{background:#eff6ff}.wkdone b{font-size:18px}
+.settime{grid-column:1/-1;justify-self:end;font-size:12px;color:#64748b;margin-top:-4px}
+.wkbar2{position:fixed;left:8px;right:8px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:900;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:#0f172a;color:#f8fafc;border-radius:16px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:720px;margin:0 auto}
+.wkbar2 .label{color:#94a3b8;font-size:11px;display:block}.wkbar2 b{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.1}
+.wkbar2 .rest{display:grid;grid-template-columns:auto auto auto auto;grid-template-areas:"l t t t" "b b b b" "m p s s";gap:4px 6px;align-items:center}.wkbar2 .rest .label{grid-area:l}.wkbar2 .rest b{grid-area:t;font-size:28px}.wkbar2 .rest b.last{color:#fbbf24}
+.wkbar2 .rest.idle{display:grid;grid-template-columns:1fr;grid-template-areas:none}.wkbar2 .rest.idle b{font-size:22px}.wkbar2 .rest.idle .muted{color:#94a3b8}
+.restbar{grid-area:b;height:6px;border-radius:3px;background:#334155;overflow:hidden}.restbar i{display:block;height:100%;background:#22d3ee;transition:width .2s linear}
+.wkbar2 .rest button{background:#1e293b;color:#f8fafc;border:0;border-radius:8px;padding:6px 8px;font-weight:600}.wkbar2 .rest [data-r=skip]{grid-area:s}
+.wkbar2 .fin{background:#22c55e;color:#04210f;border:0}.wkbar2.go{animation:wkgo 1.5s}@keyframes wkgo{0%,40%{background:#16a34a}100%{background:#0f172a}}
+body:has(#wkbar) main,body:has(#wkbar) #planPanel{padding-bottom:150px}
+.addbox summary{cursor:pointer;list-style:none}.addex,.asksug{display:grid;gap:8px;margin-top:10px}.row3{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:8px}
+.sugex{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line,#e2e8f0)}.sugex p{margin:2px 0}`;document.head.appendChild(st);
+
+addEventListener("load",()=>{setTimeout(()=>{try{load();if(ACTIVE){keepAwake(true);tick()}}catch(e){}},1500)});
 })();
 
 </script>

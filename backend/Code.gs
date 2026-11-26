@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.2.0';
+var VERSION = '2.3.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -494,7 +494,7 @@ function getExtras(token, athleteId) {
     var d = String(v[i][4]);
     if (/^META /.test(d)) { try { q.meta = JSON.parse(d.split('\n')[0].slice(5)); } catch (e) {} }
     if (st === 'answered' && (q.type === 'read' || q.type === 'suppList')) q.answer = answerOf_(v[i][10]);
-    if (st === 'answered' && q.type === 'question') q.answer = String(v[i][10]).slice(0, 4000);
+    if (st === 'answered' && q.type === 'question') q.answer = (q.meta && q.meta.kind === 'suggest') ? answerOf_(v[i][10]) : String(v[i][10]).slice(0, 4000);
     reqs.push(q);
   }
   return {
