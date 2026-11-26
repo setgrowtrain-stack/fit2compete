@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795661989";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795662309";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1908,7 +1908,7 @@ const ICON={today:'<path d="M3 10h18M7 3v4M17 3v4M5 6h14a1 1 0 0 1 1 1v12a1 1 0 
  workouts:'<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',meals:'<path d="M5 3v8a3 3 0 0 0 6 0V3M8 3v18M16 3c-2 2-2 6 0 8v10"/>',
  supps:'<rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-45 12 12)"/><path d="M9 9l6 6"/>',plan:'<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>',
  coach:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',body:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 9h10M12 9v12M9 21l3-6 3 6"/>'};
-const TABS=[["today","Today"],["workouts","Workouts"],["meals","Meals"],["supps","Supps"],["body","Scans"],["coach","Coach"],["plan","Plan"]];
+const TABS=[["today","Today"],["workouts","Workouts"],["meals","Meals"],["supps","Supps"],["body","Body"],["coach","Coach"],["plan","Plan"]];
 function shell(){const pp=$("planPanel");if($("ptabs"))return;
  const nav=document.createElement("nav");nav.id="ptabs";nav.className="ptabs";nav.setAttribute("role","tablist");
  nav.innerHTML=TABS.map(([k,l])=>`<button type="button" role="tab" data-tab="${k}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg><span>${l}</span></button>`).join("");
@@ -2826,6 +2826,170 @@ document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest
   if(it.req)gs("cancelRequest",TOKEN,it.req).catch(()=>{});gs("syncMeals",TOKEN,cur,isoLocal(new Date()),null,[it.id]).catch(()=>{});F2C_mealsChanged&&F2C_mealsChanged();rerender()}});
 const st=document.createElement("style");st.textContent=`.setrow.simple{grid-template-columns:20px 1fr 40px}.simplelbl{color:var(--muted);font-size:.85rem}.v2food{margin:10px 0}.v2foodlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}.v2foodlist li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:8px}`;
 document.head.appendChild(st);
+})();
+
+
+/* ===== Body view: holographic 3D figure shaded by training volume ===== */
+(function(){
+const $=id=>document.getElementById(id),e_=s=>esc(s==null?"":String(s));
+const T=()=>window.F2C_T;
+const UI=(()=>{try{return JSON.parse(localStorage.getItem("f2c-holo")||"{}")}catch(e){return {}}})();
+UI.period=UI.period||"week";UI.color=UI.color||"#22d3ee";
+const saveUI=()=>{try{localStorage.setItem("f2c-holo",JSON.stringify(UI))}catch(e){}};
+const MUSCLES=[["chest","Chest"],["shoulders","Shoulders"],["biceps","Biceps"],["triceps","Triceps"],["forearms","Forearms"],["abs","Abs"],["obliques","Obliques"],
+ ["traps","Traps"],["lats","Lats"],["upperback","Upper back"],["lowerback","Lower back"],["glutes","Glutes"],["quads","Quads"],["hamstrings","Hamstrings"],["calves","Calves"]];
+// exercise name -> muscles worked (1 = main target, less = helping)
+const MAP=[
+ [/warm.?up|stretch|foam|mobility|cool.?down|ankle rock|hip switch|90\/90|walkover|activation|breath/,{}],
+ [/face pull|rear.?delt|reverse fly|band pull.?apart/,{upperback:1,shoulders:.4}],
+ [/lateral raise|side raise|upright row/,{shoulders:1,traps:.3}],
+ [/overhead press|shoulder press|military|arnold|\bohp\b|push press|landmine press/,{shoulders:1,triceps:.5}],
+ [/shrug/,{traps:1}],
+ [/straight.?arm|pullover/,{lats:1}],
+ [/row|pulldown|pull.?up|chin.?up|\blat\b/,{lats:1,upperback:.7,biceps:.5,forearms:.2}],
+ [/romanian|\brdl\b|good morning|stiff.?leg/,{hamstrings:1,glutes:.6,lowerback:.4}],
+ [/deadlift/,{hamstrings:.7,glutes:.7,lowerback:.7,quads:.3,traps:.3,forearms:.3}],
+ [/back extension|hyperextension|superman/,{lowerback:1,glutes:.4,hamstrings:.3}],
+ [/hip thrust|glute|bridge|kickback|abduct/,{glutes:1,hamstrings:.3}],
+ [/leg curl|nordic|hamstring/,{hamstrings:1}],
+ [/leg extension/,{quads:1}],
+ [/squat|leg press|hack|lunge|step.?up|wall sit|pistol|sled push/,{quads:1,glutes:.6,hamstrings:.2}],
+ [/calf|tibialis/,{calves:1}],
+ [/hammer/,{biceps:.8,forearms:.7}],
+ [/tricep|pushdown|skull|close.?grip|french press|kickback/,{triceps:1}],
+ [/curl/,{biceps:1,forearms:.3}],
+ [/fly|flye|pec deck|crossover/,{chest:1,shoulders:.2}],
+ [/bench|chest press|push.?up|\bdip|incline press|press/,{chest:1,shoulders:.5,triceps:.5}],
+ [/pallof|side plank|oblique|russian|woodchop|suitcase/,{obliques:1,abs:.5}],
+ [/crunch|sit.?up|plank|dead bug|leg raise|hollow|rollout|\bab\b|abs|core|v.?up|mountain climber/,{abs:1,obliques:.4}],
+ [/carry|farmer|dead hang|hang\b|grip/,{forearms:1,traps:.5}],
+ [/sprint|stride|run|jump|bound|hop|skip/,{quads:.4,hamstrings:.5,glutes:.4,calves:.5}]
+];
+function musclesOf(name){const n=String(name||"").toLowerCase();for(const [re,m] of MAP)if(re.test(n))return m;return {}}
+
+/* ---------- training volume per muscle for the chosen period ---------- */
+function range(period){const end=new Date();end.setHours(23,59,59,999);const start=new Date();start.setHours(0,0,0,0);
+ if(period==="week")start.setDate(start.getDate()-((start.getDay()+6)%7));
+ else if(period==="month")start.setDate(start.getDate()-29);
+ else if(period==="year")start.setDate(start.getDate()-364);
+ return [start,end]}
+function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={};
+ ((r.plan||{}).days||[]).forEach(d=>(d.exercises||[]).forEach(x=>names[t.slug(x.name)]=x.name));
+ Object.values(r.swaps||{}).forEach(n=>names[t.slug(n)]=n);
+ const [a,b]=range(period),vol={},sets={};MUSCLES.forEach(([k])=>{vol[k]=0;sets[k]=0});let total=0,days=new Set();
+ for(const key in L){const p=key.split("|"),v=L[key]||{};if(p.length!==4||!(v.wt||v.reps||v.done))continue;
+  const w=+String(p[0]).slice(1),di=t.DAYS7.indexOf(p[1]);if(!w||di<0)continue;
+  const d=new Date(t.weekDate(w));d.setDate(d.getDate()+di);if(d<a||d>b)continue;
+  const m=musclesOf(names[p[2]]||p[2].replace(/-/g," "));if(!Object.keys(m).length)continue;
+  total++;days.add(d.toDateString());for(const k in m){vol[k]+=m[k];if(m[k]>=.5)sets[k]++}}
+ const max=Math.max(0,...Object.values(vol));
+ return {vol,sets,max,total,days:days.size}}
+
+/* ---------- body shape from height, weight, sex and the latest InBody ---------- */
+function shape(){const t=T(),a=t.rec().a||{},X=window.F2C_X||{},scans=((X.body||{}).scans||[]).filter(s=>s.confirmed);const last=scans[scans.length-1];
+ const female=/^f/i.test(a.sex||"");
+ let hIn=0;const hs=String(a.height||"");let m=hs.match(/(\d)\s*['’ ]\s*(\d{1,2})/);if(m)hIn=+m[1]*12+ +m[2];else if((m=hs.match(/(\d{3})\s*cm/i)))hIn=+m[1]/2.54;else if((m=hs.match(/^(\d{2})$/)))hIn=+m[1];
+ if(!hIn)hIn=female?64:69;
+ const wt=+(last&&last.weight)||parseFloat(a.weight)||(female?140:175);
+ const bf=+(last&&last.bf)||parseFloat(a.bf)||(female?26:18);
+ const smm=+(last&&last.smm)||0;
+ const bmi=703*wt/(hIn*hIn);
+ const musc=smm?Math.min(1.5,Math.max(.6,(smm/wt)/(female?.38:.45))):1; // muscle mass vs typical for the sex
+ return {female,hIn,wt,bf,bmi,musc,scan:last,first:scans[0]}}
+
+/* ---------- 3D ---------- */
+let R=null; // {renderer, raf, ro}
+function dispose(){if(!R)return;cancelAnimationFrame(R.raf);try{R.ro&&R.ro.disconnect();R.controls&&R.controls.dispose();R.renderer.dispose()}catch(e){}R=null}
+async function draw(box,V,S){
+ dispose();
+ let THREE,OC;try{THREE=await import("./vendor/three.module.min.js");OC=(await import("./vendor/OrbitControls.js")).OrbitControls}catch(e){box.innerHTML=`<p class="muted small" style="padding:20px">The 3D view couldn't load on this device.</p>`;return}
+ const w=box.clientWidth||340,h=box.clientHeight||420;
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));renderer.setSize(w,h);box.innerHTML="";box.appendChild(renderer.domElement);
+ const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(32,w/h,.1,50);cam.position.set(0,1.0,5.2);
+ const controls=new OC(cam,renderer.domElement);controls.target.set(0,.95,0);controls.enablePan=false;controls.minDistance=2.6;controls.maxDistance=8;controls.autoRotate=true;controls.autoRotateSpeed=1.4;
+ controls.addEventListener("start",()=>controls.autoRotate=false);
+ scene.add(new THREE.AmbientLight(0xffffff,.55));const dl=new THREE.DirectionalLight(0xffffff,1.1);dl.position.set(2,4,3);scene.add(dl);const bl=new THREE.DirectionalLight(0xffffff,.6);bl.position.set(-2,2,-3);scene.add(bl);
+ const hue=new THREE.Color(UI.color);const hsl={};hue.getHSL(hsl);
+ const shell=new THREE.MeshStandardMaterial({color:hue,emissive:hue,emissiveIntensity:.22,transparent:true,opacity:.22,roughness:.4,metalness:.1,depthWrite:false});
+ const wire=new THREE.MeshBasicMaterial({color:hue,wireframe:true,transparent:true,opacity:.045});
+ const fig=new THREE.Group();scene.add(fig);
+ // proportions: 1 unit ~ 1 m, figure scaled to height
+ const H=S.hIn*.0254, sc=H/1.75;fig.scale.setScalar(sc);
+ const girth=Math.min(1.45,Math.max(.82,Math.sqrt(S.bmi/23))), soft=Math.min(1.3,Math.max(.85,S.bf/(S.female?26:17))), mu=S.musc;
+ const F=S.female;
+ const shW=(F?.19:.23)*Math.max(.9,Math.min(1.25,mu)), waist=(F?.13:.145)*girth*Math.sqrt(soft), hip=(F?.19:.165)*girth, chest=(F?.165:.18)*girth;
+ const add=(geo,pos,scl,mat,rot)=>{const m=new THREE.Mesh(geo,mat);m.position.set(...pos);if(scl)m.scale.set(...scl);if(rot)m.rotation.set(...rot);fig.add(m);return m};
+ const both=(geo,pos,scl,rot)=>{add(geo,pos,scl,shell,rot);add(geo,pos,scl,wire,rot)};
+ const sph=new THREE.SphereGeometry(1,28,20),cap=(r,l)=>new THREE.CapsuleGeometry(r,l,8,16);
+ // torso from a lathe profile (radius by height), squashed front to back
+ const prof=[[0.001,.86],[hip*.9,.88],[hip,.95],[hip*.95,1.0],[waist,1.08],[waist*1.02,1.14],[chest*.95,1.25],[chest,1.33],[shW*.88,1.41],[shW*.55,1.46],[.06,1.5],[0.001,1.5]].map(p=>new THREE.Vector2(p[0],p[1]));
+ const torso=new THREE.LatheGeometry(prof,40);both(torso,[0,0,0],[1,1,.72]);
+ both(cap(.05,.06),[0,1.53,0]);           // neck
+ both(sph,[0,1.66,0],[.095,.12,.105]);     // head
+ const legX=hip*.5, armX=shW+.035;
+ [-1,1].forEach(s=>{
+  both(cap(F?.08:.085,.3),[s*legX,.66,0],[girth*.95,1,girth*.95]);   // thigh
+  both(cap(.058,.31),[s*legX*.95,.27,0]);                               // shin
+  both(new THREE.BoxGeometry(.09,.05,.2),[s*legX*.95,.03,.04]);         // foot
+  both(cap(.052,.2),[s*armX,1.27,0],[1,1,1],[0,0,s*.12]);              // upper arm
+  both(cap(.043,.2),[s*(armX+.035),.99,0.01],[1,1,1],[0,0,s*.08]);     // forearm
+  both(sph,[s*(armX+.05),.82,.01],[.04,.06,.025]);                      // hand
+ });
+ // muscles: ellipsoids sitting on the surface, colored by volume
+ const mats={};
+ MUSCLES.forEach(([k])=>{const t=V.max?V.vol[k]/V.max:0;
+  // more sets = darker, deeper shade of the chosen color; untrained = faint outline
+  const c=new THREE.Color().setHSL(hsl.h,Math.max(.6,hsl.s),t?(.80-.45*t):.5);
+  mats[k]=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:t?.45-.25*t:.05,transparent:true,opacity:t?.92:.12,roughness:.45,depthWrite:t>0})});
+ const M=(k,pos,scl,rot)=>add(sph,pos,scl.map((v,i)=>i===1?v:v*(.85+.15*mu)),mats[k],rot);
+ [-1,1].forEach(s=>{
+  M("chest",[s*chest*.42,1.32,chest*.6],[chest*.52,.08*(F?.9:1),.05]);
+  M("shoulders",[s*(shW+.005),1.4,0],[.068*mu,.065,.07*mu]);
+  M("biceps",[s*(armX+.012),1.27,.036],[.036,.1,.032],[0,0,s*.12]);
+  M("triceps",[s*(armX+.005),1.28,-.038],[.038,.11,.032],[0,0,s*.12]);
+  M("forearms",[s*(armX+.04),1.0,.015],[.03,.1,.03],[0,0,s*.08]);
+  M("obliques",[s*waist*.85,1.1,.02],[.035,.09,.06]);
+  M("lats",[s*chest*.66,1.24,-chest*.36],[.065,.14,.04],[0,0,s*-.25]);
+  M("upperback",[s*chest*.3,1.36,-chest*.58],[.075,.06,.035]);
+  M("lowerback",[s*.037,1.08,-waist*.68],[.032,.075,.028]);
+  M("glutes",[s*hip*.42,.92,-hip*.5],[.088*girth,.088,.065]);
+  M("quads",[s*legX,.68,.055*girth],[.066*girth,.18,.045]);
+  M("hamstrings",[s*legX,.66,-.055*girth],[.064*girth,.17,.042]);
+  M("calves",[s*legX*.95,.32,-.042],[.046,.1,.038]);
+ });
+ M("traps",[0,1.47,-.045],[.11,.04,.04]);
+ for(let r=0;r<3;r++)[-1,1].forEach(s=>M("abs",[s*.032,1.2-r*.055,waist*.68+.01],[.028,.025,.014]));
+ // floor ring
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.35,.37,64),new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
+ const ring2=new THREE.Mesh(new THREE.RingGeometry(.48,.485,64),new THREE.MeshBasicMaterial({color:hue,transparent:true,opacity:.25,side:THREE.DoubleSide}));ring2.rotation.x=-Math.PI/2;scene.add(ring2);
+ const ro=new ResizeObserver(()=>{const W=box.clientWidth,Hh=box.clientHeight;if(!W||!Hh)return;renderer.setSize(W,Hh);cam.aspect=W/Hh;cam.updateProjectionMatrix()});ro.observe(box);
+ R={renderer,controls,ro,raf:0};
+ const tick=()=>{if(!box.isConnected){dispose();return}controls.update();ring.rotation.z+=.004;renderer.render(scene,cam);R.raf=requestAnimationFrame(tick)};tick();
+}
+
+/* ---------- panel ---------- */
+const LBL={day:"Today",week:"This week",month:"30 days",year:"12 months"};
+function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host=$("holoWrap");
+ if(!host){host=document.createElement("div");host.id="holoWrap";v.insertBefore(host,v.firstChild)}
+ const V=volume(UI.period),S=shape();
+ const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+ const sc=S.scan,fs=S.first;
+ host.innerHTML=`<div class="sheet holo"><div class="sheethead"><div><span class="label">Your body</span><h3>Training map</h3></div>
+  <label class="holocol" title="Pick the color">Color <input type="color" id="holoColor" value="${e_(UI.color)}"></label></div>
+  <div class="seg holoseg">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p==="day"?"Day":p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div>
+  <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
+  <p class="muted small holohint">Drag to turn the figure. Pinch to zoom. ${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
+  ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} sets</b></div>`).join("")}</div>
+   <p class="muted small">${LBL[UI.period]}: ${V.total} sets logged on ${V.days} day${V.days===1?"":"s"}.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
+  <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets.</p></div>`;
+ host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
+ $("holoColor").oninput=e=>{UI.color=e.target.value;saveUI();clearTimeout(panel._t);panel._t=setTimeout(panel,250)};
+ draw($("holoStage"),V,S)}
+const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{panel()}catch(e){console.warn("[F2C] body view",e)}return r};
+const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:10px}.holostage{height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
+ background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
+.holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
+.holoseg{justify-self:start}.holobars{display:grid;gap:6px}`;document.head.appendChild(st);
 })();
 
 </script>
