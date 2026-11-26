@@ -105,8 +105,9 @@ document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest
  if(t.dataset.sugdone){window.F2C_markApplied&&F2C_markApplied(t.dataset.sugdone);r.sugSeen=(r.sugSeen||[]).concat([t.dataset.sugdone]).slice(-30);T().touch();redraw();return}
  if(t.dataset.asksug!=null){const f=t.closest(".asksug"),txt=f.querySelector("textarea").value.trim(),st=f.querySelector(".status");if(!txt){f.querySelector("textarea").focus();return}
   st.textContent="Sending…";askSug(txt,w,day).then(()=>{st.textContent="Sent to your coach.";redraw()}).catch(e=>{st.textContent=e&&e.code==="read_only"?"Only the athlete or parent can ask.":"Couldn't send. Try again."})}},true);
+window.F2C_addEx=(ex,scope)=>addEx(ex,scope);
 function addEx(ex,scope){const r=R(),w=T().ui.week,day=T().ui.day;r.addEx=r.addEx||{all:{},wk:{}};r.addEx.all=r.addEx.all||{};r.addEx.wk=r.addEx.wk||{};
- ex.addId="x"+Date.now().toString(36);if(scope==="all")(r.addEx.all[day]=r.addEx.all[day]||[]).push(ex);else (r.addEx.wk[`w${w}|${day}`]=r.addEx.wk[`w${w}|${day}`]||[]).push(ex);T().touch();redraw()}
+ ex.addId="x"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);if(scope==="all")(r.addEx.all[day]=r.addEx.all[day]||[]).push(ex);else (r.addEx.wk[`w${w}|${day}`]=r.addEx.wk[`w${w}|${day}`]||[]).push(ex);T().touch();redraw()}
 
 /* ---------- ask the coach what to add ---------- */
 async function askSug(goal,w,day){const r=R(),a=r.a||{},d=T().dayPlan(day),p=r.plan||{};
@@ -131,8 +132,9 @@ window.F2C_wkTools=function(w,day){const X=window.F2C_X||{},r=R(),seen=r.sugSeen
    <div class="row"><button type="button" class="btn small primary" data-addsug="${i}" data-req="${esc(q.id)}" data-scope="all">Add every ${esc(day)}</button><button type="button" class="btn small" data-addsug="${i}" data-req="${esc(q.id)}" data-scope="wk">Just this week</button></div></div>`).join("")}
   <div class="nav"><span></span><button type="button" class="linkbtn small" data-sugdone="${esc(q.id)}">Done with these</button></div></div>`).join("");
  if(pend.length)h+=`<div class="note gold">Your coach is picking exercises for "${esc(pend[0].meta.goal||"")}". Usually within 3 hours; they'll show up here.</div>`;
- h+=`<details class="sheet addbox"><summary><b>+ Add an exercise</b> <span class="muted small">or ask your coach what to add</span></summary>
-  <div class="addex"><datalist id="exlist">${COMMON.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+ h+=`<details class="sheet addbox"><summary><b>+ Add an exercise</b> <span class="muted small">browse 876, type one, or ask your coach</span></summary>
+  <button type="button" class="libopenbtn" data-libopen><svg viewBox="0 0 24 24" class="wic"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><div><b>Browse the exercise library</b><span>876 exercises with photos and steps · search by muscle or equipment</span></div></button>
+  <div class="addex"><h4 class="sect">Or type one in</h4><datalist id="exlist">${COMMON.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
    <label class="field"><span class="flabel">Exercise</span><input name="name" list="exlist" placeholder="e.g. Rowing machine intervals"></label>
    <div class="row3"><label class="field"><span class="flabel">Sets</span><input name="sets" inputmode="numeric" value="3"></label><label class="field"><span class="flabel">Reps or time</span><input name="reps" placeholder="10 or 4 min"></label><label class="field"><span class="flabel">Rest</span><input name="rest" placeholder="90 s"></label></div>
    <div class="row"><label class="small"><input type="radio" name="scope" value="all" checked> Every ${esc(day)}</label><label class="small"><input type="radio" name="scope" value="wk"> Just this week</label></div>

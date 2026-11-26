@@ -14,6 +14,7 @@ rep('''async function enter(){
  const r=await gs("listAthletes",TOKEN);''', '''async function enter(fromLogin){
  $("login").hidden=true;
  let fast=false,before="";
+ if(!fromLogin&&!ME&&document.readyState==="loading")await new Promise(res=>document.addEventListener("DOMContentLoaded",res,{once:true}));  // the rest of the app's code must be loaded first
  if(!fromLogin&&!ME){try{const u=JSON.parse(localStorage.getItem("f2c-me")||"null");
   if(u&&u.email){LS="f2c-athletes-"+u.email;loadLocal();const ks=Object.keys(athletes).filter(k=>athletes[k]&&(athletes[k].a&&athletes[k].a.name||athletes[k].plan));
    if(ks.length){ME=u;$("whoName").innerHTML=esc(ME.name||ME.email)+(ME.role==="admin"?' <span class="adminTag">COACH</span>':"");$("who").hidden=false;
@@ -44,3 +45,7 @@ rep('''   location.reload();return true}}catch(e){}return false}''',
 
 # Check for a newer version shortly after opening (the saved copy may be one version behind).
 rep(' tryEnter();\n})();', ' tryEnter();\n setTimeout(()=>{if(!BUSY)appOutdated()},2500);\n})();')
+
+# v2.7: library exercises show their photo on the exercise card (tap for photos and steps).
+rep('return `<article class="excard"><div class="exhead"><div><h4>${e_(ex.name)}</h4>',
+    'return `<article class="excard"><div class="exhead">${window.F2C_libThumb?F2C_libThumb(ex):""}<div><h4>${e_(ex.name)}</h4>')
