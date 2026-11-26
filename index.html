@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795718368";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795719944";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -2743,34 +2743,56 @@ function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||
    <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"#ffffff").replace(/style="color:#(16ec06|ff2a4a)"/,'style="color:#aab4be"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,"#1e9bff")}</div></div>
   <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,"#8fb3cc")}${t("BMR",last.bmr," kcal","bmr",true,"#ffffff")}</div>
   <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Arrows compare with your scan before this one: green is the direction you want.</p></div>`}
+const scansOf=()=>((X.body&&X.body.scans)||[]);
+const SCIC='<svg viewBox="0 0 24 24" class="wic"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
  if(!X.loaded){v.innerHTML=`<div class="sheet"><p class="muted">Loading scans…</p></div>`;load(true);return}
- const scans=(b&&b.scans)||[],pend=open().filter(q=>q.type==="inbody"),unconf=scans.filter(s=>!s.confirmed);const last=scans.filter(s=>s.confirmed).slice(-1)[0];
- let h=`<div class="sheet"><div class="sheethead"><div><span class="label">InBody</span><h3>Body scans</h3></div>${b&&b.lastDate?`<span class="pill">Last scan ${e_(b.lastDate)}</span>`:""}</div>`;
- const due=scanDue();h+=due?`<div class="note gold"><b>Scan due.</b> ${e_(due)} Scan every 4 weeks and at each phase change.${PROTOCOL}</div>`:`<p class="muted small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"")}. Scan every 4 weeks and at each phase change.</p><details><summary class="small">How to scan for a fair comparison</summary>${PROTOCOL}</details>`;
- h+=`</div>`;
- if(last)h+=scanCard(last,b&&b.cmp);
- if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
+ const scans=scansOf(),pend=open().filter(q=>q.type==="inbody"),unconf=scans.filter(s=>!s.confirmed);const last=scans.filter(s=>s.confirmed).slice(-1)[0];
+ const due=scanDue(),days=b&&b.lastDate?(b.daysSince!=null?b.daysSince:Math.round((Date.now()-new Date(b.lastDate+"T12:00:00"))/864e5)):null;
+ const when=b&&b.lastDate?new Date(b.lastDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+ let h=`<div class="sheet scanstrip"><div class="ssico">${SCIC}</div><div class="sstext"><b>Body scans</b><span>${when?`Last ${e_(when)} · ${days} day${days===1?"":"s"} ago`:"No scan on file yet"}</span></div>
+  ${due?`<button type="button" class="sspill" data-wd="scan:add">Scan due</button>`:""}${!ro&&scans.length?`<button type="button" class="btn small" data-wd="scan:add">+ Add</button>`:""}</div>`;
+ if(last){const card=scanCard(last,b&&b.cmp),k=card.lastIndexOf("</div>");
+  h+=`<div class="scantap" data-wd="scan:parts" role="button" tabindex="0" aria-label="Scan details">${card.slice(0,k)}<p class="wtap">Tap for body parts, changes and every value</p>${card.slice(k)}</div>`}
+ if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
+ if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
+ if(!scans.length&&!ro)h+=scanAddHtml();
+ v.innerHTML=h;scanWire(v)};
+function scanAddHtml(){const ro=!mine(),b=X.body;let h="";
+ if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
+  <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
+ const due=scanDue();
+ h+=`<div class="sheet"><span class="label">When and how to scan</span>${due?`<div class="note gold"><b>Scan due.</b> ${e_(due)}</div>`:`<p class="small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"now")}.</p>`}<p class="small">Scan every 4 weeks and at each phase change.</p>${PROTOCOL}</div>`;
+ return h}
+function scanChangesHtml(){const b=X.body,scans=scansOf();let h="";
  const c=b&&b.cmp;
  if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
   h+=(window.F2C_sinceCard?F2C_sinceCard(c,scans.filter(x=>x.confirmed)):"")+`<div class="sheet"><span class="label">Food and training in those ${c.weeks} week${c.weeks>1?"s":""}</span>
    <h4 class="sect">Food</h4>${c.food?`<p>Average <b>${c.food.cal} kcal</b> and <b>${c.food.protein} g protein</b> a day, from ${c.food.days} day${c.food.days>1?"s":""} of meals checked off.</p>`:`<p class="muted small">No meals were checked off in this window, so food can't be compared. Tap "Ate it" on Today to track it.</p>`}
    <h4 class="sect">Training</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
    ${(c.strength||[]).length?`<div class="scroll"><table><thead><tr><th>Key lift</th><th>Est. max then</th><th>Now</th><th>Change</th></tr></thead><tbody>${c.strength.map(x=>`<tr><td>${e_(x.lift)}</td><td class="num">${x.from} lb</td><td class="num">${x.to} lb</td><td class="num">${x.pct>0?"+":""}${x.pct}%</td></tr>`).join("")}</tbody></table></div>`:""}</div>`}
- else if(scans.length)h+=`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`;
- if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
- if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
- if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
-  <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
- if(scans.length)h+=`<details class="sheet"><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}${s.source==="history"?' <span class="muted small">from sheet</span>':""}${s.type==="dexa"?' <span class="muted small">DEXA</span>':""}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
- v.innerHTML=h;
+ return h||`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`}
+function scanHistHtml(){const scans=scansOf();let h="";
+ if(scans.length)h+=`<details class="sheet" open><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}${s.source==="history"?' <span class="muted small">from sheet</span>':""}${s.type==="dexa"?' <span class="muted small">DEXA</span>':""}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
+ return h}
+function scanPair(){const sc=scansOf().filter(s=>s.confirmed),last=sc.slice(-1)[0];return [last,last?sc.filter(s=>s!==last&&s.details).slice(-1)[0]:null]}
+window.F2C_scanTab=function(tab){const [last,prev]=scanPair();
+ if(tab==="add")return scanAddHtml();
+ if(tab==="changes")return scanChangesHtml();
+ if(tab==="hist")return scanHistHtml();
+ if(!last)return `<p class="muted">No confirmed scan yet.</p>`;
+ if(tab==="all")return (last.details?scanDetailsHtml(last,prev,"rest").replace("<details>","<details open>"):"")||`<p class="muted">This scan only has the main numbers.</p>`;
+ return (last.details?scanDetailsHtml(last,prev,"segs"):"")||`<p class="muted">This scan has no body part numbers.</p>`};
+window.F2C_scanDate=()=>{const l=scanPair()[0];return l?l.date:""};
+function scanWire(v){
  const f=$("scanFile");if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;const st=$("scanSt");st.textContent="Uploading…";
-  try{const id=await upload(file,"inbody__"+(file.name||"scan"));await F2C_submit("inbody",INBODY_PROMPT,{fileIds:[id],meta:{kind:"inbody"}});st.textContent="Sent to your coach.";F2C_rBody()}catch(e){st.textContent=errCopy(e)}};
+  try{const id=await upload(file,"inbody__"+(file.name||"scan"));await F2C_submit("inbody",INBODY_PROMPT,{fileIds:[id],meta:{kind:"inbody"}});st.textContent="Sent to your coach.";F2C_rBody();window.F2C_wdRedraw&&F2C_wdRedraw()}catch(e){st.textContent=errCopy(e)}};
  const sv=$("scanSave");if(sv)sv.onclick=()=>save(readForm($("scanNew")),sv);
  v.querySelectorAll("[data-scanok]").forEach(btn=>btn.onclick=()=>{const x=readForm(v.querySelector(`[data-scan="${btn.dataset.scanok}"]`));x.id=btn.dataset.scanok;save(x,btn)});
- v.querySelectorAll("[data-scanrm]").forEach(btn=>btn.onclick=()=>save({id:btn.dataset.scanrm,remove:true},btn))};
+ v.querySelectorAll("[data-scanrm]").forEach(btn=>btn.onclick=()=>save({id:btn.dataset.scanrm,remove:true},btn))}
+window.F2C_scanWire=scanWire;
 const SEG=[["la","Left arm"],["ra","Right arm"],["tr","Trunk"],["ll","Left leg"],["rl","Right leg"]];
-function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||{},sg=d.segments||{},psg=pd.segments||{};
+function scanDetailsHtml(s,prev,mode){const d=s.details||{},pd=(prev&&prev.details)||{},sg=d.segments||{},psg=pd.segments||{};
  const chg=(a,b,u)=>{if(typeof a!=="number"||typeof b!=="number")return "";const n=Math.round((a-b)*100)/100;return `<span class="muted small">${n>0?"+":""}${n}${u||""}</span>`};
  let h="";
  const seg=(k,title,note)=>{const m=sg[k];if(!m||!SEG.some(([x])=>m[x]))return "";const pm=psg[k]||{};
@@ -2782,10 +2804,11 @@ function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||
  const secs=(d.sections||[]).filter(x=>(x.items||[]).length);
  if(secs.length)h+=`<details><summary class="small">Everything on this scan (${secs.reduce((n,x)=>n+x.items.length,0)} values)${d.device?" · "+e_(d.device):""}</summary>${secs.map(x=>`<h4 class="sect">${e_(x.title||"")}</h4><div class="scroll"><table><tbody>${x.items.map(it=>`<tr><td>${e_(it.label)}${it.range?` <span class="muted small">(${e_(it.range)})</span>`:""}</td><td class="num">${e_(it.value)}${it.unit?" "+e_(it.unit):""}</td>${prev?`<td class="num">${it.key&&it.key in pk?chg(it.value,pk[it.key]):""}</td>`:""}</tr>`).join("")}</tbody></table></div>`).join("")}</details>`;
  if(!h)return "";const parts=h.split("<!--segend-->"),segs=parts.slice(0,-1).join(""),rest=parts[parts.length-1];
+ if(mode==="segs")return segs;if(mode==="rest")return rest?`<div class="sheet">${rest}</div>`:"";
  return segs+(rest?`<div class="sheet"><span class="label">${s.type==="dexa"?"DEXA scan":"Scan"} details · ${e_(s.date)}</span>${rest}</div>`:"")}
 function formFields(s){return [["date","Date","date"],["weight","Weight (lb)"],["bf","Body fat %"],["smm","Muscle SMM (lb)"],["lean","Lean mass (lb)"],["bmr","BMR (kcal)"]].map(([k,l,t])=>`<label class="field"><span class="flabel">${l}</span><input type="${t||"text"}" ${t?"":'inputmode="decimal"'} data-f="${k}" value="${e_(s[k]==null?"":s[k])}"></label>`).join("")}
 function readForm(el){const o={};el.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return o}
-async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
+async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();window.F2C_wdRedraw&&F2C_wdRedraw();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
 
 /* ---------- hooks ---------- */
 const _renderAll=renderAll;renderAll=function(){const out=_renderAll.apply(this,arguments);if(X.for!==cur){X.for=cur;X.loaded=false;X.prog={};X.requests=[];X.notes=[];X.body=null;X.targets=null;load(true)}bar();return out};
@@ -3212,17 +3235,27 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
  const V=volume(UI.period),S=shape();
  const lb=n=>Math.round(n).toLocaleString("en-US");const ranked=MUSCLES.map(([k,l])=>({k,l,v:V.vol[k],n:V.sets[k],w:V.lbs[k]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
  const sc=S.scan,fs=S.first;
- host.innerHTML=`<div class="sheet holo"><div class="sheethead"><div><span class="label">Your body</span><h3>Training map</h3></div>
-  <span class="seg holoview">${[["3d","3D"],["map","Front & back"],["pain","Pain"]].map(([k,l])=>`<button type="button" data-hv="${k}" aria-pressed="${(UI.view||"3d")===k}">${l}</button>`).join("")}</span><label class="holocol" title="Pick the color">Color <input type="color" id="holoColor" value="${e_(UI.color)}"></label></div>
-  <div class="seg holoseg hololayer">${[["muscle","Muscles"],["fat","Body fat"],["organs","Organs + visceral fat"]].map(([k,l])=>`<button type="button" data-hl="${k}" aria-pressed="${(UI.layer||"muscle")===k}">${l}</button>`).join("")}</div>
-  <div class="seg holoseg">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p==="day"?"Day":p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div>
-  <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
-  ${(UI.layer||"muscle")!=="muscle"?`<p class="small holoLayerNote">${layerNote(S)}</p>`:""}<p class="muted small holohint">${UI.view==="pain"?"Pinch over a spot and it slides to the center and zooms into it, or double-tap a spot to jump to it. Drag to turn, two fingers to slide. Tap the exact spot that hurts. ":UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn. Pinch over a spot and it slides to the center and zooms into it, or double-tap a spot to jump to it (double-tap empty space to reset). Two fingers to slide. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
-  ${UI.view==="pain"?`<div id="painBox"></div>`:""}${UI.view!=="pain"&&V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
-   <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
-   <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:UI.view==="pain"?"":`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
-  ${S.count>1?`<div class="seg holoseg">${[["latest","Now"],["first","First scan"]].map(([k,l])=>`<button type="button" data-hs="${k}" aria-pressed="${(UI.shapeFrom||"latest")===k}">${l}${k==="first"?" ("+e_(fs.date)+")":""}</button>`).join("")}</div>`:""}
-  <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets. ${shapeNote(S)}</p></div>`;
+ const lay=UI.layer||"muscle",view=UI.view||"3d";
+ const hint=view==="pain"?"Pinch over a spot and it slides to the center and zooms in, or double-tap a spot to jump to it. Drag to turn, two fingers to slide. Tap the exact spot that hurts.":view==="map"?"Front on the left, back on the right.":"Drag to turn. Pinch over a spot to zoom into it, or double-tap a spot (double-tap empty space to reset). Two fingers to slide.";
+ const bars=view!=="pain"&&V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>`:"";
+ host.innerHTML=`<div class="sheet holo"><div class="holohead"><span class="label">Your body</span>
+  <span class="seg holoview">${[["3d","3D"],["map","Front & back"],["pain","Pain"]].map(([k,l])=>`<button type="button" data-hv="${k}" aria-pressed="${view===k}">${l}</button>`).join("")}</span></div>
+  <div class="holobox">
+   <div class="holostage" id="holoStage" style="--hc:${e_(UI.color)}"><p class="muted small" style="padding:20px">Loading 3D…</p></div>
+   ${view!=="pain"?`<div class="holoov hotop"><div class="hochips hololayer" role="group" aria-label="Layer">${[["muscle","Muscles"],["fat","Fat"],["organs","Organs"]].map(([k,l])=>`<button type="button" data-hl="${k}" aria-pressed="${lay===k}" title="${k==="organs"?"Organs + visceral fat":l}">${l}</button>`).join("")}</div>
+    <label class="hocolor" title="Pick the color"><input type="color" id="holoColor" value="${e_(UI.color)}" aria-label="Muscle color"></label></div>
+   <div class="holoov hobot"><div class="hochips" role="group" aria-label="Time range">${["day","week","month","year"].map(p=>`<button type="button" data-hp="${p}" aria-pressed="${p===UI.period}">${p[0].toUpperCase()+p.slice(1)}</button>`).join("")}</div></div>`:`<input type="color" id="holoColor" value="${e_(UI.color)}" hidden>`}
+  </div>
+  ${view==="pain"?`<p class="muted small holohint">${hint}</p><div id="painBox"></div>`:`<div class="holosum">${V.total?`<b>${lb(V.lbTotal)} lb</b><span>${F2C_term("lifted","lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"} · ${LBL[UI.period].toLowerCase()}</span>`:`<span>No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up.</span>`}</div>
+  ${lay!=="muscle"?`<p class="small holoLayerNote">${layerNote(S)}</p>`:""}
+  <details class="holomore"><summary>${V.total?"Muscles worked, how it's counted, and your shape":"How it works and your shape"}</summary>
+   ${bars}${V.total?`<div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total ${F2C_term("lifted","weight lifted")} · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>`:""}
+   <p class="muted small holohint">${hint} ${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
+   ${V.total?`<p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:""}
+   ${S.count>1?`<div class="seg holoseg">${[["latest","Now"],["first","First scan"]].map(([k,l])=>`<button type="button" data-hs="${k}" aria-pressed="${(UI.shapeFrom||"latest")===k}">${l}${k==="first"?" ("+e_(fs.date)+")":""}</button>`).join("")}</div>`:""}
+   <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add a body scan to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets. ${shapeNote(S)}</p>
+  </details>`}</div>`;
+ const more=host.querySelector(".holomore");if(more){more.open=!!UI.moreOpen;more.ontoggle=()=>{UI.moreOpen=more.open;saveUI()}}
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
  host.querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{UI.shapeFrom=b.dataset.hs;saveUI();panel()});
  host.querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{UI.layer=b.dataset.hl;saveUI();panel()});
@@ -3231,7 +3264,14 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
  draw($("holoStage"),V,S);window.F2C_painPanel&&UI.view==="pain"&&F2C_painPanel()}
 window.F2C_holoPanel=()=>panel();
 const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{panel()}catch(e){console.warn("[F2C] body view",e)}return r};
-const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:10px}.holoreset{position:absolute;right:8px;bottom:8px;z-index:2}.holostage.full{position:fixed;inset:0;z-index:9999;height:100vh!important;border-radius:0}.holostage{position:relative;height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
+const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:10px}.holohead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.holohead .seg button{padding:6px 10px;font-size:.8rem}
+.holobox{position:relative}.holoov{position:absolute;left:8px;right:8px;display:flex;justify-content:space-between;align-items:center;gap:6px;pointer-events:none;z-index:3}.holoov>*{pointer-events:auto}.hotop{top:8px}.hobot{bottom:8px;right:auto}
+.hochips{display:flex;gap:2px;background:rgba(6,10,20,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:3px}
+.hochips button{border:0;background:none;color:#c9d1d9;font-weight:800;font-size:.72rem;letter-spacing:.02em;border-radius:999px;padding:6px 10px;cursor:pointer;white-space:nowrap}.hochips button[aria-pressed="true"]{background:#e8edf2;color:#0b1220}
+.hocolor{width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.5);display:block;cursor:pointer;flex:none}.hocolor input{width:48px;height:48px;margin:-8px;border:0;padding:0;cursor:pointer}
+.holosum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.holosum b{font-size:1.25rem}.holosum span{font-size:.82rem;color:var(--muted,#64748b)}
+.holomore>summary{cursor:pointer;font-weight:700;font-size:.85rem}.holomore[open]{display:grid;gap:10px}
+.holoreset{position:absolute;right:8px;bottom:8px;z-index:2}.holostage.full{position:fixed;inset:0;z-index:9999;height:100vh!important;border-radius:0}.holostage{position:relative;height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
 .holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
 .holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}.pertag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2,#eef2f7);color:var(--ink2,#334155)}`;document.head.appendChild(st);
@@ -3856,7 +3896,7 @@ window.F2C_segCard=function(k,title,m,pm,SEG){const lean=k==="lean";
   const w=pct==null?0:Math.max(3,Math.min(100,pct/150*100));
   const d=pm&&num(v.lb)&&num(p.lb)?Math.round((v.lb-p.lb)*100)/100:null;
   const dc=d==null||d===0?MU:((d>0)===lean?G:R);
-  return `<div class="segrow"><div class="segic" style="color:${c}">${ic(SEGIC[x]||"arm","segsvg"+(x[0]==="r"?" flip":""))}</div>
+  return `<div class="segrow" data-wd="scan:part:${x}" role="button" tabindex="0"><div class="segic" style="color:${c}">${ic(SEGIC[x]||"arm","segsvg"+(x[0]==="r"?" flip":""))}</div>
    <div class="segmain"><div class="segtop"><b>${e_(l)}</b><span>${num(v.lb)?e_(v.lb)+" lb":""}</span></div>
    <div class="segbar"><i style="width:${w}%;background:${c}"></i><em title="100%"></em></div></div>
    <div class="segpct" style="color:${c}">${pct!=null?e_(pct)+"%":"–"}${d!=null?`<i style="color:${dc}">${d>0?"▲ +":d<0?"▼ ":""}${d} lb</i>`:""}</div></div>`}).join("");
@@ -3916,7 +3956,37 @@ function body(kind,W,i){const d=W[i]||{},prev=W.slice(Math.max(0,i-30),i),A=k=>a
   if(!num(d.hravg)&&!num(d.kj))h+=`<p class="dnote">Heart rate, kJ and workouts fill in after the next WHOOP sync.</p>`;
   h+=`<p class="dnote">Strain runs 0 to 21: light under 10, moderate 10 to 13.9, high 14 to 17.9, all out 18 and up. On a red recovery day, aim for a lower strain.</p>`}
  return h}
-function draw(){const W=days();let o=document.getElementById("wdSheet");if(!DS.kind||!W.length){if(o)o.remove();document.body.classList.remove("wdopen");return}
+const PARTN={la:"Left arm",ra:"Right arm",tr:"Trunk",ll:"Left leg",rl:"Right leg"},OTHER={la:"ra",ra:"la",ll:"rl",rl:"ll"};
+function partHtml(code){const all=((X().body||{}).scans||[]).filter(s=>s.confirmed&&s.details&&s.details.segments&&s.details.segments.lean&&s.details.segments.lean[code]);
+ if(!all.length)return `<p class="dnote">No ${PARTN[code]||"body part"} numbers on your scans yet.</p>`;
+ const last=all[all.length-1],prev=all[all.length-2],sg=last.details.segments,L=sg.lean[code]||{},Fa=(sg.fat||{})[code]||{},PL=prev?prev.details.segments.lean[code]||{}:null,PF=prev?((prev.details.segments.fat||{})[code]||{}):null;
+ const pct=num(L.pct)?+L.pct:null,c=!num(pct)?MU:pct>=100?G:pct>=90?Y:R;
+ let h=`<div class="dhero">${ring(pct==null?0:Math.min(100,pct/150*100),c)}<div class="dherov"><b style="color:${c}">${pct!=null?Math.round(pct*10)/10+"%":"–"}</b><span style="color:${c}">OF IDEAL MUSCLE</span><small>${num(L.lb)?L.lb+" lb lean mass":""}</small></div></div>`;
+ const d=(a,b2)=>num(a)&&num(b2)?Math.round((a-b2)*100)/100:null,sgn=n=>n==null?"–":(n>0?"+":"")+n;
+ const dl=d(L.lb,PL&&PL.lb),df=d(Fa.lb,PF&&PF.lb);
+ const tile=(icon,label,val,sub,col)=>`<div class="dstat">${ic(icon)}<div><b${col?` style="color:${col}"`:""}>${val}</b><span>${label}</span>${sub?`<small>${sub}</small>`:""}</div></div>`;
+ h+=`<div class="dstats">${tile("bicep","Lean mass",num(L.lb)?L.lb+" lb":"–",prev?`${sgn(dl)} lb since ${new Date(prev.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"",dl==null?null:dl>0?G:dl<0?R:null)}${tile("target","Muscle vs ideal",pct!=null?pct+"%":"–","100% = average for your height")}`+
+  (num(Fa.lb)||num(Fa.pct)?tile("drop","Fat",num(Fa.lb)?Fa.lb+" lb":"–",prev&&df!=null?`${sgn(df)} lb since ${new Date(prev.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"",df==null?null:df<0?G:df>0?R:null)+tile("drop","Fat vs normal",num(Fa.pct)?Fa.pct+"%":"–","100% = normal amount"):"");
+ const o=OTHER[code],OL=o&&sg.lean[o];if(OL&&num(OL.lb)&&num(L.lb)&&L.lb&&OL.lb){const diff=Math.abs(L.lb-OL.lb)/Math.max(L.lb,OL.lb)*100,ok=diff<=3;
+  h+=tile("target","Vs "+PARTN[o].toLowerCase(),`${OL.lb} lb`,`${diff.toFixed(1)}% apart · ${ok?"balanced":L.lb>OL.lb?"this side is bigger":"this side is smaller"}`,ok?G:Y)}
+ h+=`</div>`;
+ const hs=all.slice(-8),mx=Math.max(...hs.map(s=>+s.details.segments.lean[code].lb||0),1);
+ if(hs.length>1)h+=`<h4 class="dsect">Lean mass, scan by scan</h4><div class="dbars" style="grid-template-columns:repeat(${hs.length},1fr)">${hs.map((s,i)=>{const v=+s.details.segments.lean[code].lb||0,hh=Math.max(4,(v-mx*0.8)/(mx*0.2)*100);
+  return `<div class="dbar${i===hs.length-1?" sel":""}"><span class="dbv">${v||""}</span><span class="dbt"><i style="height:${Math.min(100,hh)}%;background:${BL}"></i></span><span class="dbd">${new Date(s.date+"T12:00:00").toLocaleDateString("en-US",{month:"short"})}</span></div>`}).join("")}</div><p class="dnote">Bars start at 80% of your best scan so small changes show.</p>`;
+ h+=`<p class="dnote">InBody measures lean mass in each arm, each leg and the trunk. 90 to 110% of ideal is the normal range. Compare scans taken the same way (time of day, fasted, no workout first).</p>`;
+ return h}
+function drawScan(o){const k=DS.kind.split(":"),tab=k[1]||"parts",part=k[2];const dt=window.F2C_scanDate?F2C_scanDate():"";
+ const TABS=[["parts","Body parts"],["changes","Changes"],["all","All values"],["hist","History"],["add","+ Add"]];
+ const title=part?(PARTN[part]||"").toUpperCase():"SCAN"+(dt?" · "+new Date(dt+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}).toUpperCase():"");
+ o.innerHTML=`<div class="wdtop"><button type="button" class="wdback" ${part?'data-wd="scan:parts"':"data-wdclose"} aria-label="${part?"Back":"Close"}">‹</button><b>${e_(title)}</b><span></span></div>
+  ${part?`<div class="wdtabs scroll">${Object.keys(PARTN).map(c=>`<button type="button" data-wd="scan:part:${c}" class="${c===part?"on":""}">${PARTN[c]}</button>`).join("")}</div>`
+   :`<div class="wdtabs scroll">${TABS.map(([t,l])=>`<button type="button" data-wd="scan:${t}" class="${t===tab?"on":""}">${l}</button>`).join("")}</div>`}
+  <div class="wdbody scanbody">${part?partHtml(part):(window.F2C_scanTab?F2C_scanTab(tab):"")}${!part&&tab==="parts"?`<p class="dnote">Tap a body part for its own numbers and history.</p>`:""}</div>`;
+ try{window.F2C_scanWire&&F2C_scanWire(o)}catch(e){console.warn("[F2C] scan wire",e)}}
+function draw(){const W=days();let o=document.getElementById("wdSheet");const isScan=DS.kind&&DS.kind.startsWith("scan");
+ if(!DS.kind||(!isScan&&!W.length)){if(o)o.remove();document.body.classList.remove("wdopen");return}
+ if(isScan){if(!o){o=document.createElement("div");o.id="wdSheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");document.body.appendChild(o);history.pushState({wd:1},"")}
+  const y=o.dataset.kind===DS.kind?o.scrollTop:0;drawScan(o);o.dataset.kind=DS.kind;o.scrollTop=y;document.body.classList.add("wdopen");return}
  if(DS.i<0||DS.i>=W.length)DS.i=W.length-1;const d=W[DS.i],today=new Date().toISOString().slice(0,10);
  const title={rec:"RECOVERY",sleep:"SLEEP",strain:"STRAIN"}[DS.kind];
  const dl=d.date===today?"Today":new Date(d.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
@@ -3927,9 +3997,10 @@ function draw(){const W=days();let o=document.getElementById("wdSheet");if(!DS.k
  if(!o){o=document.createElement("div");o.id="wdSheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");document.body.appendChild(o);history.pushState({wd:1},"")}
  o.innerHTML=html;document.body.classList.add("wdopen")}
 function close(fromPop){DS.kind=null;draw();if(!fromPop&&history.state&&history.state.wd)history.back()}
-document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-wd],[data-wdi],[data-wdclose]");if(!t)return;
+window.F2C_wdRedraw=()=>{if(DS.kind&&document.getElementById("wdSheet"))draw()};
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-term],a,input,label,select,textarea"))return;const t=e.target.closest&&e.target.closest("[data-wd],[data-wdi],[data-wdclose]");if(!t)return;
  if(t.hasAttribute("data-wdclose")){close();return}
- if(t.dataset.wd){const keep=!!document.getElementById("wdSheet");DS.kind=t.dataset.wd;if(!keep)DS.i=-1;draw();return}
+ if(t.dataset.wd){const keep=!!document.getElementById("wdSheet");DS.kind=t.dataset.wd;if(!keep)DS.i=-1;draw();const o=document.getElementById("wdSheet");if(o&&!DS.kind.startsWith("scan:part")&&o.dataset.kind!==DS.kind)o.scrollTop=0;return}
  if(t.dataset.wdi!=null&&document.getElementById("wdSheet")){DS.i=+t.dataset.wdi;draw()}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&DS.kind)close();if((e.key==="Enter"||e.key===" ")&&e.target&&e.target.dataset&&e.target.dataset.wd&&!document.getElementById("wdSheet")){e.preventDefault();e.target.click()}});
 window.addEventListener("popstate",()=>{if(DS.kind)close(true)});
@@ -3957,6 +4028,16 @@ body.wdopen{overflow:hidden}
 .wdtabs{display:flex;gap:6px;justify-content:center;margin:10px auto 4px;max-width:640px}.wdtabs button{flex:1;border:0;border-radius:999px;padding:9px 0;background:rgba(255,255,255,.07);color:#aab4be;font-weight:800;font-size:.82rem;letter-spacing:.04em;cursor:pointer}.wdtabs button.on{background:#e8edf2;color:#0b0f13}
 .wdday{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px auto;max-width:640px}.wdday span{min-width:130px;text-align:center;font-weight:700;color:#c9d1d9}.wdday button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:1.3rem;cursor:pointer}.wdday button:disabled{opacity:.25;cursor:default}
 .wdbody{max-width:640px;margin:0 auto}
+.wdtabs.scroll{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}.wdtabs.scroll::-webkit-scrollbar{display:none}.wdtabs.scroll button{flex:none;padding:9px 14px}
+.scanbody .sheet:not(.wearcard){background:#141a20;color:#dfe5ea;border-color:rgba(255,255,255,.08)}.scanbody .sheet:not(.wearcard) .muted,.scanbody .sheet:not(.wearcard) .small{color:#aab4be}
+.scanbody table{color:#dfe5ea}.scanbody th{color:#8a96a2}.scanbody td,.scanbody th{border-color:rgba(255,255,255,.08)!important}.scanbody input{background:#0b0f13;color:#e8edf2;border-color:rgba(255,255,255,.18)}
+.scanbody .wearcard{margin-bottom:12px}.segrow[data-wd]{cursor:pointer}.segrow[data-wd]:active{transform:scale(.98)}
+.scanbody .sheet:not(.wearcard) .sect,.scanbody .sheet:not(.wearcard) .label,.scanbody .sheet:not(.wearcard) summary{color:#c9d1d9!important}.scanbody .note.gold{color:#1b1b1b}
+#v-body .scantap .wadv.small{display:none}.holobox .holoreset{top:48px;bottom:auto;right:8px;font-size:.72rem;padding:5px 10px}
+.scantap{cursor:pointer;display:block}.scantap .wtap{margin-top:2px}
+.scanstrip{display:flex;align-items:center;gap:10px;padding:10px 12px!important}.ssico{width:38px;height:38px;border-radius:12px;background:var(--gold-soft,#f6efd9);display:flex;align-items:center;justify-content:center;flex:none}.ssico .wic{width:22px;height:22px}
+.sstext{flex:1;min-width:0;display:flex;flex-direction:column}.sstext b{font-size:.95rem}.sstext span{font-size:.8rem;color:var(--muted,#64748b)}
+.sspill{border:1px solid var(--gold,#c9a227);background:var(--gold-soft,#f6efd9);color:inherit;font-weight:800;font-size:.75rem;border-radius:999px;padding:6px 10px;cursor:pointer}
 .dhero{position:relative;width:min(230px,62vw);margin:6px auto 4px}.dring{width:100%;display:block}.dherov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.dherov b{font-size:2.6rem;line-height:1}.dherov span{font-size:.72rem;font-weight:800;letter-spacing:.1em;margin-top:6px}.dherov small{font-size:.75rem;color:#8a96a2;margin-top:3px;max-width:62%;line-height:1.25}
 .dadv{background:rgba(255,255,255,.07);border-radius:16px;padding:12px 14px;font-size:.9rem;line-height:1.45;color:#dfe5ea}
 .dsect{font-size:.72rem;letter-spacing:.14em;color:#8a96a2;margin:18px 0 8px;text-transform:uppercase}

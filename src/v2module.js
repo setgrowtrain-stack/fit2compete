@@ -166,34 +166,56 @@ function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||
    <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"#ffffff").replace(/style="color:#(16ec06|ff2a4a)"/,'style="color:#aab4be"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,"#1e9bff")}</div></div>
   <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,"#8fb3cc")}${t("BMR",last.bmr," kcal","bmr",true,"#ffffff")}</div>
   <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Arrows compare with your scan before this one: green is the direction you want.</p></div>`}
+const scansOf=()=>((X.body&&X.body.scans)||[]);
+const SCIC='<svg viewBox="0 0 24 24" class="wic"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
  if(!X.loaded){v.innerHTML=`<div class="sheet"><p class="muted">Loading scans…</p></div>`;load(true);return}
- const scans=(b&&b.scans)||[],pend=open().filter(q=>q.type==="inbody"),unconf=scans.filter(s=>!s.confirmed);const last=scans.filter(s=>s.confirmed).slice(-1)[0];
- let h=`<div class="sheet"><div class="sheethead"><div><span class="label">InBody</span><h3>Body scans</h3></div>${b&&b.lastDate?`<span class="pill">Last scan ${e_(b.lastDate)}</span>`:""}</div>`;
- const due=scanDue();h+=due?`<div class="note gold"><b>Scan due.</b> ${e_(due)} Scan every 4 weeks and at each phase change.${PROTOCOL}</div>`:`<p class="muted small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"")}. Scan every 4 weeks and at each phase change.</p><details><summary class="small">How to scan for a fair comparison</summary>${PROTOCOL}</details>`;
- h+=`</div>`;
- if(last)h+=scanCard(last,b&&b.cmp);
- if(last&&last.details)h+=scanDetailsHtml(last,scans.filter(s=>s.confirmed&&s!==last&&s.details).slice(-1)[0]);
+ const scans=scansOf(),pend=open().filter(q=>q.type==="inbody"),unconf=scans.filter(s=>!s.confirmed);const last=scans.filter(s=>s.confirmed).slice(-1)[0];
+ const due=scanDue(),days=b&&b.lastDate?(b.daysSince!=null?b.daysSince:Math.round((Date.now()-new Date(b.lastDate+"T12:00:00"))/864e5)):null;
+ const when=b&&b.lastDate?new Date(b.lastDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+ let h=`<div class="sheet scanstrip"><div class="ssico">${SCIC}</div><div class="sstext"><b>Body scans</b><span>${when?`Last ${e_(when)} · ${days} day${days===1?"":"s"} ago`:"No scan on file yet"}</span></div>
+  ${due?`<button type="button" class="sspill" data-wd="scan:add">Scan due</button>`:""}${!ro&&scans.length?`<button type="button" class="btn small" data-wd="scan:add">+ Add</button>`:""}</div>`;
+ if(last){const card=scanCard(last,b&&b.cmp),k=card.lastIndexOf("</div>");
+  h+=`<div class="scantap" data-wd="scan:parts" role="button" tabindex="0" aria-label="Scan details">${card.slice(0,k)}<p class="wtap">Tap for body parts, changes and every value</p>${card.slice(k)}</div>`}
+ if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
+ if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
+ if(!scans.length&&!ro)h+=scanAddHtml();
+ v.innerHTML=h;scanWire(v)};
+function scanAddHtml(){const ro=!mine(),b=X.body;let h="";
+ if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
+  <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
+ const due=scanDue();
+ h+=`<div class="sheet"><span class="label">When and how to scan</span>${due?`<div class="note gold"><b>Scan due.</b> ${e_(due)}</div>`:`<p class="small">Next scan around ${e_(b&&b.lastDate?isoLocal(new Date(new Date(b.lastDate+"T12:00:00").getTime()+28*864e5)):"now")}.</p>`}<p class="small">Scan every 4 weeks and at each phase change.</p>${PROTOCOL}</div>`;
+ return h}
+function scanChangesHtml(){const b=X.body,scans=scansOf();let h="";
  const c=b&&b.cmp;
  if(c){const sg=(x,u,good)=>{if(x==null)return `<b class="muted">—</b>`;const n=Math.round(x*10)/10;const cls=n===0?"":((n>0)===good?"up":"down");return `<b class="${cls}">${n>0?"+":""}${n}${u}</b>`};
   h+=(window.F2C_sinceCard?F2C_sinceCard(c,scans.filter(x=>x.confirmed)):"")+`<div class="sheet"><span class="label">Food and training in those ${c.weeks} week${c.weeks>1?"s":""}</span>
    <h4 class="sect">Food</h4>${c.food?`<p>Average <b>${c.food.cal} kcal</b> and <b>${c.food.protein} g protein</b> a day, from ${c.food.days} day${c.food.days>1?"s":""} of meals checked off.</p>`:`<p class="muted small">No meals were checked off in this window, so food can't be compared. Tap "Ate it" on Today to track it.</p>`}
    <h4 class="sect">Training</h4>${(c.setsPerWeek||[]).length?`<div class="scroll"><table><thead><tr><th>Muscle (approx.)</th><th>Hard sets a week</th></tr></thead><tbody>${c.setsPerWeek.map(x=>`<tr><td>${e_(x.muscle)}</td><td class="num">${x.sets}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">No sets logged in this window.</p>`}
    ${(c.strength||[]).length?`<div class="scroll"><table><thead><tr><th>Key lift</th><th>Est. max then</th><th>Now</th><th>Change</th></tr></thead><tbody>${c.strength.map(x=>`<tr><td>${e_(x.lift)}</td><td class="num">${x.from} lb</td><td class="num">${x.to} lb</td><td class="num">${x.pct>0?"+":""}${x.pct}%</td></tr>`).join("")}</tbody></table></div>`:""}</div>`}
- else if(scans.length)h+=`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`;
- if(unconf.length&&!ro)h+=unconf.map(s=>`<div class="sheet v2conf"><span class="label">Your coach read this ${s.type==="dexa"?"DEXA scan":"scan"}${s.details&&s.details.device?" ("+e_(s.details.device)+")":""}. Check the main numbers, then confirm</span><div class="v2form" data-scan="${e_(s.id)}">${formFields(s)}</div>${s.notes?`<p class="muted small">${e_(s.notes)}</p>`:""}${s.details?scanDetailsHtml(s,null).replace('<div class="sheet">','<div class="inner">'):""}<div class="nav"><button class="btn small" type="button" data-scanrm="${e_(s.id)}">Delete</button><button class="btn small primary" type="button" data-scanok="${e_(s.id)}">These are right</button></div></div>`).join("");
- if(pend.length)h+=`<div class="note gold">Your coach is reading ${pend.length>1?pend.length+" scans":"your scan"} (sent ${fmt(pend[0].created)}). ${RUN_NOTE}</div>`;
- if(!ro)h+=`<div class="sheet"><h4 class="sect">Add a scan</h4><div class="row"><label class="btn" for="scanFile">Upload a photo or PDF</label><input id="scanFile" type="file" accept="image/*,application/pdf" hidden><span class="status" id="scanSt"></span></div>
-  <p class="muted small">Your coach reads it on the next run. Or type the 5 numbers now:</p><div class="v2form" id="scanNew">${formFields({date:isoLocal(new Date())})}</div><div class="nav"><span></span><button class="btn primary" type="button" id="scanSave">Save scan</button></div></div>`;
- if(scans.length)h+=`<details class="sheet"><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}${s.source==="history"?' <span class="muted small">from sheet</span>':""}${s.type==="dexa"?' <span class="muted small">DEXA</span>':""}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
- v.innerHTML=h;
+ return h||`<p class="muted small">After your next scan you'll see the change next to your food and training for the same weeks.</p>`}
+function scanHistHtml(){const scans=scansOf();let h="";
+ if(scans.length)h+=`<details class="sheet" open><summary>All scans (${scans.length})</summary><div class="scroll"><table><thead><tr><th>Date</th><th>Weight</th><th>Body fat</th><th>SMM</th><th>Lean</th><th>BMR</th></tr></thead><tbody>${scans.slice().reverse().map(s=>`<tr><td>${e_(s.date)}${s.confirmed?"":" (to check)"}${s.source==="history"?' <span class="muted small">from sheet</span>':""}${s.type==="dexa"?' <span class="muted small">DEXA</span>':""}</td><td class="num">${e_(s.weight)}</td><td class="num">${e_(s.bf)}</td><td class="num">${e_(s.smm)}</td><td class="num">${e_(s.lean)}</td><td class="num">${e_(s.bmr)}</td></tr>`).join("")}</tbody></table></div></details>`;
+ return h}
+function scanPair(){const sc=scansOf().filter(s=>s.confirmed),last=sc.slice(-1)[0];return [last,last?sc.filter(s=>s!==last&&s.details).slice(-1)[0]:null]}
+window.F2C_scanTab=function(tab){const [last,prev]=scanPair();
+ if(tab==="add")return scanAddHtml();
+ if(tab==="changes")return scanChangesHtml();
+ if(tab==="hist")return scanHistHtml();
+ if(!last)return `<p class="muted">No confirmed scan yet.</p>`;
+ if(tab==="all")return (last.details?scanDetailsHtml(last,prev,"rest").replace("<details>","<details open>"):"")||`<p class="muted">This scan only has the main numbers.</p>`;
+ return (last.details?scanDetailsHtml(last,prev,"segs"):"")||`<p class="muted">This scan has no body part numbers.</p>`};
+window.F2C_scanDate=()=>{const l=scanPair()[0];return l?l.date:""};
+function scanWire(v){
  const f=$("scanFile");if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;const st=$("scanSt");st.textContent="Uploading…";
-  try{const id=await upload(file,"inbody__"+(file.name||"scan"));await F2C_submit("inbody",INBODY_PROMPT,{fileIds:[id],meta:{kind:"inbody"}});st.textContent="Sent to your coach.";F2C_rBody()}catch(e){st.textContent=errCopy(e)}};
+  try{const id=await upload(file,"inbody__"+(file.name||"scan"));await F2C_submit("inbody",INBODY_PROMPT,{fileIds:[id],meta:{kind:"inbody"}});st.textContent="Sent to your coach.";F2C_rBody();window.F2C_wdRedraw&&F2C_wdRedraw()}catch(e){st.textContent=errCopy(e)}};
  const sv=$("scanSave");if(sv)sv.onclick=()=>save(readForm($("scanNew")),sv);
  v.querySelectorAll("[data-scanok]").forEach(btn=>btn.onclick=()=>{const x=readForm(v.querySelector(`[data-scan="${btn.dataset.scanok}"]`));x.id=btn.dataset.scanok;save(x,btn)});
- v.querySelectorAll("[data-scanrm]").forEach(btn=>btn.onclick=()=>save({id:btn.dataset.scanrm,remove:true},btn))};
+ v.querySelectorAll("[data-scanrm]").forEach(btn=>btn.onclick=()=>save({id:btn.dataset.scanrm,remove:true},btn))}
+window.F2C_scanWire=scanWire;
 const SEG=[["la","Left arm"],["ra","Right arm"],["tr","Trunk"],["ll","Left leg"],["rl","Right leg"]];
-function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||{},sg=d.segments||{},psg=pd.segments||{};
+function scanDetailsHtml(s,prev,mode){const d=s.details||{},pd=(prev&&prev.details)||{},sg=d.segments||{},psg=pd.segments||{};
  const chg=(a,b,u)=>{if(typeof a!=="number"||typeof b!=="number")return "";const n=Math.round((a-b)*100)/100;return `<span class="muted small">${n>0?"+":""}${n}${u||""}</span>`};
  let h="";
  const seg=(k,title,note)=>{const m=sg[k];if(!m||!SEG.some(([x])=>m[x]))return "";const pm=psg[k]||{};
@@ -205,10 +227,11 @@ function scanDetailsHtml(s,prev){const d=s.details||{},pd=(prev&&prev.details)||
  const secs=(d.sections||[]).filter(x=>(x.items||[]).length);
  if(secs.length)h+=`<details><summary class="small">Everything on this scan (${secs.reduce((n,x)=>n+x.items.length,0)} values)${d.device?" · "+e_(d.device):""}</summary>${secs.map(x=>`<h4 class="sect">${e_(x.title||"")}</h4><div class="scroll"><table><tbody>${x.items.map(it=>`<tr><td>${e_(it.label)}${it.range?` <span class="muted small">(${e_(it.range)})</span>`:""}</td><td class="num">${e_(it.value)}${it.unit?" "+e_(it.unit):""}</td>${prev?`<td class="num">${it.key&&it.key in pk?chg(it.value,pk[it.key]):""}</td>`:""}</tr>`).join("")}</tbody></table></div>`).join("")}</details>`;
  if(!h)return "";const parts=h.split("<!--segend-->"),segs=parts.slice(0,-1).join(""),rest=parts[parts.length-1];
+ if(mode==="segs")return segs;if(mode==="rest")return rest?`<div class="sheet">${rest}</div>`:"";
  return segs+(rest?`<div class="sheet"><span class="label">${s.type==="dexa"?"DEXA scan":"Scan"} details · ${e_(s.date)}</span>${rest}</div>`:"")}
 function formFields(s){return [["date","Date","date"],["weight","Weight (lb)"],["bf","Body fat %"],["smm","Muscle SMM (lb)"],["lean","Lean mass (lb)"],["bmr","BMR (kcal)"]].map(([k,l,t])=>`<label class="field"><span class="flabel">${l}</span><input type="${t||"text"}" ${t?"":'inputmode="decimal"'} data-f="${k}" value="${e_(s[k]==null?"":s[k])}"></label>`).join("")}
 function readForm(el){const o={};el.querySelectorAll("[data-f]").forEach(i=>o[i.dataset.f]=i.value.trim());return o}
-async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
+async function save(x,btn){btn.disabled=true;try{const r=await gs("saveInBody",TOKEN,cur,x);X.body=r.body;F2C_rBody();window.F2C_wdRedraw&&F2C_wdRedraw();toast(x.remove?"Scan deleted.":"Scan saved.")}catch(e){btn.disabled=false;toast(errCopy(e))}}
 
 /* ---------- hooks ---------- */
 const _renderAll=renderAll;renderAll=function(){const out=_renderAll.apply(this,arguments);if(X.for!==cur){X.for=cur;X.loaded=false;X.prog={};X.requests=[];X.notes=[];X.body=null;X.targets=null;load(true)}bar();return out};

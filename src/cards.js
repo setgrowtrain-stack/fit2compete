@@ -38,7 +38,7 @@ window.F2C_segCard=function(k,title,m,pm,SEG){const lean=k==="lean";
   const w=pct==null?0:Math.max(3,Math.min(100,pct/150*100));
   const d=pm&&num(v.lb)&&num(p.lb)?Math.round((v.lb-p.lb)*100)/100:null;
   const dc=d==null||d===0?MU:((d>0)===lean?G:R);
-  return `<div class="segrow"><div class="segic" style="color:${c}">${ic(SEGIC[x]||"arm","segsvg"+(x[0]==="r"?" flip":""))}</div>
+  return `<div class="segrow" data-wd="scan:part:${x}" role="button" tabindex="0"><div class="segic" style="color:${c}">${ic(SEGIC[x]||"arm","segsvg"+(x[0]==="r"?" flip":""))}</div>
    <div class="segmain"><div class="segtop"><b>${e_(l)}</b><span>${num(v.lb)?e_(v.lb)+" lb":""}</span></div>
    <div class="segbar"><i style="width:${w}%;background:${c}"></i><em title="100%"></em></div></div>
    <div class="segpct" style="color:${c}">${pct!=null?e_(pct)+"%":"–"}${d!=null?`<i style="color:${dc}">${d>0?"▲ +":d<0?"▼ ":""}${d} lb</i>`:""}</div></div>`}).join("");
@@ -98,7 +98,37 @@ function body(kind,W,i){const d=W[i]||{},prev=W.slice(Math.max(0,i-30),i),A=k=>a
   if(!num(d.hravg)&&!num(d.kj))h+=`<p class="dnote">Heart rate, kJ and workouts fill in after the next WHOOP sync.</p>`;
   h+=`<p class="dnote">Strain runs 0 to 21: light under 10, moderate 10 to 13.9, high 14 to 17.9, all out 18 and up. On a red recovery day, aim for a lower strain.</p>`}
  return h}
-function draw(){const W=days();let o=document.getElementById("wdSheet");if(!DS.kind||!W.length){if(o)o.remove();document.body.classList.remove("wdopen");return}
+const PARTN={la:"Left arm",ra:"Right arm",tr:"Trunk",ll:"Left leg",rl:"Right leg"},OTHER={la:"ra",ra:"la",ll:"rl",rl:"ll"};
+function partHtml(code){const all=((X().body||{}).scans||[]).filter(s=>s.confirmed&&s.details&&s.details.segments&&s.details.segments.lean&&s.details.segments.lean[code]);
+ if(!all.length)return `<p class="dnote">No ${PARTN[code]||"body part"} numbers on your scans yet.</p>`;
+ const last=all[all.length-1],prev=all[all.length-2],sg=last.details.segments,L=sg.lean[code]||{},Fa=(sg.fat||{})[code]||{},PL=prev?prev.details.segments.lean[code]||{}:null,PF=prev?((prev.details.segments.fat||{})[code]||{}):null;
+ const pct=num(L.pct)?+L.pct:null,c=!num(pct)?MU:pct>=100?G:pct>=90?Y:R;
+ let h=`<div class="dhero">${ring(pct==null?0:Math.min(100,pct/150*100),c)}<div class="dherov"><b style="color:${c}">${pct!=null?Math.round(pct*10)/10+"%":"–"}</b><span style="color:${c}">OF IDEAL MUSCLE</span><small>${num(L.lb)?L.lb+" lb lean mass":""}</small></div></div>`;
+ const d=(a,b2)=>num(a)&&num(b2)?Math.round((a-b2)*100)/100:null,sgn=n=>n==null?"–":(n>0?"+":"")+n;
+ const dl=d(L.lb,PL&&PL.lb),df=d(Fa.lb,PF&&PF.lb);
+ const tile=(icon,label,val,sub,col)=>`<div class="dstat">${ic(icon)}<div><b${col?` style="color:${col}"`:""}>${val}</b><span>${label}</span>${sub?`<small>${sub}</small>`:""}</div></div>`;
+ h+=`<div class="dstats">${tile("bicep","Lean mass",num(L.lb)?L.lb+" lb":"–",prev?`${sgn(dl)} lb since ${new Date(prev.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"",dl==null?null:dl>0?G:dl<0?R:null)}${tile("target","Muscle vs ideal",pct!=null?pct+"%":"–","100% = average for your height")}`+
+  (num(Fa.lb)||num(Fa.pct)?tile("drop","Fat",num(Fa.lb)?Fa.lb+" lb":"–",prev&&df!=null?`${sgn(df)} lb since ${new Date(prev.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:"",df==null?null:df<0?G:df>0?R:null)+tile("drop","Fat vs normal",num(Fa.pct)?Fa.pct+"%":"–","100% = normal amount"):"");
+ const o=OTHER[code],OL=o&&sg.lean[o];if(OL&&num(OL.lb)&&num(L.lb)&&L.lb&&OL.lb){const diff=Math.abs(L.lb-OL.lb)/Math.max(L.lb,OL.lb)*100,ok=diff<=3;
+  h+=tile("target","Vs "+PARTN[o].toLowerCase(),`${OL.lb} lb`,`${diff.toFixed(1)}% apart · ${ok?"balanced":L.lb>OL.lb?"this side is bigger":"this side is smaller"}`,ok?G:Y)}
+ h+=`</div>`;
+ const hs=all.slice(-8),mx=Math.max(...hs.map(s=>+s.details.segments.lean[code].lb||0),1);
+ if(hs.length>1)h+=`<h4 class="dsect">Lean mass, scan by scan</h4><div class="dbars" style="grid-template-columns:repeat(${hs.length},1fr)">${hs.map((s,i)=>{const v=+s.details.segments.lean[code].lb||0,hh=Math.max(4,(v-mx*0.8)/(mx*0.2)*100);
+  return `<div class="dbar${i===hs.length-1?" sel":""}"><span class="dbv">${v||""}</span><span class="dbt"><i style="height:${Math.min(100,hh)}%;background:${BL}"></i></span><span class="dbd">${new Date(s.date+"T12:00:00").toLocaleDateString("en-US",{month:"short"})}</span></div>`}).join("")}</div><p class="dnote">Bars start at 80% of your best scan so small changes show.</p>`;
+ h+=`<p class="dnote">InBody measures lean mass in each arm, each leg and the trunk. 90 to 110% of ideal is the normal range. Compare scans taken the same way (time of day, fasted, no workout first).</p>`;
+ return h}
+function drawScan(o){const k=DS.kind.split(":"),tab=k[1]||"parts",part=k[2];const dt=window.F2C_scanDate?F2C_scanDate():"";
+ const TABS=[["parts","Body parts"],["changes","Changes"],["all","All values"],["hist","History"],["add","+ Add"]];
+ const title=part?(PARTN[part]||"").toUpperCase():"SCAN"+(dt?" · "+new Date(dt+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}).toUpperCase():"");
+ o.innerHTML=`<div class="wdtop"><button type="button" class="wdback" ${part?'data-wd="scan:parts"':"data-wdclose"} aria-label="${part?"Back":"Close"}">‹</button><b>${e_(title)}</b><span></span></div>
+  ${part?`<div class="wdtabs scroll">${Object.keys(PARTN).map(c=>`<button type="button" data-wd="scan:part:${c}" class="${c===part?"on":""}">${PARTN[c]}</button>`).join("")}</div>`
+   :`<div class="wdtabs scroll">${TABS.map(([t,l])=>`<button type="button" data-wd="scan:${t}" class="${t===tab?"on":""}">${l}</button>`).join("")}</div>`}
+  <div class="wdbody scanbody">${part?partHtml(part):(window.F2C_scanTab?F2C_scanTab(tab):"")}${!part&&tab==="parts"?`<p class="dnote">Tap a body part for its own numbers and history.</p>`:""}</div>`;
+ try{window.F2C_scanWire&&F2C_scanWire(o)}catch(e){console.warn("[F2C] scan wire",e)}}
+function draw(){const W=days();let o=document.getElementById("wdSheet");const isScan=DS.kind&&DS.kind.startsWith("scan");
+ if(!DS.kind||(!isScan&&!W.length)){if(o)o.remove();document.body.classList.remove("wdopen");return}
+ if(isScan){if(!o){o=document.createElement("div");o.id="wdSheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");document.body.appendChild(o);history.pushState({wd:1},"")}
+  const y=o.dataset.kind===DS.kind?o.scrollTop:0;drawScan(o);o.dataset.kind=DS.kind;o.scrollTop=y;document.body.classList.add("wdopen");return}
  if(DS.i<0||DS.i>=W.length)DS.i=W.length-1;const d=W[DS.i],today=new Date().toISOString().slice(0,10);
  const title={rec:"RECOVERY",sleep:"SLEEP",strain:"STRAIN"}[DS.kind];
  const dl=d.date===today?"Today":new Date(d.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
@@ -109,9 +139,10 @@ function draw(){const W=days();let o=document.getElementById("wdSheet");if(!DS.k
  if(!o){o=document.createElement("div");o.id="wdSheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");document.body.appendChild(o);history.pushState({wd:1},"")}
  o.innerHTML=html;document.body.classList.add("wdopen")}
 function close(fromPop){DS.kind=null;draw();if(!fromPop&&history.state&&history.state.wd)history.back()}
-document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-wd],[data-wdi],[data-wdclose]");if(!t)return;
+window.F2C_wdRedraw=()=>{if(DS.kind&&document.getElementById("wdSheet"))draw()};
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-term],a,input,label,select,textarea"))return;const t=e.target.closest&&e.target.closest("[data-wd],[data-wdi],[data-wdclose]");if(!t)return;
  if(t.hasAttribute("data-wdclose")){close();return}
- if(t.dataset.wd){const keep=!!document.getElementById("wdSheet");DS.kind=t.dataset.wd;if(!keep)DS.i=-1;draw();return}
+ if(t.dataset.wd){const keep=!!document.getElementById("wdSheet");DS.kind=t.dataset.wd;if(!keep)DS.i=-1;draw();const o=document.getElementById("wdSheet");if(o&&!DS.kind.startsWith("scan:part")&&o.dataset.kind!==DS.kind)o.scrollTop=0;return}
  if(t.dataset.wdi!=null&&document.getElementById("wdSheet")){DS.i=+t.dataset.wdi;draw()}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&DS.kind)close();if((e.key==="Enter"||e.key===" ")&&e.target&&e.target.dataset&&e.target.dataset.wd&&!document.getElementById("wdSheet")){e.preventDefault();e.target.click()}});
 window.addEventListener("popstate",()=>{if(DS.kind)close(true)});
@@ -139,6 +170,16 @@ body.wdopen{overflow:hidden}
 .wdtabs{display:flex;gap:6px;justify-content:center;margin:10px auto 4px;max-width:640px}.wdtabs button{flex:1;border:0;border-radius:999px;padding:9px 0;background:rgba(255,255,255,.07);color:#aab4be;font-weight:800;font-size:.82rem;letter-spacing:.04em;cursor:pointer}.wdtabs button.on{background:#e8edf2;color:#0b0f13}
 .wdday{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px auto;max-width:640px}.wdday span{min-width:130px;text-align:center;font-weight:700;color:#c9d1d9}.wdday button{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:1.3rem;cursor:pointer}.wdday button:disabled{opacity:.25;cursor:default}
 .wdbody{max-width:640px;margin:0 auto}
+.wdtabs.scroll{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}.wdtabs.scroll::-webkit-scrollbar{display:none}.wdtabs.scroll button{flex:none;padding:9px 14px}
+.scanbody .sheet:not(.wearcard){background:#141a20;color:#dfe5ea;border-color:rgba(255,255,255,.08)}.scanbody .sheet:not(.wearcard) .muted,.scanbody .sheet:not(.wearcard) .small{color:#aab4be}
+.scanbody table{color:#dfe5ea}.scanbody th{color:#8a96a2}.scanbody td,.scanbody th{border-color:rgba(255,255,255,.08)!important}.scanbody input{background:#0b0f13;color:#e8edf2;border-color:rgba(255,255,255,.18)}
+.scanbody .wearcard{margin-bottom:12px}.segrow[data-wd]{cursor:pointer}.segrow[data-wd]:active{transform:scale(.98)}
+.scanbody .sheet:not(.wearcard) .sect,.scanbody .sheet:not(.wearcard) .label,.scanbody .sheet:not(.wearcard) summary{color:#c9d1d9!important}.scanbody .note.gold{color:#1b1b1b}
+#v-body .scantap .wadv.small{display:none}.holobox .holoreset{top:48px;bottom:auto;right:8px;font-size:.72rem;padding:5px 10px}
+.scantap{cursor:pointer;display:block}.scantap .wtap{margin-top:2px}
+.scanstrip{display:flex;align-items:center;gap:10px;padding:10px 12px!important}.ssico{width:38px;height:38px;border-radius:12px;background:var(--gold-soft,#f6efd9);display:flex;align-items:center;justify-content:center;flex:none}.ssico .wic{width:22px;height:22px}
+.sstext{flex:1;min-width:0;display:flex;flex-direction:column}.sstext b{font-size:.95rem}.sstext span{font-size:.8rem;color:var(--muted,#64748b)}
+.sspill{border:1px solid var(--gold,#c9a227);background:var(--gold-soft,#f6efd9);color:inherit;font-weight:800;font-size:.75rem;border-radius:999px;padding:6px 10px;cursor:pointer}
 .dhero{position:relative;width:min(230px,62vw);margin:6px auto 4px}.dring{width:100%;display:block}.dherov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.dherov b{font-size:2.6rem;line-height:1}.dherov span{font-size:.72rem;font-weight:800;letter-spacing:.1em;margin-top:6px}.dherov small{font-size:.75rem;color:#8a96a2;margin-top:3px;max-width:62%;line-height:1.25}
 .dadv{background:rgba(255,255,255,.07);border-radius:16px;padding:12px 14px;font-size:.9rem;line-height:1.45;color:#dfe5ea}
 .dsect{font-size:.72rem;letter-spacing:.14em;color:#8a96a2;margin:18px 0 8px;text-transform:uppercase}
