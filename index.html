@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795671037";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795671773";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1962,10 +1962,10 @@ function swapBox(ex,i){if(!window.F2C_swaps)return "";const base=ex.orig?{name:e
  return `<div class="swapset"><button type="button" class="linkbtn small" data-swap="${i}">⇄ ${ex.orig?"Swapped. Change":"Swap equipment"}</button><div class="swapbox" hidden>
   <p class="muted small">Same muscles, different equipment you have. Your logs follow the one you pick.</p>${note?`<p class="small swapnote">${e_(note)}</p>`:""}
   <div class="swapopts">${ex.orig?`<button type="button" class="btn small primary" data-swapto="" data-i="${i}">Switch back to ${e_(ex.orig)}</button>`:""}${opts.map(o=>`<button type="button" class="btn small" data-swapto="${e_(o.name)}" data-i="${i}">${e_(o.name)}</button>`).join("")}</div></div></div>`}
-function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n};const K=window.F2C_exKind?F2C_exKind(ex):"load";const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
+function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n};const K=window.F2C_exKind?F2C_exKind(ex):"load";const P=window.F2C_per?F2C_per(ex):{};const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
  let rows="";for(let k=1;k<=n;k++){const key=`w${w}|${ui.day}|${s}|${k}`,v=L[key]||{};let prev=null;for(let pw=w-1;pw>=1&&!prev;pw--){const pv=L[`w${pw}|${ui.day}|${s}|${k}`];if(pv&&(pv.wt||pv.reps))prev=pv}
   rows+=K==="stretch"?`<div class="setrow simple${v.done?" isdone":""}"><span class="sn">${k}</span><span class="simplelbl">${e_(ex.reps||"")}${ex.tempo?" · "+e_(ex.tempo):""}</span><label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">Set ${k} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label></div>`:`<div class="setrow${v.done?" isdone":""}"><span class="sn">${k}</span>
-   <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):(K==="bw"?"BW":"lb")}"></label>
+   <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):(K==="bw"?"BW":P.hand?"lb ea":"lb")}"></label>
    <label><span class="sr">Reps, set ${k}</span><input inputmode="numeric" data-k="${key}" data-f="reps" value="${e_(v.reps||"")}" placeholder="${prev&&prev.reps?e_(prev.reps):(K==="timed"?"sec":"reps")}"></label>
    <label><span class="sr">Reps in reserve, set ${k}</span><select data-k="${key}" data-f="rir" class="${v.rir?"on":""}">${RIRS.map(o=>`<option value="${o[0]}"${o[0]===(v.rir||"")?" selected":""}>${o[1]}</option>`).join("")}</select></label>
    <label><span class="sr">Tempo used, set ${k}</span><select data-k="${key}" data-f="t" class="${v.t?"on":""}">${TEMPOS.map(o=>`<option value="${o[0]}"${o[0]===(v.t||"")?" selected":""}>${o[1]}</option>`).join("")}</select></label>
@@ -1973,8 +1973,8 @@ function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1
  return `<article class="excard"><div class="exhead"><div><h4>${e_(ex.name)}</h4>${ex.orig?`<p class="swapped small">In place of ${e_(ex.orig)}</p>`:""}${ex.notes?`<p class="exnote">${e_(ex.notes)}</p>`:""}</div>
   <a class="demo${V.exact?"":" find"}" href="${e_(V.url)}" target="_blank" rel="noopener">${V.exact?"▶ Watch how":"▶ Find a video"}</a></div>${swapBox(ex,i)}
   ${window.F2C_videos&&F2C_videos.isCoach()?`<div class="vidset"><button type="button" class="linkbtn small" data-vid="${i}">${V.custom?"Change video (you set this one)":"Change video"}</button><div class="vidbox" hidden><label class="sr" for="vid${i}">YouTube Shorts link</label><input id="vid${i}" type="url" inputmode="url" placeholder="Paste a YouTube Shorts link"><div class="nav"><span class="status small"></span>${V.custom?`<button type="button" class="btn small" data-vidclear="${i}">Use the default</button>`:""}<button type="button" class="btn small primary" data-vidsave="${i}">Save video</button></div></div></div>`:""}
-  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span><b>${n}</b> × ${e_(ex.reps||"")}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}</div>
-  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?"+ lb":"Weight"}</span><span>${K==="timed"?"Seconds":"Reps"}</span><span>RIR</span><span>Tempo used</span><span></span></div>`}${rows}</div>
+  ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span><b>${n}</b> × ${e_(ex.reps||"")}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}${P.tag&&K!=="stretch"?`<span class="pertag" title="${e_(P.tip)}">${e_(P.tag)}</span>`:""}</div>
+  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?"+ lb":P.hand?"Each hand":"Weight"}</span><span>${K==="timed"?"Seconds":P.side?"Reps / side":"Reps"}</span><span>RIR</span><span>Tempo used</span><span></span></div>`}${rows}</div>
   <button class="histbtn" type="button">History</button><div class="hist" hidden>${hist(s,w,L)}</div></article>`}
 function hist(s,w,L){const out=[];for(let k=w;k>=1&&out.length<8;k--){const sets=[];for(let n=1;n<=10;n++){const v=L[`w${k}|${ui.day}|${s}|${n}`];if(v&&(v.wt||v.reps))sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}${v.rir?` <em>RIR ${e_(v.rir)}</em>`:""}${v.t?` <em>${e_((TEMPOS.find(t=>t[0]===v.t)||[,v.t])[1])}</em>`:""}`)}
  if(sets.length)out.push(`<li><b>Week ${k}</b> ${sets.join(" · ")}</li>`)}return out.length?`<ul>${out.join("")}</ul>`:`<p class="muted">Nothing logged yet.</p>`}
@@ -2798,6 +2798,14 @@ const mine=()=>{const r=athletes[cur];return !!(r&&!r.readOnly&&(!r.owner||ME&&(
 const isoLocal=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")};
 
 /* stretch: check off only; bw: weight is optional added load; timed: seconds instead of reps */
+/* Two dumbbells or kettlebells: the weight box is per hand. One arm or one leg at a time: reps are per side. Totals count both. */
+window.F2C_per=function(ex){const n=String(ex.name||"").toLowerCase(),r=String(ex.reps||"").toLowerCase();
+ const one=/single.?arm|one.?arm|single.?leg|one.?leg|unilateral|suitcase|goblet|\b1.?arm|\b1.?leg/.test(n);
+ const hand=/dumbbell|\bdbs?\b|kettlebell|\bkbs?\b/.test(n)&&!one&&!/goblet|single (db|dumbbell)|swing|pullover|turkish|windmill|halo/.test(n);
+ const side=/each|per (side|leg|arm)|\/\s*(side|leg|arm)|\bea\b|\bper\b/.test(r)||/single.?arm|one.?arm|single.?leg|one.?leg|unilateral|\b1.?arm|\b1.?leg|bulgarian|split squat|lunge|step.?up|pistol|copenhagen/.test(n);
+ const tag=hand&&side?"per hand · reps per side":hand?"per hand":side?"per side":"";
+ const tip=hand&&side?"Enter the weight of one dumbbell and the reps for one side. Totals count both hands and both sides.":hand?"Enter the weight of one dumbbell. Totals count both hands.":side?"Enter the reps for one side. Totals count both sides.":"";
+ return {hand,side,mult:(hand?2:1)*(side?2:1),tag,tip}};
 window.F2C_exKind=function(ex){const n=String(ex.name||"").toLowerCase(),r=String(ex.reps||"").toLowerCase();
  const loaded=/dumbbell|barbell|\bdb\b|kettlebell|cable|machine|weighted|plate|sled|carry|vest|med(icine)? ball/.test(n);
  if(/stretch|foam|mobility|warm.?up|cool.?down|ankle rock|hip switch|90\/90|breath|cat.?cow|child'?s pose|yoga|massage|lacrosse ball|walkover|drill|activation/.test(n)&&!loaded)return "stretch";
@@ -2902,18 +2910,19 @@ function range(period){const end=new Date();end.setHours(23,59,59,999);const sta
  return [start,end]}
 /* pounds moved in one set: load x reps. Bodyweight moves count the share of body weight the move lifts, plus any added weight. */
 const BWF=[[/push.?up/,.64],[/pull.?up|chin.?up|\bdip|muscle.?up/,1],[/inverted row/,.5],[/calf raise/,1],[/pistol|split squat|lunge|step.?up|air squat|squat/,.7]];
-function setLoad(name,v,bw){const reps=parseFloat(v.reps)||0;if(!reps)return 0;const kind=window.F2C_exKind?F2C_exKind({name}):"load";
+function setLoad(name,v,bw,range){const reps=parseFloat(v.reps)||0;if(!reps)return 0;const kind=window.F2C_exKind?F2C_exKind({name}):"load";
  if(kind==="stretch"||kind==="timed")return 0;const add=parseFloat(String(v.wt||"").replace(/[^\d.]/g,""))||0;
- if(kind==="bw"){const n=String(name).toLowerCase(),f=(BWF.find(([re])=>re.test(n))||[0,0])[1];return Math.round((bw*f+add)*reps)}
- return Math.round(add*reps)}
+ const P=window.F2C_per?F2C_per({name,reps:range||""}):{mult:1};
+ if(kind==="bw"){const n=String(name).toLowerCase(),f=(BWF.find(([re])=>re.test(n))||[0,0])[1];return Math.round((bw*f+add)*reps*(P.side?2:1))}
+ return Math.round(add*reps*P.mult)}
 function volume(period){const t=T(),r=t.rec(),L=r.log||{},names={},bw=shape().wt;
- ((r.plan||{}).days||[]).forEach(d=>(d.exercises||[]).forEach(x=>names[t.slug(x.name)]=x.name));
+ const ranges={};((r.plan||{}).days||[]).forEach(d=>(d.exercises||[]).forEach(x=>{names[t.slug(x.name)]=x.name;ranges[t.slug(x.name)]=x.reps||""}));
  Object.values(r.swaps||{}).forEach(n=>names[t.slug(n)]=n);
  const [a,b]=range(period),vol={},sets={},lbs={};MUSCLES.forEach(([k])=>{vol[k]=0;sets[k]=0;lbs[k]=0});let total=0,lbTotal=0,days=new Set();
  for(const key in L){const p=key.split("|"),v=L[key]||{};if(p.length!==4||!(v.wt||v.reps||v.done))continue;
   const w=+String(p[0]).slice(1),di=t.DAYS7.indexOf(p[1]);if(!w||di<0)continue;
   const d=new Date(t.weekDate(w));d.setDate(d.getDate()+di);if(d<a||d>b)continue;
-  const nm=names[p[2]]||p[2].replace(/-/g," "),m=musclesOf(nm),ld=setLoad(nm,v,bw);lbTotal+=ld;if(!Object.keys(m).length)continue;
+  const nm=names[p[2]]||p[2].replace(/-/g," "),m=musclesOf(nm),ld=setLoad(nm,v,bw,ranges[p[2]]);lbTotal+=ld;if(!Object.keys(m).length)continue;
   total++;days.add(d.toDateString());for(const k in m){vol[k]+=m[k];if(m[k]>=.5){sets[k]++;lbs[k]+=ld}}}
  const max=Math.max(0,...Object.values(vol));
  return {vol,sets,lbs,lbTotal,max,total,days:days.size}}
@@ -3022,7 +3031,7 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
   <p class="muted small holohint">${UI.view==="map"?"Front on the left, back on the right. ":"Drag to turn the figure. Pinch to zoom. "}${UI.period==="day"?"Lit muscles are the ones you trained today.":"Darker shade = more sets for that muscle."}</p>
   ${V.total?`<div class="holobars">${ranked.slice(0,8).map(x=>`<div class="v2tot"><span>${e_(x.l)}</span><div class="v2meter"><i style="width:${Math.round(100*x.v/V.max)}%;background:${e_(UI.color)}"></i></div><b>${Math.max(1,Math.round(x.v))} set${Math.max(1,Math.round(x.v))===1?"":"s"}${x.w?`<small class="holoLb">${lb(x.w)} lb</small>`:""}</b></div>`).join("")}</div>
    <div class="holoTotal"><span class="label">${LBL[UI.period]}</span><b>${lb(V.lbTotal)} lb</b><span class="muted small">total weight lifted · ${V.total} sets on ${V.days} day${V.days===1?"":"s"}</span></div>
-   <p class="muted small">Weight lifted = weight × reps for every set, added up. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
+   <p class="muted small">Weight lifted = weight × reps for every set, added up. Dumbbell moves count both hands, and one-arm or one-leg moves count both sides. Bodyweight moves count the part of your body weight they lift (about 64% for push-ups, all of it for pull-ups and dips) plus any added weight. A muscle's pounds include every set that works it, so the muscle numbers overlap and add up to more than the total.</p>`:`<p class="muted small">No sets logged ${UI.period==="day"?"today":"in "+LBL[UI.period].toLowerCase()} yet. Log sets in Workouts and the muscles light up here.</p>`}
   <p class="muted small">Shape from ${sc?`your InBody on ${e_(sc.date)} (${e_(sc.weight)} lb, ${e_(sc.bf)}% body fat${sc.smm?", "+e_(sc.smm)+" lb muscle":""})`:`your profile (${Math.round(S.wt)} lb). Add an InBody scan below to shape it from your real numbers`}.${fs&&sc&&fs!==sc?` Since ${e_(fs.date)}: ${(sc.weight-fs.weight>0?"+":"")+Math.round((sc.weight-fs.weight)*10)/10} lb, muscle ${(sc.smm-fs.smm>0?"+":"")+Math.round((sc.smm-fs.smm)*10)/10} lb.`:""} Muscle colors come from your logged sets.</p></div>`;
  host.querySelectorAll("[data-hp]").forEach(b=>b.onclick=()=>{UI.period=b.dataset.hp;saveUI();panel()});
  host.querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{UI.view=b.dataset.hv;saveUI();panel()});
@@ -3032,7 +3041,7 @@ const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(th
 const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:10px}.holostage{height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
 .holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
-.holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}`;document.head.appendChild(st);
+.holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}.pertag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2,#eef2f7);color:var(--ink2,#334155)}`;document.head.appendChild(st);
 })();
 
 </script>
