@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795658436";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795658881";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -1942,11 +1942,11 @@ function swapBox(ex,i){if(!window.F2C_swaps)return "";const base=ex.orig?{name:e
  return `<div class="swapset"><button type="button" class="linkbtn small" data-swap="${i}">⇄ ${ex.orig?"Swapped. Change":"Swap equipment"}</button><div class="swapbox" hidden>
   <p class="muted small">Same muscles, different equipment you have. Your logs follow the one you pick.</p>${note?`<p class="small swapnote">${e_(note)}</p>`:""}
   <div class="swapopts">${ex.orig?`<button type="button" class="btn small primary" data-swapto="" data-i="${i}">Switch back to ${e_(ex.orig)}</button>`:""}${opts.map(o=>`<button type="button" class="btn small" data-swapto="${e_(o.name)}" data-i="${i}">${e_(o.name)}</button>`).join("")}</div></div></div>`}
-function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n};const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
+function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1;k<=n;k++)window.F2C_KI[`w${w}|${ui.day}|${s}|${k}`]={ex:ex.name,range:ex.reps||"",sets:n};const K=window.F2C_exKind?F2C_exKind(ex):"load";const SV=window.F2C_swaps?F2C_swaps.videoOf(ex.name):undefined;const V=SV?{url:SV,exact:true}:SV===null?{url:"https://www.youtube.com/results?search_query="+encodeURIComponent(String(ex.name).split(/[(]/)[0]+" form shorts"),exact:false}:window.F2C_videos?F2C_videos.videoFor(ex.name):{url:"https://www.youtube.com/results?search_query="+encodeURIComponent((ex.name||"")+" form shorts"),exact:false};
  let rows="";for(let k=1;k<=n;k++){const key=`w${w}|${ui.day}|${s}|${k}`,v=L[key]||{};let prev=null;for(let pw=w-1;pw>=1&&!prev;pw--){const pv=L[`w${pw}|${ui.day}|${s}|${k}`];if(pv&&(pv.wt||pv.reps))prev=pv}
-  rows+=`<div class="setrow${v.done?" isdone":""}"><span class="sn">${k}</span>
-   <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):"lb"}"></label>
-   <label><span class="sr">Reps, set ${k}</span><input inputmode="numeric" data-k="${key}" data-f="reps" value="${e_(v.reps||"")}" placeholder="${prev&&prev.reps?e_(prev.reps):"reps"}"></label>
+  rows+=K==="stretch"?`<div class="setrow simple${v.done?" isdone":""}"><span class="sn">${k}</span><span class="simplelbl">${e_(ex.reps||"")}${ex.tempo?" · "+e_(ex.tempo):""}</span><label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">Set ${k} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label></div>`:`<div class="setrow${v.done?" isdone":""}"><span class="sn">${k}</span>
+   <label><span class="sr">Weight, set ${k}</span><input inputmode="decimal" data-k="${key}" data-f="wt" value="${e_(v.wt||"")}" placeholder="${prev&&prev.wt?e_(prev.wt):(K==="bw"?"BW":"lb")}"></label>
+   <label><span class="sr">Reps, set ${k}</span><input inputmode="numeric" data-k="${key}" data-f="reps" value="${e_(v.reps||"")}" placeholder="${prev&&prev.reps?e_(prev.reps):(K==="timed"?"sec":"reps")}"></label>
    <label><span class="sr">Reps in reserve, set ${k}</span><select data-k="${key}" data-f="rir" class="${v.rir?"on":""}">${RIRS.map(o=>`<option value="${o[0]}"${o[0]===(v.rir||"")?" selected":""}>${o[1]}</option>`).join("")}</select></label>
    <label><span class="sr">Tempo used, set ${k}</span><select data-k="${key}" data-f="t" class="${v.t?"on":""}">${TEMPOS.map(o=>`<option value="${o[0]}"${o[0]===(v.t||"")?" selected":""}>${o[1]}</option>`).join("")}</select></label>
    <label class="chk"><input type="checkbox" data-k="${key}" data-f="done" ${v.done?"checked":""}><span class="sr">Set ${k} done</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></label></div>`}
@@ -1954,7 +1954,7 @@ function exCard(ex,i,w,L){const s=slug(ex.name),n=setsFor(ex.sets,w);for(let k=1
   <a class="demo${V.exact?"":" find"}" href="${e_(V.url)}" target="_blank" rel="noopener">${V.exact?"▶ Watch how":"▶ Find a video"}</a></div>${swapBox(ex,i)}
   ${window.F2C_videos&&F2C_videos.isCoach()?`<div class="vidset"><button type="button" class="linkbtn small" data-vid="${i}">${V.custom?"Change video (you set this one)":"Change video"}</button><div class="vidbox" hidden><label class="sr" for="vid${i}">YouTube Shorts link</label><input id="vid${i}" type="url" inputmode="url" placeholder="Paste a YouTube Shorts link"><div class="nav"><span class="status small"></span>${V.custom?`<button type="button" class="btn small" data-vidclear="${i}">Use the default</button>`:""}<button type="button" class="btn small primary" data-vidsave="${i}">Save video</button></div></div></div>`:""}
   ${window.F2C_chip?F2C_chip(s):""}<div class="rx"><span><b>${n}</b> × ${e_(ex.reps||"")}</span>${ex.tempo?`<span class="tempo">${e_(ex.tempo)}</span>`:""}${n!==+ex.sets?`<span class="muted">(${e_(ex.sets)} normally)</span>`:""}</div>
-  <div class="sets"><div class="sethdr"><span></span><span>Weight</span><span>Reps</span><span>RIR</span><span>Tempo used</span><span></span></div>${rows}</div>
+  <div class="sets">${K==="stretch"?"":`<div class="sethdr"><span></span><span>${K==="bw"?"+ lb":"Weight"}</span><span>${K==="timed"?"Seconds":"Reps"}</span><span>RIR</span><span>Tempo used</span><span></span></div>`}${rows}</div>
   <button class="histbtn" type="button">History</button><div class="hist" hidden>${hist(s,w,L)}</div></article>`}
 function hist(s,w,L){const out=[];for(let k=w;k>=1&&out.length<8;k--){const sets=[];for(let n=1;n<=10;n++){const v=L[`w${k}|${ui.day}|${s}|${n}`];if(v&&(v.wt||v.reps))sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}${v.rir?` <em>RIR ${e_(v.rir)}</em>`:""}${v.t?` <em>${e_((TEMPOS.find(t=>t[0]===v.t)||[,v.t])[1])}</em>`:""}`)}
  if(sets.length)out.push(`<li><b>Week ${k}</b> ${sets.join(" · ")}</li>`)}return out.length?`<ul>${out.join("")}</ul>`:`<p class="muted">Nothing logged yet.</p>`}
@@ -1971,7 +1971,8 @@ function rMeals(){const m=rec().meals,v=$("v-meals"),a=rec().a;
  if(m.targets)h+=`<p class="muted small">${e_(m.targets)}</p>`;
  h+=(window.F2C_mealTotals?F2C_mealTotals():"");
  if(pick.totals)h+=`<div class="macros">${[["kcal",pick.totals.calories],["protein",pick.totals.protein_g+" g"],["carbs",pick.totals.carbs_g+" g"],["fat",pick.totals.fat_g+" g"]].map(x=>`<div><b>${e_(x[1])}</b><span>${x[0]}</span></div>`).join("")}</div>`;
- h+=`<div class="timeline">${(pick.meals||[]).map(x=>`<article class="tcard"><div class="ttime">${e_(x.time||"")}</div><div class="tbody"><h4>${e_(x.name)}</h4><ul>${(x.items||[]).map(i=>`<li>${e_(i)}</li>`).join("")}</ul><span class="muted small">${e_(x.calories)} kcal · ${e_(x.protein_g)} g protein · ${e_(x.carbs_g)} g carbs · ${e_(x.fat_g)} g fat</span></div></article>`).join("")}</div>`;
+ h+=(window.F2C_foodLog?F2C_foodLog():"");
+ h+=`<div class="timeline">${(pick.meals||[]).map((x,mi)=>`<article class="tcard"><div class="ttime">${e_(x.time||"")}</div><div class="tbody"><h4>${e_(x.name)}</h4><ul>${(x.items||[]).map(i=>`<li>${e_(i)}</li>`).join("")}</ul><span class="muted small">${e_(x.calories)} kcal · ${e_(x.protein_g)} g protein · ${e_(x.carbs_g)} g carbs · ${e_(x.fat_g)} g fat</span>${window.F2C_mealActions?F2C_mealActions(pick,mi):""}</div></article>`).join("")}</div>`;
  if(m.groceryList&&m.groceryList.length)h+=`<details class="sheet"><summary>Grocery list</summary><div class="kpis">${m.groceryList.map(g=>`<div class="kpi"><span class="label">${e_(g.group)}</span>${list(g.items)}</div>`).join("")}</div></details>`;
  if((m.prepTips||[]).length||(m.swaps||[]).length)h+=`<details class="sheet"><summary>Prep tips and swaps</summary>${list(m.prepTips||[])}${list(m.swaps||[])}</details>`;
  h+=`<div class="nav"><span class="status" id="mealStatus"></span><button class="btn" id="mealBtn" type="button">Rebuild meal plan</button></div>`;
@@ -2031,7 +2032,8 @@ function rToday(){const v=$("v-today"),day=todayKey(),w=currentWeek(),d=dayPlan(
  h+=`<h4 class="sect">Today's schedule</h4><div class="timeline">${items.map((x,n)=>{const isDone=x.kind==="meal"?!!D.meal[x.i]:allSupDone(x.g,D);const sk=x.kind==="meal"?"meal"+x.i:"supp@"+x.time;const skipped=D.skip[sk];
   return `<article class="tcard ${x.kind}${isDone?" isdone":""}${n===nextIdx?" next":""}"><div class="ttime">${e_(x.time||"")}</div><div class="tbody"><span class="label">${x.kind==="meal"?"Meal":"Supplements"}${n===nextIdx?" · next":""}</span><h4>${e_(x.title)}</h4><p class="muted small">${e_(x.sub)}</p>
    ${skipped?`<div class="alt">${skipped}</div>`:""}
-   <div class="tact"><button class="btn small ${isDone?"":"primary"}" type="button" data-done="${x.kind}:${x.i}">${isDone?"Done ✓":(x.kind==="meal"?"Ate it":"Took them")}</button>${isDone?"":`<button class="btn small" type="button" data-cant="${x.kind}:${x.i}">${x.kind==="meal"?"Can't eat now":"Can't now"}</button>`}</div></div></article>`}).join("")||`<p class="muted">No meals or supplements scheduled yet.</p>`}</div>`;
+   <div class="tact"><button class="btn small ${isDone?"":"primary"}" type="button" data-done="${x.kind}:${x.i}">${isDone?"Done ✓":(x.kind==="meal"?"Ate it":"Took them")}</button>${isDone?"":`<button class="btn small" type="button" data-cant="${x.kind}:${x.i}">${x.kind==="meal"?"Can't eat now":"Can't now"}</button>`}${x.kind==="meal"&&window.F2C_foodBtn?F2C_foodBtn(x.i):""}</div>${x.kind==="meal"&&window.F2C_foodNote?F2C_foodNote(x.i):""}</div></article>`}).join("")||`<p class="muted">No meals or supplements scheduled yet.</p>`}</div>`;
+ h+=(window.F2C_foodLog?F2C_foodLog():"");
  v.innerHTML=h;
  const gw=$("goWorkout");if(gw)gw.onclick=()=>{ui.tab="workouts";ui.week=w;ui.day=day;saveUI();show()};
  const gc=$("goChecks");if(gc)gc.onclick=()=>{ui.tab=open?"plan":"supps";saveUI();show()};
@@ -2533,7 +2535,7 @@ const T=()=>window.F2C_T;
 const X={for:null,requests:[],prog:{},notes:[],body:null,targets:null,meals:[],loaded:false};
 window.F2C_X=X;
 const RUN_NOTE="Your coach answers on the next run, usually within 3 hours. This page updates on its own.";
-const LABEL={plan:"New plan",revise:"Plan change",meals:"Meal plan",coach:"Coach question",checkin:"Weekly check-in",inbody:"InBody scan reading",read:"File reading",suppList:"Supplement list reading",question:"Question"};
+const LABEL={food:"Meal estimate",plan:"New plan",revise:"Plan change",meals:"Meal plan",coach:"Coach question",checkin:"Weekly check-in",inbody:"InBody scan reading",read:"File reading",suppList:"Supplement list reading",question:"Question"};
 const fmt=t=>new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 const isoLocal=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")};
 const mine=()=>{const r=athletes[cur];return !!(r&&!r.readOnly&&(!r.owner||ME&&(ME.role==="admin"||String(r.owner).toLowerCase()===ME.email)))};
@@ -2629,12 +2631,16 @@ function paintChip(s){document.querySelectorAll(`[data-prog="${CSS.escape(s)}"]`
 function targetNums(){const t=X.targets;if(t&&(t.cal||t.p))return {cal:+t.cal||0,p:+t.p||0,c:+t.c||0,f:+t.f||0,by:t.by,why:t.why,from:t.from};
  const n=(athletes[cur]&&athletes[cur].plan&&athletes[cur].plan.nutrition)||{};const f=s=>{const m=String(s||"").replace(/,/g,"").match(/(\d+(?:\.\d+)?)/);return m?+m[1]:0};
  return {cal:f(n.calories),p:f(n.protein),c:f(n.carbs),f:f(n.fat),by:"plan"}}
-function eatenToday(){const t=T();if(!t)return null;const day=t.DAYS7[(new Date().getDay()+6)%7];const md=t.mealDayFor(day);const D=t.DAILY();const out={cal:0,p:0,c:0,f:0,rows:[]};
- if(!md)return out;(md.meals||[]).forEach((x,i)=>{if(!D.meal[i])return;out.cal+=+x.calories||0;out.p+=+x.protein_g||0;out.c+=+x.carbs_g||0;out.f+=+x.fat_g||0;
-  out.rows.push({meal:x.name||("Meal "+(i+1)),food:(x.items||[]).join(", "),cal:x.calories,p:x.protein_g,c:x.carbs_g,f:x.fat_g})});return out}
+function eatenToday(){const t=T();if(!t)return null;const day=t.DAYS7[(new Date().getDay()+6)%7];const md=t.mealDayFor(day);const D=t.DAILY();const out={cal:0,p:0,c:0,f:0,rows:[],pending:0};
+ const food=D.food||[];
+ if(md)(md.meals||[]).forEach((x,i)=>{if(!D.meal[i]||food.some(f=>f.slot===i))return;out.cal+=+x.calories||0;out.p+=+x.protein_g||0;out.c+=+x.carbs_g||0;out.f+=+x.fat_g||0;
+  out.rows.push({meal:x.name||("Meal "+(i+1)),food:(x.items||[]).join(", "),cal:x.calories,p:x.protein_g,c:x.carbs_g,f:x.fat_g})});
+ food.forEach(it=>{if(it.est&&it.est.calories!==""&&it.est.calories!=null){out.cal+=+it.est.calories||0;out.p+=+it.est.protein_g||0;out.c+=+it.est.carbs_g||0;out.f+=+it.est.fat_g||0}else out.pending++});
+ return out}
 window.F2C_mealTotals=function(){const tg=targetNums(),e=eatenToday();if(!e||!tg.cal)return "";
  const pct=(a,b)=>b?Math.min(100,Math.round(100*a/b)):0;const row=(l,a,b,u)=>`<div class="v2tot"><span>${l}</span><div class="v2meter"><i style="width:${pct(a,b)}%"></i></div><b>${Math.round(a)}${u} / ${Math.round(b)}${u}</b></div>`;
  return `<div class="sheet v2meals"><span class="label">Eaten today vs target</span>${row("Calories",e.cal,tg.cal,"")}${tg.p?row("Protein",e.p,tg.p," g"):""}${tg.c?row("Carbs",e.c,tg.c," g"):""}${tg.f?row("Fat",e.f,tg.f," g"):""}
+  ${e.pending?`<p class="muted small">${e.pending} food entr${e.pending>1?"ies":"y"} waiting for an estimate (next coach run).</p>`:""}
   ${tg.by&&tg.by!=="plan"?`<p class="muted small">Targets updated by your coach${tg.from?" on "+e_(tg.from):""}: ${e_(tg.why||"")}</p>`:""}</div>`};
 let mealT=null;
 window.F2C_mealsChanged=function(){if(!mine())return;clearTimeout(mealT);mealT=setTimeout(async()=>{const e=eatenToday();if(!e)return;
@@ -2737,6 +2743,69 @@ const st=document.createElement("style");st.textContent=`.saveapp{display:inline
 .savehead{display:flex;gap:12px;align-items:center}.savehead img{border-radius:10px}.savehead span{display:block;color:var(--muted);font-size:.85rem}.savecard ol{margin:0;padding-left:20px;display:grid;gap:8px}`;
 document.head.appendChild(st);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",add);else add();
+})();
+
+/* ===== Exercise kinds and food log ===== */
+(function(){
+const $=id=>document.getElementById(id),e_=s=>esc(s==null?"":String(s));
+const T=()=>window.F2C_T;
+const mine=()=>{const r=athletes[cur];return !!(r&&!r.readOnly&&(!r.owner||ME&&(ME.role==="admin"||String(r.owner).toLowerCase()===ME.email)))};
+const isoLocal=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")};
+
+/* stretch: check off only; bw: weight is optional added load; timed: seconds instead of reps */
+window.F2C_exKind=function(ex){const n=String(ex.name||"").toLowerCase(),r=String(ex.reps||"").toLowerCase();
+ const loaded=/dumbbell|barbell|\bdb\b|kettlebell|cable|machine|weighted|plate|sled|carry|vest|med(icine)? ball/.test(n);
+ if(/stretch|foam|mobility|warm.?up|cool.?down|ankle rock|hip switch|90\/90|breath|cat.?cow|child'?s pose|yoga|massage|lacrosse ball|walkover|drill|activation/.test(n)&&!loaded)return "stretch";
+ if(/sprint|stride|ladder|\brun\b|jog|\d+\s*m\b|meters?\b|\bzone\s*2|interval|rower|rowing|bike|cycling|treadmill|elliptical|swim/.test(n)&&!/sled|sandbag/.test(n))return "stretch";
+ const timed=/\bsec|\d\s*s\b|min|hold|yd|yard|meter|\d\s*m\b/.test(r);
+ if(timed&&!loaded)return "timed";
+ if(/push.?up|pull.?up|chin.?up|\bdip|inverted row|sit.?up|crunch|plank|dead bug|bird dog|glute bridge|nordic|burpee|mountain climber|air squat|bodyweight|leg raise|hollow|superman|jump|bound|hop|skip|sprint|lunge|step.?up|split squat|calf raise|pistol|back extension|band/.test(n)&&!loaded)return "bw";
+ return "load"};
+
+/* ---------- food ---------- */
+const FOOD_PROMPT=`Estimate what this person ate from their description and/or the attached photo. Use typical US portions when amounts aren't given, and the amounts they give when they do. Round to sensible numbers; it is an estimate, so don't pretend to precision. Reply with ONLY one JSON object:
+{"desc":"short description of the foods and portions you assumed","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"confidence":"low|medium|high"}`;
+function dayKey(){return new Date().toISOString().slice(0,10)} // same key the app uses for daily check-offs
+function FOOD(){const D=T().DAILY();D.food=D.food||[];return D.food}
+function todayMeals(){const t=T();const md=t.mealDayFor(t.DAYS7[(new Date().getDay()+6)%7]);return md&&md.meals||[]}
+const est=it=>it.est&&it.est.calories!==""&&it.est.calories!=null?`about ${it.est.calories} kcal · ${it.est.protein_g} g protein · ${it.est.carbs_g} g carbs · ${it.est.fat_g} g fat`:`estimate comes on the next coach run (within about 3 hours)`;
+window.F2C_foodBtn=i=>mine()&&!FOOD().some(f=>f.slot===i)?`<button class="btn small" type="button" data-other="${i}">Ate something else</button>`:"";
+window.F2C_foodNote=i=>{const it=FOOD().find(f=>f.slot===i);return it?`<div class="alt"><b>You ate:</b> ${e_(it.text||"(photo)")}<br><span class="small">${e_(est(it))}</span></div>`:""};
+window.F2C_mealActions=function(pick,mi){const t=T();if(!mine()||pick!==t.mealDayFor(t.DAYS7[(new Date().getDay()+6)%7]))return "";
+ const D=t.DAILY(),done=!!D.meal[mi],alt=FOOD().some(f=>f.slot===mi);
+ return `<div class="tact">${alt?"":`<button class="btn small ${done?"":"primary"}" type="button" data-ate="${mi}">${done?"Ate it ✓":"Ate it"}</button>`}${F2C_foodBtn(mi)}</div>${F2C_foodNote(mi)}`};
+window.F2C_foodLog=function(){if(!athletes[cur])return "";const extra=FOOD().filter(f=>f.slot==null);const ro=!mine();
+ if(ro&&!extra.length)return "";
+ return `<div class="sheet v2food"><div class="sheethead"><div><span class="label">Food log</span><h4>Anything not on your plan today</h4></div>${ro?"":`<button class="btn small primary" type="button" data-food-add="1">+ Log food</button>`}</div>
+  ${extra.length?`<ul class="v2foodlist">${extra.map(it=>`<li><div><b>${e_(it.meal)}</b> ${e_(it.text||"(photo)")}<br><span class="muted small">${e_(est(it))}</span></div>${ro?"":`<button class="linkbtn" type="button" data-food-rm="${e_(it.id)}">Remove</button>`}</li>`).join("")}</ul>`:`<p class="muted small">Missed a meal or ate something different? Type it or snap a photo and your coach estimates the calories and macros.</p>`}</div>`};
+function rerender(){try{T().show(T().ui.tab)}catch(e){}}
+function sheet(slot){const meals=todayMeals();const name=slot!=null&&meals[slot]?meals[slot].name:"";
+ let o=$("foodSheet");if(o)o.remove();o=document.createElement("div");o.id="foodSheet";o.className="savesheet";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");
+ const h=new Date().getHours(),guess=h<11?"Breakfast":h<15?"Lunch":h<17?"Snack":"Dinner";
+ o.innerHTML=`<div class="savecard"><b>${slot!=null?"What did you eat instead of "+e_(name)+"?":"Log food"}</b>
+  ${slot!=null?"":`<label class="field"><span class="flabel">Meal</span><select id="foodMeal">${["Breakfast","Lunch","Dinner","Snack","Pre-workout","Post-workout"].map(m=>`<option${m===guess?" selected":""}>${m}</option>`).join("")}</select></label>`}
+  <label class="field"><span class="flabel">What you ate</span><textarea id="foodText" rows="3" placeholder="For example: chicken burrito bowl with rice, black beans, salsa, no cheese. About 1.5 cups rice."></textarea><span class="hint">Amounts help (cups, ounces, pieces). A photo alone works too.</span></label>
+  <label class="field"><span class="flabel">Photo (optional)</span><input id="foodPhoto" type="file" accept="image/*" capture="environment" class="filepick"></label>
+  <p class="status" id="foodSt"></p><div class="nav"><button class="btn" type="button" id="foodCancel">Cancel</button><button class="btn primary" type="button" id="foodSave">Save</button></div></div>`;
+ document.body.appendChild(o);o.addEventListener("click",e=>{if(e.target===o)o.remove()});$("foodCancel").onclick=()=>o.remove();
+ $("foodSave").onclick=async()=>{const text=$("foodText").value.trim(),file=$("foodPhoto").files[0],st=$("foodSt");
+  if(!text&&!file){st.textContent="Type what you ate or add a photo.";return}
+  $("foodSave").disabled=true;st.textContent="Saving…";
+  const it={id:"f"+Date.now().toString(36),slot:slot!=null?slot:null,meal:slot!=null?name:($("foodMeal")||{}).value||"Food",text,at:Date.now(),est:null};
+  const D=T().DAILY();if(slot!=null){D.meal[slot]=false;delete D.skip["meal"+slot]}FOOD().push(it);T().touch();
+  try{let ids=[];if(file){const s=await shrink(file);const r=await gs("uploadFile",TOKEN,cur,"food__"+(file.name||"meal.jpg"),s.type||"image/jpeg",await blobToB64(s));it.photo=r.id;ids=[r.id]}
+   const planned=slot!=null&&todayMeals()[slot];
+   it.req=await F2C_submit("food",FOOD_PROMPT+"\n\nMEAL: "+it.meal+"\nWHAT THEY ATE: "+(text||"(see photo)")+(file?"\nA photo is attached (File link).":"")+(planned?"\nFor scale, their planned meal was: "+(planned.items||[]).join(", ")+" ("+planned.calories+" kcal).":""),{fileIds:ids,meta:{kind:"food",itemId:it.id,dayKey:dayKey(),date:isoLocal(new Date()),meal:it.meal}});
+   T().touch();window.F2C_mealsChanged&&F2C_mealsChanged();o.remove();rerender();
+  }catch(e){st.textContent=errCopy(e);$("foodSave").disabled=false}}}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-other],[data-food-add],[data-food-rm],[data-ate]");if(!t||!T())return;
+ if(t.dataset.other!=null)return sheet(+t.dataset.other);
+ if(t.dataset.foodAdd!=null)return sheet(null);
+ if(t.dataset.ate!=null){const D=T().DAILY(),i=t.dataset.ate;D.meal[i]=!D.meal[i];delete D.skip["meal"+i];T().touch();F2C_mealsChanged&&F2C_mealsChanged();return rerender()}
+ if(t.dataset.foodRm!=null){const L=FOOD(),k=L.findIndex(f=>f.id===t.dataset.foodRm);if(k<0)return;const it=L.splice(k,1)[0];T().touch();
+  if(it.req)gs("cancelRequest",TOKEN,it.req).catch(()=>{});gs("syncMeals",TOKEN,cur,isoLocal(new Date()),null,[it.id]).catch(()=>{});F2C_mealsChanged&&F2C_mealsChanged();rerender()}});
+const st=document.createElement("style");st.textContent=`.setrow.simple{grid-template-columns:20px 1fr 40px}.simplelbl{color:var(--muted);font-size:.85rem}.v2food{margin:10px 0}.v2foodlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}.v2foodlist li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:8px}`;
+document.head.appendChild(st);
 })();
 
 </script>

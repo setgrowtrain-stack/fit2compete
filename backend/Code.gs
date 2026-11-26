@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.0.0';
+var VERSION = '2.1.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -41,7 +41,7 @@ var TABS = {
 };
 
 // Request types the server applies to the athlete record itself. "read" and "suppList" are applied by the screens.
-var SERVER_TYPES = ['plan', 'revise', 'meals', 'coach', 'checkin', 'inbody'];
+var SERVER_TYPES = ['plan', 'revise', 'meals', 'coach', 'checkin', 'inbody', 'food'];
 var REQUEST_TYPES = SERVER_TYPES.concat(['read', 'suppList', 'question']);
 
 /* ---------------------------------------------------------------- web app */
@@ -414,7 +414,8 @@ function applyAnswers_(at) {
   try {
     var rec = readRec_(at.fileId), changed = false, now = Date.now();
     todo.forEach(function (i) {
-      var id = v[i][0], type = v[i][3], status = 'applied';
+      var id = v[i][0], type = v[i][3], status = 'applied', meta = {};
+      try { var d0 = String(v[i][4]); if (/^META /.test(d0)) meta = JSON.parse(d0.split('\n')[0].slice(5)) || {}; } catch (e) {}
       try {
         var ans = answerOf_(v[i][10]);
         if (!ans) throw new Error('answer is not JSON');
@@ -449,6 +450,14 @@ function applyAnswers_(at) {
           c.msgs.push({ r: 'c', t: text, at: now, adv: adv.map(function (x) { return x.text; }), req: id });
           if (c.msgs.length > 40) c.msgs = c.msgs.slice(-40);
           if (ans.summary && type === 'coach' && ans.conversationSummary) c.summary = String(ans.conversationSummary).slice(0, 1500);
+        } else if (type === 'food') {
+          // A meal the athlete typed or photographed: store the estimate on the item and in the Meals tab.
+          var day = rec.daily && rec.daily[meta.dayKey], item = day && (day.food || []).filter(function (f) { return f.id === meta.itemId; })[0];
+          var est = { calories: num_(ans.calories), protein_g: num_(ans.protein_g), carbs_g: num_(ans.carbs_g), fat_g: num_(ans.fat_g), desc: String(ans.desc || '').slice(0, 300), confidence: String(ans.confidence || '') };
+          if (item) item.est = est;
+          var ms = sheet_('Meals'), mv = ms.getDataRange().getValues();
+          for (var q = mv.length - 1; q >= 1; q--) if (mv[q][0] === at.id && mv[q][9] === 'estimate:' + meta.itemId) ms.deleteRow(q + 1);
+          ms.appendRow([at.id, String(meta.date || dateStr_(new Date())), 'eaten', String(meta.meal || 'Food').slice(0, 80), String(item ? item.text || est.desc : est.desc).slice(0, 300), est.calories, est.protein_g, est.carbs_g, est.fat_g, 'estimate:' + meta.itemId, v[i][8], new Date()]);
         } else if (type === 'inbody') {
           addInBody_(at.id, ans, 'claude', false, v[i][5]);
           status = 'applied';
@@ -739,14 +748,15 @@ function bodyFor_(id) {
 /* ---------------------------------------------------------------- meals */
 
 /** Replaces the logged ("eaten") meals for one date. rows: [{meal, food, cal, p, c, f}] */
-function syncMeals(token, athleteId, date, rows) {
+function syncMeals(token, athleteId, date, rows, removeEst) {
   var u = auth_(token), at = athlete_(u, athleteId, true);
   date = String(date || '').slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw err_('bad_request', 'Bad date.');
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     var sh = sheet_('Meals'), v = sh.getDataRange().getValues();
-    for (var i = v.length - 1; i >= 1; i--) if (v[i][0] === at.id && dateStr_(v[i][1]) === date && v[i][2] === 'eaten') sh.deleteRow(i + 1);
+    var gone = (removeEst || []).map(function (x) { return 'estimate:' + x; });
+    for (var i = v.length - 1; i >= 1; i--) if (v[i][0] === at.id && ((dateStr_(v[i][1]) === date && v[i][2] === 'eaten' && v[i][9] === 'app') || gone.indexOf(v[i][9]) >= 0)) sh.deleteRow(i + 1);
     var now = new Date(), add = (rows || []).slice(0, 20).map(function (x) {
       return [at.id, date, 'eaten', String(x.meal || '').slice(0, 80), String(x.food || '').slice(0, 300), num_(x.cal), num_(x.p), num_(x.c), num_(x.f), 'app', u.email, now];
     });
