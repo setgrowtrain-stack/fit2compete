@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795667730";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795668521";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2908,7 +2908,7 @@ function dispose(){if(!R)return;cancelAnimationFrame(R.raf);try{R.ro&&R.ro.disco
 let ANA=null;
 async function loadAnatomy(){if(ANA)return ANA;const buf=await (await fetch("vendor/anatomy.bin")).arrayBuffer();const hl=new DataView(buf).getUint32(0,true);
  const head=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,hl)));const o=4+hl;
- ANA={head,pos:new Float32Array(buf,o,head.nv*3),idx:new Uint32Array(buf,o+head.nv*12,head.ni)};return ANA}
+ ANA={head,pos:new Float32Array(buf,o,head.nv*3),fib:new Float32Array(buf,o+head.nv*12,head.nv),idx:new Uint32Array(buf,o+head.nv*16,head.ni)};return ANA}
 const DBG={chest:0,shoulders:.08,biceps:.16,triceps:.24,forearms:.32,abs:.4,obliques:.48,traps:.56,lats:.64,upperback:.72,lowerback:.8,glutes:.88,quads:.12,hamstrings:.52,calves:.92};
 const GRID=`float ln(vec2 c){vec2 g=abs(fract(c-.5)-.5)/fwidth(c);return 1.-min(min(g.x,g.y),1.);}
  float gridAt(vec3 P,float dens){vec3 p=P*dens;vec3 an=abs(normalize(cross(dFdx(P),dFdy(P))));return ln(p.yz)*an.x+ln(p.xz)*an.y+ln(p.xy)*an.z;}`;
@@ -2929,17 +2929,24 @@ async function draw(box,V,S){
  const G=A.head.groups,skinG=G.find(g=>g.m==="skin");
  const mi=new Float32Array(A.head.nv).fill(-1);G.forEach(g=>{const k=g.m==="other"||g.m==="skin"?-1:IDX[g.m];mi.fill(k,g.v0,g.v0+g.vn)});
  const all=new THREE.BufferAttribute(A.pos,3);
- const musc=new THREE.BufferGeometry();musc.setAttribute("position",all);musc.setAttribute("mi",new THREE.BufferAttribute(mi,1));musc.setIndex(new THREE.BufferAttribute(A.idx.subarray(0,skinG.i0),1));musc.computeVertexNormals();
+ const musc=new THREE.BufferGeometry();musc.setAttribute("position",all);musc.setAttribute("mi",new THREE.BufferAttribute(mi,1));musc.setAttribute("fb",new THREE.BufferAttribute(A.fib,1));musc.setIndex(new THREE.BufferAttribute(A.idx.subarray(0,skinG.i0),1));musc.computeVertexNormals();
  const skin=new THREE.BufferGeometry();skin.setAttribute("position",all);skin.setIndex(new THREE.BufferAttribute(A.idx.subarray(skinG.i0,skinG.i0+skinG.in),1));skin.computeVertexNormals();
- const U={mc:{value:mcol},mh:{value:mheat},paleC:{value:tint(0)},hueC:{value:hue},latsH:{value:mheat[IDX.lats]},absH:{value:mheat[IDX.abs]},latC:{value:mcol[IDX.lats]},absC:{value:mcol[IDX.abs]}};
+ const U={mc:{value:mcol},mh:{value:mheat},paleC:{value:tint(0)},hueC:{value:hue},latsH:{value:0},absH:{value:0},absI:{value:IDX.abs},latC:{value:mcol[IDX.lats]},absC:{value:mcol[IDX.abs]}};
  const VS=`attribute float mi;varying float vMi;varying vec3 vP;varying vec3 vO;varying vec3 vN;varying vec3 vV;
   void main(){vMi=mi;vP=position;vO=normal;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`;
  // muscles: lit like a hologram, trained ones in full color (deeper = more sets), untrained pale
- const mMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,side:THREE.FrontSide,vertexShader:VS,
-  fragmentShader:`uniform vec3 mc[15];uniform float mh[15];uniform vec3 paleC;varying float vMi;varying vec3 vP;varying vec3 vO;varying vec3 vN;varying vec3 vV;
+ const mMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,side:THREE.FrontSide,vertexShader:VS.replace('attribute float mi;','attribute float mi;attribute float fb;varying float vF;').replace('vMi=mi;','vMi=mi;vF=fb;'),
+  fragmentShader:`uniform vec3 mc[15];uniform float mh[15];uniform vec3 paleC;uniform float absI;varying float vMi;varying float vF;varying vec3 vP;varying vec3 vO;varying vec3 vN;varying vec3 vV;
    void main(){int i=int(vMi+.5);float h=vMi<-.5?0.:mh[i];vec3 c=vMi<-.5?paleC:(h>0.?mc[i]:paleC);
-    vec3 n=normalize(vN);float lit=.55+.45*max(dot(n,normalize(vec3(.3,.6,1.))),0.);float fr=pow(1.-abs(dot(n,normalize(vV))),2.5);
-    float a=h>0.?.95:.5;gl_FragColor=vec4(c*lit+fr*.35*(h>0.?c:vec3(.8)),a);}`});
+    vec3 n=normalize(vN);float lit=.55+.45*max(dot(n,normalize(vec3(.3,.6,1.))),0.);
+    if(vMi>-.5){float k=vF*190.+.4*sin(vF*23.+vP.y*41.)+.25*sin(vP.y*97.+vP.z*53.);float w=fwidth(k);float st=1.-smoothstep(.0,.5,abs(fract(k)-.5)*2.-.4);lit*=1.-.17*st*(1.-smoothstep(.35,.9,w));
+     if(i==int(absI)){ // six-pack: tendinous lines across, linea alba down the middle, each segment domed
+      float ax=abs(vP.x),yy=vP.y;float ys[5];ys[0]=.96;ys[1]=1.035;ys[2]=1.105;ys[3]=1.175;ys[4]=1.255;
+      float sh=1.;for(int r=0;r<4;r++){if(yy>=ys[r]&&yy<ys[r+1]){float u=(ax-.04)/.034,v=(yy-(ys[r]+ys[r+1])*.5)/((ys[r+1]-ys[r])*.5);
+        float e=max(abs(u),abs(v));sh=1.-.42*smoothstep(.5,1.02,e)+.16*(-v)*(1.-smoothstep(.6,1.,e))+.1*(-u);}}
+      float g=0.;for(int r=1;r<4;r++){float dd=abs(yy-ys[r])/max(fwidth(yy),1e-5);g=max(g,1.-smoothstep(.8,2.6,dd));}
+      float lb=1.-smoothstep(1.,2.6,ax/max(fwidth(vP.x),1e-5)-1.2);lit*=sh*(1.-.36*max(g,lb));}}float fr=pow(1.-abs(dot(n,normalize(vV))),2.5);
+    float a=h>0.?.96:.85;gl_FragColor=vec4(c*lit+fr*.35*(h>0.?c:vec3(.8)),a);}`});
  // skin: faint glowing grid shell; lats and abs (not in the muscle set) are drawn on it
  const sMat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,vertexShader:VS,
   fragmentShader:`uniform vec3 hueC;uniform vec3 paleC;uniform float latsH;uniform float absH;uniform vec3 latC;uniform vec3 absC;varying vec3 vP;varying vec3 vO;varying vec3 vN;varying vec3 vV;
@@ -2949,8 +2956,6 @@ async function draw(box,V,S){
     vec3 c=hueC;float a=g*.16+fr*.3;
     float x=abs(vP.x),y=vP.y;vec3 n=normalize(vO);
     float d=1.;vec3 mcol=paleC;float mh=0.;
-    if(n.z<-.25&&y>.98&&y<1.26){float t=clamp((y-.98)/.26,0.,1.);float xo=.062+.088*pow(t,.75);d=max(max(x-xo,.018-x),y-(1.10+(x-.02)*1.15));mcol=latC;mh=latsH;}
-    if(n.z>.3&&x<.075&&y>.97&&y<1.21){float cc=1.;for(int r=0;r<4;r++){float t=1.155-float(r)*.058;float wd=.062-float(r)*.003;cc=min(cc,box(vec2(x,y),vec2(.009,t),vec2(wd,t+.05),.016));}d=cc;mcol=absC;mh=absH;}
     if(d<0.){float rim=1.-smoothstep(0.,fwidth(d)*1.5+.0015,-d-.002);
      float sh=.75+.25*smoothstep(0.,.02,-d);if(mh>0.){c=mcol*sh;a=max(a,.6+.35*mh);}else{c=paleC*sh;a=max(a,.35);}a=max(a,rim*.5);}
     if(!gl_FrontFacing)a*=.3;
@@ -2961,7 +2966,7 @@ async function draw(box,V,S){
  const ring=new THREE.Mesh(new THREE.RingGeometry(.3,.315,64),ringMat(.55));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
  const ring2=new THREE.Mesh(new THREE.RingGeometry(.42,.425,64),ringMat(.22));ring2.rotation.x=-Math.PI/2;scene.add(ring2);
  const ro=new ResizeObserver(()=>{const W=box.clientWidth,Hh=box.clientHeight;if(!W||!Hh)return;renderer.setSize(W,Hh);cam.aspect=W/Hh;cam.updateProjectionMatrix()});ro.observe(box);
- R={renderer,controls,ro,raf:0};
+ R={renderer,controls,ro,raf:0};window.F2C_holoR=R;
  if(UI.view==="map"){ // front and back side by side, no rotation
   controls.enabled=false;controls.autoRotate=false;ring.visible=ring2.visible=false;
   const oc=new THREE.OrthographicCamera(-1,1,1,-1,.1,20),s=S.hIn*.0254/1.72,Hm=1.72*s;
