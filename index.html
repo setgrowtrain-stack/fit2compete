@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795704041";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795704322";</script>
 <title>Fit 2 Compete</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -2012,7 +2012,7 @@ function rSupps(){const v=$("v-supps"),a=rec().a||{},E=engineOut(),D=DAILY();
  if(ui.suppEdit){v.innerHTML=`<div class="sheet"><div class="sheethead"><h3>Your supplement list</h3></div><p class="muted small">Fix anything that was read wrong. The times are worked out from fixed rules each time you save, so nothing here costs AI time.</p><div id="suppEd"></div><div class="nav"><button class="btn" type="button" id="suppEdCancel">Cancel</button><button class="btn primary" type="button" id="suppEdSave">Save list</button></div></div>`;
   const ed=window.F2C_suppEditor($("suppEd"),a.suppItems||[]);
   $("suppEdCancel").onclick=()=>{ui.suppEdit=false;rSupps()};
-  $("suppEdSave").onclick=()=>{a.suppItems=ed.get();a.suppConfirmed=Date.now();ui.suppEdit=false;touch();rSupps()};return}
+  $("suppEdSave").onclick=()=>{a.suppItems=ed.get();a.suppConfirmed=Date.now();ui.suppEdit=false;touch();if(window.F2C_suppSaved)F2C_suppSaved(a);rSupps()};return}
  if(!E){const S=suppSchedule();
   if(!S.length){v.innerHTML=`<div class="sheet"><h3>Supplements</h3><p class="muted">No supplement list yet. Upload it with Plan › Add new info, or type it in.</p><div class="nav"><button class="btn primary" type="button" id="suppEdOpen">Type my list</button></div>${a.supps?`<pre class="raw">${e_(a.supps)}</pre>`:""}</div>`;$("suppEdOpen").onclick=()=>{ui.suppEdit=true;rSupps()};return}
   v.innerHTML=`<div class="note small">This schedule was written before the rules-based scheduler. Open <b>Edit my list</b>, check it and save, and the times will be set by the rules.</div><div class="nav"><button class="btn primary" type="button" id="suppEdOpen">Edit my list</button></div>`+timelineHtml(S,D);
@@ -2027,7 +2027,7 @@ function rSupps(){const v=$("v-supps"),a=rec().a||{},E=engineOut(),D=DAILY();
  if(E.s.skippedRest.length&&dt==="rest")h+=`<p class="muted small">Not on rest days: ${e_(E.s.skippedRest.join(", "))}.</p>`;
  h+=`<div class="nav"><button class="btn" type="button" id="suppEdOpen">Edit my list</button></div>
   <div class="note small">Times come from fixed rules (version ${e_(E.s.version)}), not from AI guesses: each item shows why it sits where it does. Talk with your doctor or pharmacist before adding or changing anything on this list.</div>`;
- v.innerHTML=h;wireSuppChecks(v);
+ v.innerHTML=h+(window.F2C_suppReviewHtml?F2C_suppReviewHtml():"");wireSuppChecks(v);
  v.querySelectorAll("[data-sd]").forEach(b=>b.onclick=()=>{ui.suppDay=b.dataset.sd;saveUI();rSupps()});
  $("suppEdOpen").onclick=()=>{ui.suppEdit=true;rSupps()};
  const st=$("setTimes");if(st)st.onclick=()=>{const i=SECTIONS.findIndex(s=>s.k==="training");step=i<0?0:i;renderAll(false)}}
@@ -3466,6 +3466,63 @@ const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(th
 const _te=window.F2C_todayExtras;window.F2C_todayExtras=function(){let h="";try{h=F2C_wearToday()}catch(e){}return h+(_te?_te.apply(this,arguments):"")};
 window.F2C_wearRead=readFiles;
 const st=document.createElement("style");st.textContent=`.wearcard .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wearcard .kpi b{font-size:20px;white-space:nowrap}.z-green{color:#16a34a}.z-yellow{color:#ca8a04}.z-red{color:#dc2626}.wgood{color:#16a34a}.wbad{color:#dc2626}.wearup{display:grid;gap:8px;margin-top:8px}.wearup .btn{justify-self:start;cursor:pointer}`;document.head.appendChild(st);
+})();
+
+/* ===== Supplement review: the coach checks whether each supplement is needed; times always come from the fixed rules ===== */
+(function(){
+const T=()=>window.F2C_T,X=()=>window.F2C_X||{},R=()=>T().rec();
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=n=>String(n||"").toLowerCase().replace(/\([^)]*\)/g,"").replace(/[^a-z0-9]/g,"");
+const same=(a,b)=>{const x=norm(a),y=norm(b);return x===y||(x.length>4&&y.length>4&&(x.includes(y)||y.includes(x)))};
+const isRx=it=>it.cat==="medication";
+function reviewPrompt(a){const RU=window.F2C_RULES||{},cats=(RU.CAT_IDS||[]).filter(c=>c!=="medication").join(", ");
+ const list=(a.suppItems||[]).map(x=>`- ${x.name}${x.dose?" | "+x.dose:""} | type ${x.cat} | ${x.status}${x.condition?" ("+x.condition+")":""}`).join("\n");
+ return `Review this athlete's supplement list. For each item decide if they actually need it for their goals, health and labs. Be honest: many supplements people take have weak evidence or duplicate something else. Do not judge prescription medications (type medication): leave them out of your answer. Do not set times: the app sets times from fixed rules.
+ATHLETE: age ${a.age||"?"}, sex ${a.sex||"?"}, goals: ${[].concat(a.goals||a.goal||[]).join(", ")||"?"}${a.showDate?", show date "+a.showDate:""}${a.drugTested?", drug-tested competition":""}.
+HEALTH AND LABS: ${String(a.health||a.conditions||"").slice(0,600)} ${a.labValues?JSON.stringify(a.labValues).slice(0,1500):""}
+DIET NOTES: ${String(a.diet||a.dietNotes||"").slice(0,400)}
+LIST (name | amount | type | status):
+${list}
+Reply with ONLY JSON: {"items":[{"name":"exact name from the list","need":"keep" or "not-needed" or "optional" or "restart","why":"one plain sentence with the main reason","dose":"better amount if the current one is wrong, else empty","cat":"one of: ${cats}, only if the listed type is wrong, else empty"}],"add":[{"name":"product","dose":"amount","cat":"type","why":"one sentence"}],"note":"one or two sentences"}
+Use "not-needed" when evidence is weak for their goal, it duplicates another item, or it adds risk (lead, drug-test risk before a tested show, interactions). Use "restart" for a paused item that is worth taking again. Only add something when there is a clear, specific reason.`}
+async function askReview(){const a=R().a||{};if(!(a.suppItems||[]).some(x=>!isRx(x)))return;
+ const names=(a.suppItems||[]).filter(x=>!isRx(x)).map(x=>norm(x.name)).sort().join("|");
+ a.suppReviewKey=names;T().touch();return F2C_submit("question",reviewPrompt(a),{meta:{kind:"suppReview"}})}
+window.F2C_suppSaved=function(a){const names=(a.suppItems||[]).filter(x=>!isRx(x)).map(x=>norm(x.name)).sort().join("|");if(names&&names!==a.suppReviewKey)askReview().catch(()=>{})};
+/* Apply an answered review: not needed -> stopped (with the reason), restart -> taking, dose and type fixes, additions. Medications are never touched. */
+function apply(ans,id){const a=R().a||{},items=a.suppItems=a.suppItems||[],date=new Date().toISOString().slice(0,10);let n=0;
+ (ans.items||[]).forEach(v=>{const it=items.find(x=>same(x.name,v.name));if(!it||isRx(it))return;
+  it.verdict={need:v.need,why:String(v.why||"").slice(0,300),date,req:id};
+  if(v.need==="not-needed"&&it.status!=="stopped"&&!it.keepAnyway){it.prevStatus=it.status;it.status="stopped";it.stoppedBy="coach";n++}
+  if(v.need==="restart"&&(it.status==="paused"||it.status==="stopped")){it.status="taking";n++}
+  if(v.dose&&String(v.dose).trim()&&v.dose!==it.dose){it.prevDose=it.dose;it.dose=String(v.dose).slice(0,80);n++}
+  const RU=window.F2C_RULES||{};if(v.cat&&RU.CATS&&RU.CATS[v.cat]&&v.cat!=="medication"&&v.cat!==it.cat){it.cat=v.cat;n++}});
+ (ans.add||[]).forEach(v=>{if(!v.name||items.some(x=>same(x.name,v.name)))return;const RU=window.F2C_RULES||{};
+  items.push({name:String(v.name).slice(0,80),dose:String(v.dose||"").slice(0,80),time:"",cat:RU.CATS&&RU.CATS[v.cat]&&v.cat!=="medication"?v.cat:(window.F2C_ENGINE?F2C_ENGINE.guessCat(v.name):"other"),status:"taking",verdict:{need:"add",why:String(v.why||"").slice(0,300),date,req:id}});n++});
+ a.suppReviewNote=ans.note?{text:String(ans.note).slice(0,400),date}:a.suppReviewNote;a.suppReviewKey=items.filter(x=>!isRx(x)).map(x=>norm(x.name)).sort().join("|");
+ return n}
+async function applyAnswered(){const q=(X().requests||[]).filter(r=>r.type==="question"&&r.meta&&r.meta.kind==="suppReview"&&r.status==="answered"&&r.answer&&(Array.isArray(r.answer.items)||Array.isArray(r.answer.add)));
+ if(!q.length)return;for(const r of q){apply(r.answer,r.id);r.status="applied";window.F2C_markApplied&&F2C_markApplied(r.id)}
+ T().touch();if(T().ui.tab==="supps")T().show("supps");if(window.F2C_toast)F2C_toast("Your coach reviewed your supplements. See the Supplements tab.")}
+window.F2C_suppReviewHtml=function(){setTimeout(()=>applyAnswered().catch(()=>{}),0);const a=R().a||{},items=a.suppItems||[];
+ const off=items.filter(x=>x.status==="stopped"&&x.stoppedBy==="coach"),opt=items.filter(x=>x.verdict&&x.verdict.need==="optional"&&x.status!=="stopped"),
+  added=items.filter(x=>x.verdict&&(x.verdict.need==="add"||x.verdict.need==="restart")&&x.status==="taking"),pend=(X().requests||[]).some(r=>r.type==="question"&&r.meta&&r.meta.kind==="suppReview"&&(r.status==="new"||r.status==="working"));
+ let h=`<div class="sheet suppreview"><span class="label">Do you need them? · coach review</span>`;
+ if(a.suppReviewNote)h+=`<p class="small">${esc(a.suppReviewNote.text)} <span class="muted">(${esc(a.suppReviewNote.date)})</span></p>`;
+ if(off.length)h+=`<h4 class="sect">Taken off your schedule</h4>${off.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b><p class="small">${esc(x.verdict&&x.verdict.why||"")}</p></div><button type="button" class="btn small" data-keepsupp="${esc(x.name)}">Keep taking it</button></div>`).join("")}`;
+ if(added.length)h+=`<h4 class="sect">Started or restarted</h4>${added.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b>${x.dose?` <span class="muted small">${esc(x.dose)}</span>`:""}<p class="small">${esc(x.verdict.why)}</p></div></div>`).join("")}`;
+ if(opt.length)h+=`<h4 class="sect">Optional</h4>${opt.map(x=>`<div class="srev"><div><b>${esc(x.name)}</b><p class="small">${esc(x.verdict.why)}</p></div></div>`).join("")}`;
+ if(pend)h+=`<div class="note gold">Your coach is checking your list. Results show up here, usually within 3 hours.</div>`;
+ else if(!off.length&&!added.length&&!opt.length&&!a.suppReviewNote)h+=`<p class="small">Your coach can check whether each supplement is worth taking for your goals and labs. Prescription medicines are never changed.</p>`;
+ h+=`<div class="nav"><span class="muted small">Times are always set by the fixed rules. Prescriptions stay as your doctor wrote them.</span><button type="button" class="btn small" data-suppreview>${a.suppReviewNote||off.length?"Review again":"Review my list"}</button></div></div>`;
+ return h};
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-keepsupp],[data-suppreview]");if(!t)return;const a=R().a||{};
+ if(t.dataset.keepsupp){const it=(a.suppItems||[]).find(x=>x.name===t.dataset.keepsupp);if(it){it.status=it.prevStatus||"taking";it.keepAnyway=true;delete it.stoppedBy;T().touch();T().show("supps")}return}
+ if(t.dataset.suppreview!=null){t.disabled=true;t.textContent="Sending…";askReview().then(()=>T().show("supps")).catch(()=>{t.disabled=false;t.textContent="Try again"})}},true);
+const _le=window.F2C_loadExtras;if(_le)window.F2C_loadExtras=async function(){const r=await _le.apply(this,arguments);try{await applyAnswered()}catch(e){}return r};
+addEventListener("load",()=>setTimeout(()=>{applyAnswered().catch(()=>{})},4000));
+const st=document.createElement("style");st.textContent=`.srev{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line,#e2e8f0)}.srev p{margin:2px 0 0}`;document.head.appendChild(st);
+window.F2C_suppApply=apply;
 })();
 
 </script>
