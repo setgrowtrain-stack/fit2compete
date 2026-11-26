@@ -552,7 +552,8 @@ function slug_(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, 
 /** What kind of lift this is, the load step and the default target RIR. */
 function classify_(name, age) {
   var n = String(name || '').toLowerCase();
-  if (/warm.?up|foam|stretch|mobility|walk|jog|sprint|stride|row(ing|er)?\s*\d|\bzone\b|bike|cycle|treadmill|plank|carry|hang\b|skip|drill|cardio|swim/.test(n) && !/barbell row|dumbbell row|cable row|seated row|t-bar|pendlay|upright row/.test(n))
+  if (/warm.?up|cool.?down|foam|stretch|mobility|ankle rock|hip switch|90\/90|balance|copenhagen/.test(n)) return { type: 'skip', inc: 0, label: '' };
+  if (/walk|jog|sprint|stride|row(ing|er)?\s*\d|\bzone\b|bike|cycle|treadmill|plank|carry|hang\b|skip|drill|cardio|swim/.test(n) && !/barbell row|dumbbell row|cable row|seated row|t-bar|pendlay|upright row|lateral walk/.test(n))
     return { type: 'skip', inc: 0, label: '' };
   var minor = Number(age) > 0 && Number(age) < 18;
   var lower = /squat|deadlift|\brdl\b|romanian|hip thrust|lunge|good morning|step.?up|split squat|glute bridge/.test(n);
