@@ -54,20 +54,18 @@ rep('return `<article class="excard"><div class="exhead"><div><h4>${e_(ex.name)}
 # Before showing anything, a phone that opened from its saved copy checks version.json (1.5 s cap). If a newer
 # version is live, it refreshes the saved copy and reloads behind the boot screen, so the old look never shows.
 SPLASH = r'''<div id="bootSplash" role="status" aria-live="polite"><div class="bsbox">
-<svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/>
-<g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g>
-<g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g>
-<path class="bsground" d="M2 58H62"/></svg>
+<svg viewBox="0 0 120 120" class="bsrun" aria-hidden="true"><circle class="bstrack" cx="60" cy="60" r="50"/><circle class="bsarc" cx="60" cy="60" r="50"/><path class="bspulse" d="M24 62H45L51 47L59 81L67 35L74 70L79 62H96"/></svg>
 <b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></div></div>
 <style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#1a2740;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
 #bootSplash.gone{opacity:0;pointer-events:none}#bootSplash{color:#e8edf2}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:inherit;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
-.bsrun{width:96px;height:96px;fill:none;stroke:var(--bs,#22d3ee);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:var(--bs,#22d3ee);stroke:none}
-.bsbody{animation:bsbob .32s ease-in-out infinite alternate}.bsa1,.bsa2{transform-origin:33px 19px}.bsl1,.bsl2{transform-origin:30px 33px}
-.bsa1,.bsl2{animation:bssw .64s ease-in-out infinite alternate}.bsa2,.bsl1{animation:bssw .64s ease-in-out infinite alternate-reverse}
-.bsground{stroke:currentColor;opacity:.35;stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
-@keyframes bssw{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}@keyframes bsbob{from{transform:translateY(0)}to{transform:translateY(-2px)}}@keyframes bsgr{to{stroke-dashoffset:12}}
-@media (prefers-reduced-motion:reduce){.bsbody,.bsa1,.bsa2,.bsl1,.bsl2,.bsground{animation:none}}</style>
+.bsrun{width:112px;height:112px;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.bstrack{stroke:currentColor;opacity:.14;stroke-width:6}
+.bsarc{stroke:var(--bs,#22d3ee);stroke-width:6;stroke-dasharray:80 235;transform-origin:60px 60px;animation:bsspin 1.1s linear infinite}
+.bspulse{stroke:var(--bs,#22d3ee);stroke-width:4.5;stroke-dasharray:170;stroke-dashoffset:170;animation:bsbeat 1.5s ease-in-out infinite}
+@keyframes bsspin{to{transform:rotate(360deg)}}@keyframes bsbeat{0%{stroke-dashoffset:170;opacity:1}55%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:170;opacity:0}}
+@media (prefers-reduced-motion:reduce){.bsarc,.bspulse{animation:none}.bspulse{stroke-dashoffset:0}}
+</style>
 <script>/* Looks (themes). Single source: setup.js builds the Appearance picker from this table. */
 window.F2C_THEMES={
  light:{g:"l",l:"Red",n:"The original",dark:0,bg:"#f3f4f7",card:"#ffffff",acc:"#E42626"},
@@ -110,7 +108,7 @@ try{window.F2C_applyTheme(localStorage.getItem("f2c-theme")||"cyan")}catch(e){wi
      window.F2C_updateNow().then(function(){location.reload()});return}}
    checked=true}).catch(function(){if(!done){done=true;clearTimeout(to);checked=true}})}
  tick()})();</script>
-<template id="bsTpl"><svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/><g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g><g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g><path class="bsground" d="M2 58H62"/></svg><b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></template>'''
+<template id="bsTpl"><svg viewBox="0 0 120 120" class="bsrun" aria-hidden="true"><circle class="bstrack" cx="60" cy="60" r="50"/><circle class="bsarc" cx="60" cy="60" r="50"/><path class="bspulse" d="M24 62H45L51 47L59 81L67 35L74 70L79 62H96"/></svg><b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></template>'''
 rep('</head><body>', '</head><body>' + SPLASH)
 
 # The in-app update (on return to the app) shows the boot screen instead of flashing the old page.

@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795822167";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795823359";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -357,20 +357,18 @@ html{-webkit-text-size-adjust:100%} body{overflow-x:hidden}
 @media (max-width:640px){.photos{grid-template-columns:1fr 1fr}}
 </style>
 </head><body><div id="bootSplash" role="status" aria-live="polite"><div class="bsbox">
-<svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/>
-<g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g>
-<g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g>
-<path class="bsground" d="M2 58H62"/></svg>
+<svg viewBox="0 0 120 120" class="bsrun" aria-hidden="true"><circle class="bstrack" cx="60" cy="60" r="50"/><circle class="bsarc" cx="60" cy="60" r="50"/><path class="bspulse" d="M24 62H45L51 47L59 81L67 35L74 70L79 62H96"/></svg>
 <b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></div></div>
 <style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#1a2740;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
 #bootSplash.gone{opacity:0;pointer-events:none}#bootSplash{color:#e8edf2}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:inherit;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
-.bsrun{width:96px;height:96px;fill:none;stroke:var(--bs,#22d3ee);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:var(--bs,#22d3ee);stroke:none}
-.bsbody{animation:bsbob .32s ease-in-out infinite alternate}.bsa1,.bsa2{transform-origin:33px 19px}.bsl1,.bsl2{transform-origin:30px 33px}
-.bsa1,.bsl2{animation:bssw .64s ease-in-out infinite alternate}.bsa2,.bsl1{animation:bssw .64s ease-in-out infinite alternate-reverse}
-.bsground{stroke:currentColor;opacity:.35;stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
-@keyframes bssw{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}@keyframes bsbob{from{transform:translateY(0)}to{transform:translateY(-2px)}}@keyframes bsgr{to{stroke-dashoffset:12}}
-@media (prefers-reduced-motion:reduce){.bsbody,.bsa1,.bsa2,.bsl1,.bsl2,.bsground{animation:none}}</style>
+.bsrun{width:112px;height:112px;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.bstrack{stroke:currentColor;opacity:.14;stroke-width:6}
+.bsarc{stroke:var(--bs,#22d3ee);stroke-width:6;stroke-dasharray:80 235;transform-origin:60px 60px;animation:bsspin 1.1s linear infinite}
+.bspulse{stroke:var(--bs,#22d3ee);stroke-width:4.5;stroke-dasharray:170;stroke-dashoffset:170;animation:bsbeat 1.5s ease-in-out infinite}
+@keyframes bsspin{to{transform:rotate(360deg)}}@keyframes bsbeat{0%{stroke-dashoffset:170;opacity:1}55%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:170;opacity:0}}
+@media (prefers-reduced-motion:reduce){.bsarc,.bspulse{animation:none}.bspulse{stroke-dashoffset:0}}
+</style>
 <script>/* Looks (themes). Single source: setup.js builds the Appearance picker from this table. */
 window.F2C_THEMES={
  light:{g:"l",l:"Red",n:"The original",dark:0,bg:"#f3f4f7",card:"#ffffff",acc:"#E42626"},
@@ -413,7 +411,7 @@ try{window.F2C_applyTheme(localStorage.getItem("f2c-theme")||"cyan")}catch(e){wi
      window.F2C_updateNow().then(function(){location.reload()});return}}
    checked=true}).catch(function(){if(!done){done=true;clearTimeout(to);checked=true}})}
  tick()})();</script>
-<template id="bsTpl"><svg viewBox="0 0 64 64" class="bsrun" aria-hidden="true"><g class="bsbody"><circle cx="35" cy="10" r="5"/><path d="M34 16L30 33"/><g class="bsa1"><path d="M33 19L26 26L21 23"/></g><g class="bsa2"><path d="M33 19L40 25L45 21"/></g><g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g><path class="bsground" d="M2 58H62"/></svg><b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></template>
+<template id="bsTpl"><svg viewBox="0 0 120 120" class="bsrun" aria-hidden="true"><circle class="bstrack" cx="60" cy="60" r="50"/><circle class="bsarc" cx="60" cy="60" r="50"/><path class="bspulse" d="M24 62H45L51 47L59 81L67 35L74 70L79 62H96"/></svg><b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></template>
 
 <div class="appbar"><div class="in">
   <div class="brand">Fit <span>2</span> Compete<small>A CREATURES OF HEALTHY HABITS PROGRAM</small></div>
