@@ -62,12 +62,29 @@ SPLASH = r'''<div id="bootSplash" role="status" aria-live="polite"><div class="b
 <style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#060a14;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
 #bootSplash.gone{opacity:0;pointer-events:none}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:#e8edf2;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
-.bsrun{width:96px;height:96px;fill:none;stroke:#22d3ee;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:#22d3ee;stroke:none}
+.bsrun{width:96px;height:96px;fill:none;stroke:var(--bs,#22d3ee);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:var(--bs,#22d3ee);stroke:none}
 .bsbody{animation:bsbob .32s ease-in-out infinite alternate}.bsa1,.bsa2{transform-origin:33px 19px}.bsl1,.bsl2{transform-origin:30px 33px}
 .bsa1,.bsl2{animation:bssw .64s ease-in-out infinite alternate}.bsa2,.bsl1{animation:bssw .64s ease-in-out infinite alternate-reverse}
 .bsground{stroke:rgba(255,255,255,.35);stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
 @keyframes bssw{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}@keyframes bsbob{from{transform:translateY(0)}to{transform:translateY(-2px)}}@keyframes bsgr{to{stroke-dashoffset:12}}
 @media (prefers-reduced-motion:reduce){.bsbody,.bsa1,.bsa2,.bsl1,.bsl2,.bsground{animation:none}}</style>
+<script>/* Looks (themes). Single source: setup.js builds the Appearance picker from this table. */
+window.F2C_THEMES={
+ light:{l:"Light",n:"The original",dark:0,bg:"#f3f4f7",card:"#ffffff",acc:"#E42626"},
+ cyan:{l:"Dark mode",n:"Navy and cyan",dark:1,bg:"#060a14",card:"#0b1322",line:"#18253a",ink:"#e8edf2",mut:"#8a96a2",acc:"#22d3ee",ai:"#04121a",soft:"#0b2a35",h1:"#155e75",h2:"#0891b2",link:"#67e8f9"},
+ gold:{l:"Black & gold",n:"Black with gold",dark:1,bg:"#0a0a0b",card:"#151517",line:"#27272b",ink:"#f2f2f2",mut:"#9d9da6",acc:"#f5b301",ai:"#1a1300",soft:"#2a2108",h1:"#854d0e",h2:"#b7791f",link:"#fcd34d"},
+ forest:{l:"Forest",n:"Deep green and mint",dark:1,bg:"#06120c",card:"#0c1d14",line:"#173126",ink:"#e6f2ec",mut:"#8fa89a",acc:"#34d399",ai:"#03140c",soft:"#0d2e20",h1:"#065f46",h2:"#059669",link:"#6ee7b7"},
+ ember:{l:"Ember",n:"Charcoal and orange",dark:1,bg:"#110a07",card:"#1c120d",line:"#2e1e16",ink:"#f5ece6",mut:"#a8968c",acc:"#ff7a1a",ai:"#1c0b00",soft:"#33190a",h1:"#9a3412",h2:"#ea580c",link:"#fdba74"},
+ royal:{l:"Royal",n:"Deep purple and violet",dark:1,bg:"#0c0820",card:"#160f30",line:"#261c4a",ink:"#ece8fb",mut:"#a39cc4",acc:"#a78bfa",ai:"#12082b",soft:"#241a4d",h1:"#5b21b6",h2:"#7c3aed",link:"#c4b5fd"},
+ arctic:{l:"Arctic",n:"Ice white and blue",dark:0,bg:"#eef4fa",card:"#ffffff",line:"#d5e1ee",ink:"#0f172a",mut:"#52627a",acc:"#2563eb",ai:"#ffffff",soft:"#dbeafe",h1:"#1d4ed8",h2:"#3b82f6",link:"#1d4ed8"},
+ dark:{l:"Navy & red",n:"Navy with red",dark:1,bg:"#060a14",card:"#0e1625",acc:"#E42626"}};
+window.F2C_applyTheme=function(t){var T=window.F2C_THEMES,h=document.documentElement;if(!T[t])t="light";var x=T[t];
+ h.classList.toggle("dark",!!x.dark);h.classList.toggle("tint",!!x.h1);h.classList.toggle("cyan",t==="cyan");h.setAttribute("data-look",t);
+ var V={"--bg":x.bg,"--card":x.card,"--line":x.line,"--ink":x.ink,"--muted":x.mut,"--head":x.ink,"--accent":x.acc,"--accent-ink":x.ai,"--accent-soft":x.soft,"--hero-a":x.h1,"--hero-b":x.h2,"--link":x.link};
+ for(var k in V){if(x.h1&&V[k])h.style.setProperty(k,V[k]);else h.style.removeProperty(k)}
+ var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",x.dark?x.bg:"#ffffff");
+ var sp=document.getElementById("bootSplash");if(sp){sp.style.background=x.dark?x.bg:"#060a14";sp.style.setProperty("--bs",x.h1?x.acc:"#22d3ee")}return t};
+try{var _t=localStorage.getItem("f2c-theme");if(_t)window.F2C_applyTheme(_t)}catch(e){}</script>
 <script>(function(){var t0=Date.now(),checked=false;
  function el(){return document.getElementById("bootSplash")}
  function ready(){var a=document.getElementById("app"),l=document.getElementById("login");return !!((a&&!a.hidden)||(l&&!l.hidden))}
