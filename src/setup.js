@@ -35,6 +35,12 @@ const st=document.createElement("style");st.textContent=`
  --stage-a:color-mix(in srgb,var(--hero-a,#7f1d1d) 55%,#0b1220);--stage-b:color-mix(in srgb,var(--hero-a,#7f1d1d) 25%,#060a14)}
 html.dark{--stage-a:var(--card);--stage-b:color-mix(in srgb,var(--bg) 88%,#000)}
 circle.wtrack{stroke:var(--wd-tile2)}
+/* Surfaces that had white written in: follow the look */
+html.tint .appbar,html.tint .who .btn,html.tint .ptabs,html.tint .ptabs button[aria-selected="true"],html.tint .excard,html.tint .srow input,html.tint .srow select,html.tint .tbox,html.tint .fbanner,html.tint .wherebox .seg button,
+html.dark .excard,html.dark .srow input,html.dark .srow select,html.dark .tbox,html.dark .fbanner,html.dark .wherebox .seg button,html.dark .swapbox{background:var(--card)!important;color:var(--ink)!important}
+html.tint .swapbox,html.dark .swapbox{background:var(--accent-soft)!important;border-color:var(--line)!important;color:var(--ink)!important}
+html.tint .excard h4,html.tint .excard .muted,html.dark .excard h4{color:inherit}html.tint .excard .muted,html.tint .excard small{color:var(--muted)!important}
+html.tint .dchip[aria-selected="true"] i{background:var(--accent-ink)}
 :root{--wd-green:#16a34a;--wd-yellow:#d49b00;--wd-red:#e11d48}html.dark{--wd-green:#16ec06;--wd-yellow:#ffde00;--wd-red:#ff2a4a}
 .wearcard{border:1px solid var(--line)!important;box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.06))}
 .plansub{margin-bottom:12px}.setupview{display:grid;gap:16px}.setupview .top{margin:0}
