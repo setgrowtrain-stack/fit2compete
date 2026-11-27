@@ -60,30 +60,35 @@ SPLASH = r'''<div id="bootSplash" role="status" aria-live="polite"><div class="b
 <path class="bsground" d="M2 58H62"/></svg>
 <b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></div></div>
 <style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#060a14;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
-#bootSplash.gone{opacity:0;pointer-events:none}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:#e8edf2;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#bootSplash.gone{opacity:0;pointer-events:none}#bootSplash{color:#e8edf2}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:inherit;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
 .bsrun{width:96px;height:96px;fill:none;stroke:var(--bs,#22d3ee);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:var(--bs,#22d3ee);stroke:none}
 .bsbody{animation:bsbob .32s ease-in-out infinite alternate}.bsa1,.bsa2{transform-origin:33px 19px}.bsl1,.bsl2{transform-origin:30px 33px}
 .bsa1,.bsl2{animation:bssw .64s ease-in-out infinite alternate}.bsa2,.bsl1{animation:bssw .64s ease-in-out infinite alternate-reverse}
-.bsground{stroke:rgba(255,255,255,.35);stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
+.bsground{stroke:currentColor;opacity:.35;stroke-width:2;stroke-dasharray:6 6;animation:bsgr .5s linear infinite}
 @keyframes bssw{from{transform:rotate(-38deg)}to{transform:rotate(38deg)}}@keyframes bsbob{from{transform:translateY(0)}to{transform:translateY(-2px)}}@keyframes bsgr{to{stroke-dashoffset:12}}
 @media (prefers-reduced-motion:reduce){.bsbody,.bsa1,.bsa2,.bsl1,.bsl2,.bsground{animation:none}}</style>
 <script>/* Looks (themes). Single source: setup.js builds the Appearance picker from this table. */
 window.F2C_THEMES={
- light:{l:"Light",n:"The original",dark:0,bg:"#f3f4f7",card:"#ffffff",acc:"#E42626"},
- cyan:{l:"Dark mode",n:"Navy and cyan",dark:1,bg:"#060a14",card:"#0b1322",line:"#18253a",ink:"#e8edf2",mut:"#8a96a2",acc:"#22d3ee",ai:"#04121a",soft:"#0b2a35",h1:"#155e75",h2:"#0891b2",link:"#67e8f9"},
- gold:{l:"Black & gold",n:"Black with gold",dark:1,bg:"#0a0a0b",card:"#151517",line:"#27272b",ink:"#f2f2f2",mut:"#9d9da6",acc:"#f5b301",ai:"#1a1300",soft:"#2a2108",h1:"#854d0e",h2:"#b7791f",link:"#fcd34d"},
- forest:{l:"Forest",n:"Deep green and mint",dark:1,bg:"#06120c",card:"#0c1d14",line:"#173126",ink:"#e6f2ec",mut:"#8fa89a",acc:"#34d399",ai:"#03140c",soft:"#0d2e20",h1:"#065f46",h2:"#059669",link:"#6ee7b7"},
- ember:{l:"Ember",n:"Charcoal and orange",dark:1,bg:"#110a07",card:"#1c120d",line:"#2e1e16",ink:"#f5ece6",mut:"#a8968c",acc:"#ff7a1a",ai:"#1c0b00",soft:"#33190a",h1:"#9a3412",h2:"#ea580c",link:"#fdba74"},
- royal:{l:"Royal",n:"Deep purple and violet",dark:1,bg:"#0c0820",card:"#160f30",line:"#261c4a",ink:"#ece8fb",mut:"#a39cc4",acc:"#a78bfa",ai:"#12082b",soft:"#241a4d",h1:"#5b21b6",h2:"#7c3aed",link:"#c4b5fd"},
- arctic:{l:"Arctic",n:"Ice white and blue",dark:0,bg:"#eef4fa",card:"#ffffff",line:"#d5e1ee",ink:"#0f172a",mut:"#52627a",acc:"#2563eb",ai:"#ffffff",soft:"#dbeafe",h1:"#1d4ed8",h2:"#3b82f6",link:"#1d4ed8"},
- dark:{l:"Navy & red",n:"Navy with red",dark:1,bg:"#060a14",card:"#0e1625",acc:"#E42626"}};
+ light:{g:"l",l:"Red",n:"The original",dark:0,bg:"#f3f4f7",card:"#ffffff",acc:"#E42626"},
+ cyanl:{g:"l",l:"Cyan",n:"White and cyan",dark:0,bg:"#eefbfd",card:"#ffffff",line:"#cdeef4",ink:"#0f172a",mut:"#4b6470",acc:"#0891b2",ai:"#ffffff",soft:"#cffafe",h1:"#155e75",h2:"#0891b2",link:"#0e7490"},
+ goldl:{g:"l",l:"Gold",n:"White and gold",dark:0,bg:"#fdf9ee",card:"#ffffff",line:"#efe3c4",ink:"#1c1917",mut:"#6b6152",acc:"#ca8a04",ai:"#1a1300",soft:"#fef3c7",h1:"#854d0e",h2:"#b7791f",link:"#a16207"},
+ forestl:{g:"l",l:"Forest",n:"White and green",dark:0,bg:"#eff9f4",card:"#ffffff",line:"#cfe9dc",ink:"#0f1f17",mut:"#4f6a5c",acc:"#059669",ai:"#ffffff",soft:"#d1fae5",h1:"#065f46",h2:"#059669",link:"#047857"},
+ emberl:{g:"l",l:"Ember",n:"White and orange",dark:0,bg:"#fff6f0",card:"#ffffff",line:"#f6dcc9",ink:"#1f140d",mut:"#6e5a4d",acc:"#ea580c",ai:"#ffffff",soft:"#ffedd5",h1:"#9a3412",h2:"#ea580c",link:"#c2410c"},
+ royall:{g:"l",l:"Royal",n:"White and violet",dark:0,bg:"#f6f3ff",card:"#ffffff",line:"#e1d8fb",ink:"#1a1433",mut:"#5f5880",acc:"#7c3aed",ai:"#ffffff",soft:"#ede9fe",h1:"#5b21b6",h2:"#7c3aed",link:"#6d28d9"},
+ arctic:{g:"l",l:"Arctic",n:"White and blue",dark:0,bg:"#eef4fa",card:"#ffffff",line:"#d5e1ee",ink:"#0f172a",mut:"#52627a",acc:"#2563eb",ai:"#ffffff",soft:"#dbeafe",h1:"#1d4ed8",h2:"#3b82f6",link:"#1d4ed8"},
+ cyan:{g:"d",l:"Dark mode",n:"Navy and cyan",dark:1,bg:"#0e1729",card:"#17223a",line:"#24324d",ink:"#e8edf2",mut:"#94a3b8",acc:"#22d3ee",ai:"#04121a",soft:"#0f3340",h1:"#155e75",h2:"#0891b2",link:"#67e8f9"},
+ gold:{g:"d",l:"Black & gold",n:"Charcoal and gold",dark:1,bg:"#161618",card:"#212124",line:"#323237",ink:"#f2f2f2",mut:"#a3a3ad",acc:"#f5b301",ai:"#1a1300",soft:"#33290c",h1:"#854d0e",h2:"#b7791f",link:"#fcd34d"},
+ forest:{g:"d",l:"Forest",n:"Deep green and mint",dark:1,bg:"#0d1e15",card:"#162b20",line:"#22402f",ink:"#e6f2ec",mut:"#98b1a3",acc:"#34d399",ai:"#03140c",soft:"#123826",h1:"#065f46",h2:"#059669",link:"#6ee7b7"},
+ ember:{g:"d",l:"Ember",n:"Charcoal and orange",dark:1,bg:"#1c130e",card:"#291c14",line:"#3d2a1e",ink:"#f5ece6",mut:"#b2a094",acc:"#ff7a1a",ai:"#1c0b00",soft:"#3d200e",h1:"#9a3412",h2:"#ea580c",link:"#fdba74"},
+ royal:{g:"d",l:"Royal",n:"Deep purple and violet",dark:1,bg:"#161034",card:"#211946",line:"#33295f",ink:"#ece8fb",mut:"#aca5cc",acc:"#a78bfa",ai:"#12082b",soft:"#2c2160",h1:"#5b21b6",h2:"#7c3aed",link:"#c4b5fd"},
+ dark:{g:"d",l:"Navy & red",n:"Navy with red",dark:1,bg:"#0e1729",card:"#17223a",line:"#24324d",ink:"#e6edf6",mut:"#9aa8bb",acc:"#E42626",ai:"#ffffff",soft:"#3a1418",h1:"#991b1b",h2:"#dc2626",link:"#7fb6ff"}};
 window.F2C_applyTheme=function(t){var T=window.F2C_THEMES,h=document.documentElement;if(!T[t])t="light";var x=T[t];
  h.classList.toggle("dark",!!x.dark);h.classList.toggle("tint",!!x.h1);h.classList.toggle("cyan",t==="cyan");h.setAttribute("data-look",t);
  var V={"--bg":x.bg,"--card":x.card,"--line":x.line,"--ink":x.ink,"--muted":x.mut,"--head":x.ink,"--accent":x.acc,"--accent-ink":x.ai,"--accent-soft":x.soft,"--hero-a":x.h1,"--hero-b":x.h2,"--link":x.link};
  for(var k in V){if(x.h1&&V[k])h.style.setProperty(k,V[k]);else h.style.removeProperty(k)}
  var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",x.dark?x.bg:"#ffffff");
- var sp=document.getElementById("bootSplash");if(sp){sp.style.background=x.dark?x.bg:"#060a14";sp.style.setProperty("--bs",x.h1?x.acc:"#22d3ee")}return t};
+ var sp=document.getElementById("bootSplash");if(sp){sp.style.background=x.bg;sp.style.color=x.dark?"#e8edf2":(x.ink||"#141a2b");sp.style.setProperty("--bs",x.h1?x.acc:(x.dark?"#22d3ee":x.acc))}return t};
 try{var _t=localStorage.getItem("f2c-theme");if(_t)window.F2C_applyTheme(_t)}catch(e){}</script>
 <script>(function(){var t0=Date.now(),checked=false;
  function el(){return document.getElementById("bootSplash")}

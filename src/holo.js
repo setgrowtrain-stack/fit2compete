@@ -4,7 +4,7 @@
 const $=id=>document.getElementById(id),e_=s=>esc(s==null?"":String(s));
 const T=()=>window.F2C_T;
 const UI=(()=>{try{return JSON.parse(localStorage.getItem("f2c-holo")||"{}")}catch(e){return {}}})();
-UI.period=UI.period||"week";UI.color=UI.color||"#22d3ee";
+UI.period=UI.period||"week";if(!UI.colorSet){try{UI.color=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||"#22d3ee"}catch(e){UI.color="#22d3ee"}}
 window.F2C_holoUI=UI;
 const saveUI=()=>{try{localStorage.setItem("f2c-holo",JSON.stringify(UI))}catch(e){}};
 const MUSCLES=[["chest","Chest"],["shoulders","Shoulders"],["biceps","Biceps"],["triceps","Triceps"],["forearms","Forearms"],["abs","Abs"],["obliques","Obliques"],
@@ -276,7 +276,7 @@ function panel(){const v=$("v-body");if(!v||!T()||!athletes[cur])return;let host
  host.querySelectorAll("[data-hs]").forEach(b=>b.onclick=()=>{UI.shapeFrom=b.dataset.hs;saveUI();panel()});
  host.querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{UI.layer=b.dataset.hl;saveUI();panel()});
  host.querySelectorAll("[data-hv]").forEach(b=>b.onclick=()=>{UI.view=b.dataset.hv;saveUI();panel()});
- $("holoColor").oninput=e=>{UI.color=e.target.value;saveUI();clearTimeout(panel._t);panel._t=setTimeout(panel,250)};
+ $("holoColor").oninput=e=>{UI.color=e.target.value;UI.colorSet=true;saveUI();clearTimeout(panel._t);panel._t=setTimeout(panel,250)};
  draw($("holoStage"),V,S);window.F2C_painPanel&&UI.view==="pain"&&F2C_painPanel()}
 window.F2C_holoPanel=()=>panel();
 const _rb=window.F2C_rBody;window.F2C_rBody=function(){const r=_rb&&_rb.apply(this,arguments);try{panel()}catch(e){console.warn("[F2C] body view",e)}return r};
@@ -288,7 +288,7 @@ const st=document.createElement("style");st.textContent=`.holo{display:grid;gap:
 .holosum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.holosum b{font-size:1.25rem}.holosum span{font-size:.82rem;color:var(--muted,#64748b)}
 .holomore>summary{cursor:pointer;font-weight:700;font-size:.85rem}.holomore[open]{display:grid;gap:10px}
 .holoreset{position:absolute;right:8px;bottom:8px;z-index:2}.holostage.full{position:fixed;inset:0;z-index:9999;height:100vh!important;border-radius:0}.holostage{position:relative;height:min(62vh,460px);border-radius:14px;overflow:hidden;touch-action:none;
- background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,#0b1220) 0%,#060a14 70%)}
+ background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--hc) 22%,var(--stage-a,#0b1220)) 0%,var(--stage-b,#060a14) 70%)}
 .holostage canvas{display:block;width:100%!important;height:100%!important}.holocol{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.82rem}.holocol input{width:36px;height:30px;border:0;background:none;padding:0}
 .holoseg{justify-self:start}.holoview button{padding:6px 10px}.sheethead .holoview{margin-left:auto;margin-right:8px}.holobars{display:grid;gap:6px}.holobars .v2tot b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;min-width:84px}.holoLb{font-weight:500;font-size:12px;opacity:.7}.holoTotal{display:grid;gap:2px;padding:10px 12px;border-radius:12px;background:var(--bg2,#f1f5f9)}.holoTotal b{font-size:26px;line-height:1.1}.pertag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--bg2,#eef2f7);color:var(--ink2,#334155)}`;document.head.appendChild(st);
 })();
