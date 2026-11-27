@@ -1,5 +1,9 @@
 /* ===== Wearable data: upload exports (WHOOP, Oura, Fitbit, Garmin CSV...), screenshots read by the coach, show and use it ===== */
 (function(){
+/* Traffic-light colors for WHOOP numbers (same on every look). Sleep: WHOOP sleep performance bands, 85%+ optimal (green), 70 to 84% sufficient (yellow), under 70% poor (red); without a score, hours slept vs sleep needed.
+   Strain: green when the day's strain fits the recovery (green recovery 14 to 18, yellow 10 to 14, red under 10), yellow when below that, red when above it on a yellow or red recovery day. */
+window.F2C_sleepCol=(perf,hrs,need)=>{const p=perf!=null&&perf!==""?+perf:(hrs!=null&&need?hrs*6000/need:null);return p==null||!isFinite(p)?"var(--wd-mut)":p>=85?"var(--wd-green)":p>=70?"var(--wd-yellow)":"var(--wd-red)"};
+window.F2C_strainCol=(st,rec)=>{if(st==null||st===""||!isFinite(+st))return "var(--wd-mut)";st=+st;const t=rec==null||rec===""?[10,14]:rec>=67?[14,18]:rec>=34?[10,14]:[0,10];if(st<t[0])return "var(--wd-yellow)";if(st<=t[1])return "var(--wd-green)";return rec!=null&&rec!==""&&rec<67?"var(--wd-red)":"var(--wd-yellow)"};
 const T=()=>window.F2C_T,X=()=>window.F2C_X||{},$=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEYS=["rec","hrv","rhr","sleep","perf","deep","rem","debt","strain","steps","cal","spo2","temp","resp"];
@@ -77,6 +81,7 @@ function advice(d,base){if(!d)return "";const z=zone(d.rec),hrvLow=d.hrv!=null&&
  if(z==="green")return "Good recovery. A good day to push: go for weight increases and full-effort intervals.";return ""}
 window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";const last=W[W.length-1],today=new Date().toISOString().slice(0,10),prev=W.slice(-31,-1),base={hrv:avg(prev,"hrv"),rhr:avg(prev,"rhr")};
  const stale=last.date<new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+ const slc=F2C_sleepCol(last.perf,last.sleep,last.need),stc=F2C_strainCol(last.strain,last.rec);
  const ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rz=last.rec!=null?zone(last.rec):"",rc=ZC[rz]||"#9aa4af";
  const ring=v=>{const r=42,c=2*Math.PI*r,p=Math.max(0,Math.min(100,v||0));return `<svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" class="wtrack" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" style="stroke:${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 50 50)"/></svg>`};
  const I={hrv:'<path d="M2 12h4l2-5 3 10 3-7 2 2h6"/>',rhr:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',steps:'<path d="M7 14c-1.5 0-2.5 1.5-2.5 3S5.5 20 7 20s2-1.5 2-3-0.5-3-2-3zM15 4c-1.5 0-2.5 1.5-2.5 3s1 3 2.5 3 2-1.5 2-3-.5-3-2-3zM6 12c0-2 .5-4 1.5-4S9 10 8.5 12M14 13c.5 2 1 4 2 4s1.5-2 1-4"/>',cal:'<path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/>',debt:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>'};
@@ -85,8 +90,8 @@ window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";cons
  const src=(last.src||[]).some(x=>/whoop/.test(x))?"WHOOP":(last.src||[]).join(", ").toUpperCase();
  return `<div class="sheet wearcard"><div class="whead"><span>${esc(src||"WEARABLE")}</span><span>${last.date===today?"TODAY":esc(last.date)}</span></div>
   <div class="wtop"><div class="wt wrec" data-wd="rec" role="button" tabindex="0" aria-label="Recovery details">${ring(last.rec)}<div class="wrecv"><b style="color:${rc}">${last.rec!=null?Math.round(last.rec)+"%":"–"}</b><span style="color:${rc}">RECOVERY</span></div></div>
-   <div class="wcol"><div class="wt wmid" data-wd="sleep" role="button" tabindex="0" aria-label="Sleep details"><b style="color:var(--wd-sleep)">${last.perf!=null?Math.round(last.perf)+"%":last.sleep!=null?fmt.sleep(last.sleep):"–"}</b><span style="color:var(--wd-sleep)">SLEEP${last.perf!=null&&last.sleep!=null?" · "+fmt.sleep(last.sleep):""}</span></div>
-   <div class="wt wmid" data-wd="strain" role="button" tabindex="0" aria-label="Strain details"><b style="color:var(--wd-strain)">${last.strain!=null?(+last.strain).toFixed(1):"–"}</b><span style="color:var(--wd-strain)">STRAIN</span></div></div></div>
+   <div class="wcol"><div class="wt wmid" data-wd="sleep" role="button" tabindex="0" aria-label="Sleep details"><b style="color:${slc}">${last.perf!=null?Math.round(last.perf)+"%":last.sleep!=null?fmt.sleep(last.sleep):"–"}</b><span style="color:${slc}">SLEEP${last.perf!=null&&last.sleep!=null?" · "+fmt.sleep(last.sleep):""}</span></div>
+   <div class="wt wmid" data-wd="strain" role="button" tabindex="0" aria-label="Strain details"><b style="color:${stc}">${last.strain!=null?(+last.strain).toFixed(1):"–"}</b><span style="color:${stc}">STRAIN</span></div></div></div>
   ${small?`<div class="wsmall">${small}</div>`:""}
   <p class="wtap">Tap Recovery, Sleep or Strain for the details</p>
   ${stale?`<p class="wadv">No new data for a couple of days. Sync or upload on the Body tab.</p>`:`<p class="wadv">${esc(advice(last,base))}</p>`}</div>`};

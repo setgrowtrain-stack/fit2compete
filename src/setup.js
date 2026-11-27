@@ -2,15 +2,15 @@
 (function(){
 const $=id=>document.getElementById(id);
 const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},put=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-function theme(t){t=window.F2C_applyTheme?F2C_applyTheme(t):"light";put("f2c-theme",t);
+function theme(t){t=window.F2C_applyTheme?F2C_applyTheme(t):"cyan";put("f2c-theme",t);
  const U=window.F2C_holoUI;if(U&&!U.colorSet){try{U.color=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||U.color;localStorage.setItem("f2c-holo",JSON.stringify(U))}catch(e){}}
  if(window.F2C_wdRedraw)F2C_wdRedraw()}
 const LOOKS=()=>window.F2C_THEMES||{light:{l:"Light",n:"The original",bg:"#f3f4f7",card:"#fff",acc:"#E42626"}};
-function looksHtml(){const cur=get("f2c-theme")||"light",T=LOOKS();
+function looksHtml(){const cur=get("f2c-theme")||"cyan",T=LOOKS();
  const tile=k=>{const x=T[k];return `<button type="button" class="look" data-theme="${k}" role="radio" aria-checked="${k===cur}" aria-pressed="${k===cur}"><span class="lkprev" style="background:${x.bg}"><i style="background:${x.card}"></i><b style="background:${x.acc}"></b><em style="background:${x.acc}"></em></span><span class="lkname">${esc(x.l)}</span><small>${esc(x.n||"")}</small></button>`};
  const grp=(g,title)=>{const ks=Object.keys(T).filter(k=>(T[k].g||"l")===g);return ks.length?`<h4 class="sect lookgrp">${title}</h4><div class="looks" role="radiogroup" aria-label="${title}">${ks.map(tile).join("")}</div>`:""};
  return grp("l","Light backgrounds")+grp("d","Dark backgrounds")}
-theme(get("f2c-theme")||"light");
+theme(get("f2c-theme")||"cyan");
 let sub=get("f2c-plansub")||"plan";
 function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
  let seg=$("planSeg"),sv=$("setupView");
@@ -33,13 +33,13 @@ window.F2C_setupEnsure=ensure;
 const st=document.createElement("style");st.textContent=`
 :root{--wd-strain:var(--accent);--wd-sleep:color-mix(in srgb,var(--accent) 45%,var(--muted));--wd-mut:var(--muted);--wd-tile:color-mix(in srgb,var(--ink) 6%,transparent);--wd-tile2:color-mix(in srgb,var(--ink) 12%,transparent);--wd-line2:color-mix(in srgb,var(--ink) 35%,transparent);
  --stage-a:color-mix(in srgb,var(--hero-a,#7f1d1d) 55%,#0b1220);--stage-b:color-mix(in srgb,var(--hero-a,#7f1d1d) 25%,#060a14)}
-html.dark{--stage-a:color-mix(in srgb,var(--card) 85%,#000);--stage-b:color-mix(in srgb,var(--bg) 80%,#000)}
+html.dark{--stage-a:var(--card);--stage-b:color-mix(in srgb,var(--bg) 88%,#000)}
 circle.wtrack{stroke:var(--wd-tile2)}
 :root{--wd-green:#16a34a;--wd-yellow:#d49b00;--wd-red:#e11d48}html.dark{--wd-green:#16ec06;--wd-yellow:#ffde00;--wd-red:#ff2a4a}
 .wearcard{border:1px solid var(--line)!important;box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.06))}
 .plansub{margin-bottom:12px}.setupview{display:grid;gap:16px}.setupview .top{margin:0}
-html.dark{--bg:#060a14;--card:#0e1625;--ink:#e6edf6;--muted:#9aa8bb;--line:#1d2a3f;--accent-soft:#3a1418;--ok-soft:#0f2a1c;--gold:#f0b44c;--gold-soft:#2b210f;--warn-soft:#331414;--head:#e6edf6;--shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);color-scheme:dark}
-html.dark body{background:radial-gradient(ellipse at 50% 0%,#0f2236 0%,#060a14 60%) no-repeat,#060a14;color:var(--ink)}
+html.dark{--bg:#1a2740;--card:#23324f;--ink:#e6edf6;--muted:#9aa8bb;--line:#1d2a3f;--accent-soft:#3a1418;--ok-soft:#0f2a1c;--gold:#f0b44c;--gold-soft:#2b210f;--warn-soft:#331414;--head:#e6edf6;--shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);color-scheme:dark}
+html.dark body{background:var(--bg);color:var(--ink)}
 html.dark .ptabs,html.dark #ptabs{background:rgba(8,13,24,.94)!important;border-color:var(--line)!important}
 html.dark #ptabs button{color:var(--muted)}html.dark #ptabs button[aria-selected="true"]{background:transparent!important;color:var(--accent)}
 html.dark header,html.dark .appbar,html.dark .topbar{background:#08101d!important;border-color:var(--line)!important}

@@ -156,16 +156,17 @@ Rules:
 5. Use null for any number that isn't printed. Never guess a number.`;
 const PROTOCOL=`<ul class="clean"><li>Scan fasted, or 2 to 3 hours after eating.</li><li>Same time of day as your last scan.</li><li>No workout before the scan.</li><li>Use the bathroom first; normal water intake the day before.</li></ul>`;
 function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||""),bf=+last.bf;
- const z=bf?(fem?(bf<25?"green":bf<32?"yellow":"red"):(bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"#16ec06",yellow:"#ffde00",red:"#ff2a4a"},rc=ZC[z]||"#9aa4af";
+ const z=bf?(fem?(bf<25?"green":bf<32?"yellow":"red"):(bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rc=ZC[z]||"#9aa4af";
  const r=42,C=2*Math.PI*r,pct=Math.min(1,(bf||0)/(fem?45:40));
- const ch=(k,good)=>{const v=c&&c.change&&c.change[k];if(v==null||!isFinite(v))return "";const n=Math.round(v*10)/10;if(!n)return `<i class="wch">no change</i>`;const ok=(n>0)===good;return `<i class="wch" style="color:${ok?"#16ec06":"#ff2a4a"}">${n>0?"▲ +":"▼ "}${n}</i>`};
+ const ch=(k,good)=>{const v=c&&c.change&&c.change[k];if(v==null||!isFinite(v))return "";const n=Math.round(v*10)/10;if(!n)return `<i class="wch">no change</i>`;const ok=(n>0)===good;return `<i class="wch" style="color:${ok?"var(--wd-green)":"var(--wd-red)"}">${n>0?"▲ +":"▼ "}${n}</i>`};
+ const tc=(k,good)=>{const v=c&&c.change&&c.change[k];if(good==null||v==null||!isFinite(v))return "var(--ink)";const n=Math.round(v*10)/10;return !n?"var(--ink)":((n>0)===good?"var(--wd-green)":"var(--wd-red)")};
  const t=(lab,val,u,k,good,col)=>val===""||val==null?"":`<div class="wt wsm"><b style="color:${col}">${e_(val)}<small>${u}</small></b><span>${lab}</span>${ch(k,good)}</div>`;
  return `<div class="sheet wearcard scancard"><div class="whead"><span>LAST SCAN${last.type==="dexa"?" · DEXA":" · INBODY"}</span><span>${e_(last.date||"")}</span></div>
-  <div class="wtop"><div class="wt wrec"><svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" stroke="${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 50 50)"/></svg>
+  <div class="wtop"><div class="wt wrec"><svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" class="wtrack" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" style="stroke:${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 50 50)"/></svg>
     <div class="wrecv"><b style="color:${rc}">${bf?e_(bf)+"%":"–"}</b><span style="color:${rc}">${F2C_term("bf","BODY FAT")}</span>${ch("bf",false)}</div></div>
-   <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"#ffffff").replace(/style="color:#(16ec06|ff2a4a)"/,'style="color:#aab4be"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,"#1e9bff")}</div></div>
-  <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,"#8fb3cc")}${t("BMR",last.bmr," kcal","bmr",true,"#ffffff")}</div>
-  <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Arrows compare with your scan before this one: green is the direction you want.</p></div>`}
+   <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"var(--ink)").replace(/style="color:var\(--wd-(green|red)\)"/,'style="color:var(--muted)"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,tc("smm",true))}</div></div>
+  <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,tc("lean",true))}${t("BMR",last.bmr," kcal","bmr",true,tc("bmr",true))}</div>
+  <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Numbers and arrows compare with your scan before this one: green is the direction you want, red the opposite.</p></div>`}
 const scansOf=()=>((X.body&&X.body.scans)||[]);
 const SCIC='<svg viewBox="0 0 24 24" class="wic"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();

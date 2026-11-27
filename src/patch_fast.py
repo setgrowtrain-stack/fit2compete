@@ -59,7 +59,7 @@ SPLASH = r'''<div id="bootSplash" role="status" aria-live="polite"><div class="b
 <g class="bsl1"><path d="M30 33L23 43L17 45"/></g><g class="bsl2"><path d="M30 33L36 44L33 53"/></g></g>
 <path class="bsground" d="M2 58H62"/></svg>
 <b>FIT 2 COMPETE</b><span id="bootMsg">Loading…</span></div></div>
-<style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#060a14;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
+<style>#bootSplash{position:fixed;inset:0;z-index:100000;background:#1a2740;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
 #bootSplash.gone{opacity:0;pointer-events:none}#bootSplash{color:#e8edf2}.bsbox{display:flex;flex-direction:column;align-items:center;gap:10px;color:inherit;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 .bsbox b{letter-spacing:.22em;font-size:.9rem}.bsbox span{font-size:.85rem;color:#8a96a2;min-height:1.2em}
 .bsrun{width:96px;height:96px;fill:none;stroke:var(--bs,#22d3ee);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}.bsrun circle{fill:var(--bs,#22d3ee);stroke:none}
@@ -77,19 +77,19 @@ window.F2C_THEMES={
  emberl:{g:"l",l:"Ember",n:"White and orange",dark:0,bg:"#fff6f0",card:"#ffffff",line:"#f6dcc9",ink:"#1f140d",mut:"#6e5a4d",acc:"#ea580c",ai:"#ffffff",soft:"#ffedd5",h1:"#9a3412",h2:"#ea580c",link:"#c2410c"},
  royall:{g:"l",l:"Royal",n:"White and violet",dark:0,bg:"#f6f3ff",card:"#ffffff",line:"#e1d8fb",ink:"#1a1433",mut:"#5f5880",acc:"#7c3aed",ai:"#ffffff",soft:"#ede9fe",h1:"#5b21b6",h2:"#7c3aed",link:"#6d28d9"},
  arctic:{g:"l",l:"Arctic",n:"White and blue",dark:0,bg:"#eef4fa",card:"#ffffff",line:"#d5e1ee",ink:"#0f172a",mut:"#52627a",acc:"#2563eb",ai:"#ffffff",soft:"#dbeafe",h1:"#1d4ed8",h2:"#3b82f6",link:"#1d4ed8"},
- cyan:{g:"d",l:"Dark mode",n:"Navy and cyan",dark:1,bg:"#0e1729",card:"#17223a",line:"#24324d",ink:"#e8edf2",mut:"#94a3b8",acc:"#22d3ee",ai:"#04121a",soft:"#0f3340",h1:"#155e75",h2:"#0891b2",link:"#67e8f9"},
- gold:{g:"d",l:"Black & gold",n:"Charcoal and gold",dark:1,bg:"#161618",card:"#212124",line:"#323237",ink:"#f2f2f2",mut:"#a3a3ad",acc:"#f5b301",ai:"#1a1300",soft:"#33290c",h1:"#854d0e",h2:"#b7791f",link:"#fcd34d"},
- forest:{g:"d",l:"Forest",n:"Deep green and mint",dark:1,bg:"#0d1e15",card:"#162b20",line:"#22402f",ink:"#e6f2ec",mut:"#98b1a3",acc:"#34d399",ai:"#03140c",soft:"#123826",h1:"#065f46",h2:"#059669",link:"#6ee7b7"},
- ember:{g:"d",l:"Ember",n:"Charcoal and orange",dark:1,bg:"#1c130e",card:"#291c14",line:"#3d2a1e",ink:"#f5ece6",mut:"#b2a094",acc:"#ff7a1a",ai:"#1c0b00",soft:"#3d200e",h1:"#9a3412",h2:"#ea580c",link:"#fdba74"},
- royal:{g:"d",l:"Royal",n:"Deep purple and violet",dark:1,bg:"#161034",card:"#211946",line:"#33295f",ink:"#ece8fb",mut:"#aca5cc",acc:"#a78bfa",ai:"#12082b",soft:"#2c2160",h1:"#5b21b6",h2:"#7c3aed",link:"#c4b5fd"},
- dark:{g:"d",l:"Navy & red",n:"Navy with red",dark:1,bg:"#0e1729",card:"#17223a",line:"#24324d",ink:"#e6edf6",mut:"#9aa8bb",acc:"#E42626",ai:"#ffffff",soft:"#3a1418",h1:"#991b1b",h2:"#dc2626",link:"#7fb6ff"}};
-window.F2C_applyTheme=function(t){var T=window.F2C_THEMES,h=document.documentElement;if(!T[t])t="light";var x=T[t];
+ cyan:{g:"d",l:"Dark mode",n:"Navy and cyan",dark:1,bg:"#1a2740",card:"#23324f",line:"#314364",ink:"#eef2f7",mut:"#a3b1c6",acc:"#22d3ee",ai:"#04121a",soft:"#17405a",h1:"#155e75",h2:"#0891b2",link:"#67e8f9"},
+ gold:{g:"d",l:"Black & gold",n:"Charcoal and gold",dark:1,bg:"#1f1f23",card:"#2a2a2f",line:"#3b3b42",ink:"#f2f2f2",mut:"#a3a3ad",acc:"#f5b301",ai:"#1a1300",soft:"#33290c",h1:"#854d0e",h2:"#b7791f",link:"#fcd34d"},
+ forest:{g:"d",l:"Forest",n:"Deep green and mint",dark:1,bg:"#15291e",card:"#1e3829",line:"#2d4f3c",ink:"#e6f2ec",mut:"#98b1a3",acc:"#34d399",ai:"#03140c",soft:"#123826",h1:"#065f46",h2:"#059669",link:"#6ee7b7"},
+ ember:{g:"d",l:"Ember",n:"Charcoal and orange",dark:1,bg:"#261a13",card:"#33241b",line:"#4a3529",ink:"#f5ece6",mut:"#b2a094",acc:"#ff7a1a",ai:"#1c0b00",soft:"#3d200e",h1:"#9a3412",h2:"#ea580c",link:"#fdba74"},
+ royal:{g:"d",l:"Royal",n:"Deep purple and violet",dark:1,bg:"#201945",card:"#2b2257",line:"#3e3473",ink:"#ece8fb",mut:"#aca5cc",acc:"#a78bfa",ai:"#12082b",soft:"#2c2160",h1:"#5b21b6",h2:"#7c3aed",link:"#c4b5fd"},
+ dark:{g:"d",l:"Navy & red",n:"Navy with red",dark:1,bg:"#1a2740",card:"#23324f",line:"#314364",ink:"#eef2f7",mut:"#9aa8bb",acc:"#E42626",ai:"#ffffff",soft:"#3a1418",h1:"#991b1b",h2:"#dc2626",link:"#7fb6ff"}};
+window.F2C_applyTheme=function(t){var T=window.F2C_THEMES,h=document.documentElement;if(!T[t])t="cyan";var x=T[t];
  h.classList.toggle("dark",!!x.dark);h.classList.toggle("tint",!!x.h1);h.classList.toggle("cyan",t==="cyan");h.setAttribute("data-look",t);
  var V={"--bg":x.bg,"--card":x.card,"--line":x.line,"--ink":x.ink,"--muted":x.mut,"--head":x.ink,"--accent":x.acc,"--accent-ink":x.ai,"--accent-soft":x.soft,"--hero-a":x.h1,"--hero-b":x.h2,"--link":x.link};
  for(var k in V){if(x.h1&&V[k])h.style.setProperty(k,V[k]);else h.style.removeProperty(k)}
  var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",x.dark?x.bg:"#ffffff");
  var sp=document.getElementById("bootSplash");if(sp){sp.style.background=x.bg;sp.style.color=x.dark?"#e8edf2":(x.ink||"#141a2b");sp.style.setProperty("--bs",x.h1?x.acc:(x.dark?"#22d3ee":x.acc))}return t};
-try{var _t=localStorage.getItem("f2c-theme");if(_t)window.F2C_applyTheme(_t)}catch(e){}</script>
+try{window.F2C_applyTheme(localStorage.getItem("f2c-theme")||"cyan")}catch(e){window.F2C_applyTheme("cyan")}</script>
 <script>(function(){var t0=Date.now(),checked=false;
  function el(){return document.getElementById("bootSplash")}
  function ready(){var a=document.getElementById("app"),l=document.getElementById("login");return !!((a&&!a.hidden)||(l&&!l.hidden))}
