@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795727202";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795754511";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -3914,14 +3914,14 @@ const st=document.createElement("style");st.textContent=`.painfull{position:abso
 (function(){
 const $=id=>document.getElementById(id);
 const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}},put=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-function theme(t){document.documentElement.classList.toggle("dark",t==="dark");put("f2c-theme",t);const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#060a14":"#ffffff")}
+function theme(t){if(!["light","dark","cyan"].includes(t))t="light";const h=document.documentElement;h.classList.toggle("dark",t==="dark"||t==="cyan");h.classList.toggle("cyan",t==="cyan");put("f2c-theme",t);const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="light"?"#ffffff":"#060a14")}
 theme(get("f2c-theme")||"light");
 let sub=get("f2c-plansub")||"plan";
 function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
  let seg=$("planSeg"),sv=$("setupView");
  if(!seg){seg=document.createElement("div");seg.id="planSeg";seg.className="seg plansub";seg.innerHTML=`<button type="button" data-ps="plan">Written plan</button><button type="button" data-ps="setup">Setup &amp; devices</button>`;vp.insertBefore(seg,vp.firstChild)}
  if(!sv){sv=document.createElement("div");sv.id="setupView";sv.className="setupview";sv.innerHTML=`<div id="setupHead"></div><div id="setupDevices"></div>
-  <div class="sheet"><span class="label">Appearance</span><div class="seg themeseg"><button type="button" data-theme="light">Light</button><button type="button" data-theme="dark">Dark</button></div><p class="muted small">Dark uses the same deep navy as the 3D body view.</p></div>`;seg.after(sv)}
+  <div class="sheet"><span class="label">Appearance</span><div class="seg themeseg"><button type="button" data-theme="light">Light</button><button type="button" data-theme="cyan">Dark mode</button><button type="button" data-theme="dark">Navy &amp; red</button></div><p class="muted small">Dark mode is deep navy with cyan, like the loading screen. Navy &amp; red keeps the red buttons on navy. Light is the original look.</p></div>`;seg.after(sv)}
  const top=pp.querySelector(":scope > .top");if(top&&top.parentNode!==$("setupHead"))$("setupHead").appendChild(top);
  const ap=$("addPanel");if(ap&&ap.parentNode!==sv)sv.insertBefore(ap,$("setupDevices").nextSibling);
  if(!$("wearBox")&&window.F2C_wearRender)try{F2C_wearRender()}catch(e){}
@@ -3944,7 +3944,18 @@ html.dark header,html.dark .appbar,html.dark .topbar{background:#08101d!importan
 html.dark input,html.dark select,html.dark textarea{background:#0a1220;color:var(--ink);border-color:var(--line)}
 html.dark .btn:not(.primary),html.dark .chipbtn:not([aria-pressed="true"]),html.dark .seg button:not([aria-pressed="true"]){background:#101b2d;color:var(--ink);border-color:var(--line)}
 html.dark .seg{background:#0a1220;border-color:var(--line)}html.dark .note{color:var(--ink)}html.dark table th{background:#0f1a2b}html.dark .kpi,html.dark .chip span{background:#101b2d;border-color:var(--line)}
-html.dark .pill{background:#1a2638;color:var(--ink)}html.dark a{color:#7fb6ff}html.dark .note.red{background:#3a1416}`;document.head.appendChild(st);
+html.dark .pill{background:#1a2638;color:var(--ink)}html.dark a{color:#7fb6ff}html.dark .note.red{background:#3a1416}
+/* Dark mode: the loading screen's deep navy, cyan and white */
+html.cyan{--bg:#060a14;--card:#0b1322;--ink:#e8edf2;--muted:#8a96a2;--line:#18253a;--accent:#22d3ee;--accent-ink:#04121a;--accent-soft:#0b2a35;--head:#e8edf2;--ok-soft:#0f2a1c}
+html.cyan body{background:#060a14}
+html.cyan .btn.primary{box-shadow:0 2px 10px rgba(34,211,238,.25)}
+html.cyan .hero{background:linear-gradient(135deg,#0e7490,#22d3ee)!important;color:#04121a!important;box-shadow:0 8px 24px rgba(34,211,238,.18)!important}
+html.cyan .hero *{color:inherit}
+html.cyan a{color:#67e8f9}html.cyan h1 span{color:var(--accent)}
+html.cyan .seg button[aria-pressed="true"],html.cyan .chipbtn[aria-pressed="true"]{background:var(--accent)!important;color:var(--accent-ink)!important;border-color:var(--accent)!important}
+html.cyan #ptabs button[aria-selected="true"]{color:var(--accent)}html.cyan #ptabs button[aria-selected="true"] svg{color:var(--accent);stroke:var(--accent)}
+html.cyan .note.red{background:#3a1416}html.cyan .sspill{background:#0b2a35;border-color:#22d3ee}html.cyan .ssico{background:#0b2a35;color:#22d3ee}
+html.cyan .libopenbtn{background:var(--card);border-color:var(--line)}`;document.head.appendChild(st);
 })();
 
 /* ===== v2.6 cards: WHOOP detail screens (tap Recovery, Sleep or Strain on Today) and WHOOP-style scan cards on Body ===== */
