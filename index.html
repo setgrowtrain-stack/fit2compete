@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795829030";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795831031";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -1106,7 +1106,7 @@ function lvlOf(a,k){return a.lvl&&a.lvl[k]?a.lvl[k]:(a.mode==="quick"?"q":"d")}
 function inLvl(f,L){return f.lvl==="q"||(f.lvl==="d"&&L==="d")||(f.lvl==="qo"&&L==="q")}
 function visible(a,sec){const L=lvlOf(a,sec.k);return sec.f.filter(f=>inLvl(f,L)&&(!f.show||f.show(a)))}
 function filled(a,f){if(f.id==="q_any"&&empty(a.q_any)&&PARQ7.every(k=>!empty(a[k])))return true;if(f.type==="photos")return Object.keys(photos).length>0;if(f.type==="doc")return (a[f.id+"Mode"]||"skip")!=="skip"&&!!a[f.id];if(f.type==="gallery")return !!a[f.res]||!!(gal[f.id]&&gal[f.id].length);return !empty(a[f.id])}
-const F2C_REQ=["name","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));
+const F2C_REQ=["name","age","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));
 function missingIn(a,sec){return visible(a,sec).filter(f=>f.req&&!filled(a,f))}
 function allMissing(a){return SECTIONS.flatMap(s=>missingIn(a,s))}
 function detail(a){const fs=ALLF.filter(f=>f.lvl!=="qo"&&(!f.show||f.show(a)));

@@ -124,7 +124,7 @@ rep('const _renderStep=renderStep;renderStep=function(){_renderStep();',
 
 # v2.10: only name, height, weight and goal are required; nothing else ever blocks a plan
 rep('function missingIn(a,sec){',
-    'const F2C_REQ=["name","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));\nfunction missingIn(a,sec){')
+    'const F2C_REQ=["name","age","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));\nfunction missingIn(a,sec){')
 # the button never sits there dead: it says what's needed and jumps to it; with a plan on file it updates that plan
 rep('${missing.length||(+a.age>0&&+a.age<13)?" disabled":""}>Build my plan</button>',
     '${(+a.age>0&&+a.age<13)?" disabled":""}>${athletes[cur]&&athletes[cur].plan?"Update my plan":"Build my plan"}</button>')
