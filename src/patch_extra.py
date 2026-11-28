@@ -147,3 +147,6 @@ rep('T.show("plan");setTimeout(()=>{rt.scrollIntoView({behavior:"smooth",block:"
     '(window.F2C_openPlanPart?F2C_openPlanPart("revise"):T.show("plan"));setTimeout(()=>{rb.click()},300)')
 rep('plan:\'<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>\'',
     'plan:\'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>\'')
+# v2.14: the plan check box always lives with the plan on the Coach tab
+rep('let box=$("checksBox");if(!box){box=document.createElement("div");box.id="checksBox";vp.insertBefore(box,vp.firstChild)}',
+    'let box=$("checksBox");if(!box){box=document.createElement("div");box.id="checksBox";const ps=$("planStore");if(ps)ps.prepend(box);else vp.insertBefore(box,vp.firstChild)}')

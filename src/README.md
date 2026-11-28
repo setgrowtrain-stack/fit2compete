@@ -3,7 +3,7 @@
 The live page (`index.html` at the repo root) is built from these files:
 
 - `v1_index.html`: the original page.
-- `patch_index.py` + `patch_extra.py` + `patch_fast.py` (fast start): patch it and append the modules: `v2module.js`, `holo.js` (3D body, layers), `workout.js` (timer, warm-ups, where-mode), `wear.js` (wearables, WHOOP), `supp.js` (supplement review), `pain.js` (pain map), `setup.js` (Setup page, dark theme), `cards.js` (WHOOP detail screens, WHOOP-style scan cards, scan sheet), `water.js` (water card on Today; concatenated before wear.js), `library.js` (exercise library), `focus.js` (one exercise at a time during a workout, supersets), `family.js` (family invites on Settings, accept banner), `coachplan.js` (Coach tab: My plan as tappable rows with a detail sheet, and Ask your coach).
+- `patch_index.py` + `patch_extra.py` + `patch_fast.py` (fast start): patch it and append the modules: `v2module.js`, `holo.js` (3D body, layers), `workout.js` (timer, warm-ups, where-mode), `wear.js` (wearables, WHOOP), `supp.js` (supplement review), `pain.js` (pain map), `setup.js` (Setup page, dark theme), `cards.js` (WHOOP detail screens, WHOOP-style scan cards, scan sheet), `water.js` (water card on Today; concatenated before wear.js), `library.js` (exercise library), `focus.js` (one exercise at a time during a workout, supersets), `family.js` (family invites on Settings, accept banner), `coachplan.js` (Coach tab: My plan as tappable rows with a detail sheet, and Ask your coach; Settings as four rows using the same sheet).
 - `bp3d/`: scripts that bake `vendor/anatomy.bin` and `vendor/organs.bin` from BodyParts3D (CC BY 4.0).
 
 Build (paths inside the scripts point to /home/claude/v2; copy these files there first):

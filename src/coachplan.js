@@ -67,20 +67,23 @@ function sheet(){let s=$("pdSheet");if(s)return s;s=document.createElement("div"
  s.innerHTML=`<div class="pdback" data-pdx></div><div class="pdpanel" role="dialog" aria-modal="true" aria-labelledby="pdTitle"><div class="pdhead"><h3 id="pdTitle"></h3><span id="pdExtra"></span><button type="button" class="pdx" data-pdx aria-label="Close">${I('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div><div class="pdbody" id="pdBody"></div></div>`;
  document.body.appendChild(s);s.addEventListener("click",e=>{if(e.target.closest("[data-pdx]"))close()});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!s.hidden)close()});return s}
+let onClose=null;
 function close(){const s=$("pdSheet");if(!s||s.hidden)return;if(open)open.forEach(([n,ph])=>{if(ph.parentNode)ph.parentNode.replaceChild(n,ph)});open=null;
- $("pdBody").innerHTML="";s.hidden=true;document.body.classList.remove("pdlock");render(true)}
+ $("pdBody").innerHTML="";s.hidden=true;document.body.classList.remove("pdlock");const f=onClose;onClose=null;if(f)f()}
+function showSheet(title,nodes,extra,after){nodes=nodes.filter(Boolean);if(!nodes.length)return;if(open)close();const s=sheet();
+ open=nodes.map(n=>{const ph=document.createComment("pd");n.parentNode.insertBefore(ph,n);return [n,ph]});
+ $("pdTitle").textContent=title;const body=$("pdBody");body.innerHTML="";nodes.forEach(n=>{n.hidden=false;body.appendChild(n)});
+ $("pdExtra").innerHTML=extra||"";onClose=after||null;s.hidden=false;document.body.classList.add("pdlock");body.scrollTop=0}
+window.F2C_pdOpen=showSheet;window.F2C_pdClose=close;
 function openPart(k){render(true);const p=parts();let nodes=[],title="";
  if(k==="bottom"&&p.bottom){nodes=[p.bottom,p.kpis].filter(Boolean);title="Bottom line"}
  else if(k==="notes"){nodes=p.notes;title="Notes for you"}
  else if(k==="check"){const cb=$("checksBox");if(cb)nodes=[cb];title="Plan check"}
  else if(k==="revise"){const r=document.querySelector("#planStore .revise");if(r)nodes=[r];title="Ask for a change"}
  else if(/^s\d+$/.test(k)){const x=p.secs[+k.slice(1)];if(x){nodes=[x.n];title=x.t}}
- if(!nodes.length)return;const s=sheet();
- open=nodes.map(n=>{const ph=document.createComment("pd");n.parentNode.insertBefore(ph,n);return [n,ph]});
- $("pdTitle").textContent=title;const body=$("pdBody");body.innerHTML="";nodes.forEach(n=>body.appendChild(n));
- $("pdExtra").innerHTML=/workout/i.test(title)?`<button type="button" class="btn small" id="pdGoWk">Open Workouts</button>`:"";
+ if(!nodes.length)return;
+ showSheet(title,nodes,/workout/i.test(title)?`<button type="button" class="btn small" id="pdGoWk">Open Workouts</button>`:"",()=>render(true));
  const gw=$("pdGoWk");if(gw)gw.onclick=()=>{close();F2C_T.show("workouts")};
- s.hidden=false;document.body.classList.add("pdlock");body.scrollTop=0;
  if(k==="revise")setTimeout(()=>{const t=$("reviseText");t&&t.focus()},200)}
 window.F2C_openPlanPart=k=>{sub="plan";P("f2c-coachsub",sub);if(window.F2C_T&&F2C_T.ui.tab!=="coach")F2C_T.show("coach");else{ensure();render()}openPart(k)};
 window.F2C_coachPlanRender=()=>{ensure();render(true)};
@@ -90,6 +93,34 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
  if(b.dataset.pi)openPart(b.dataset.pi)});
 // keep the index in step with the plan and the coach view
 let t=null;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(()=>{if($("v-coach")&&!$("v-coach").hidden&&!open){ensure();if(sub==="plan")render()}else if($("v-coach")&&!$("coachChat"))ensure()},80)}).observe(document.documentElement,{childList:true,subtree:true});
+
+/* ---- Settings: the same rows, each opening the sheet ---- */
+const SET=[["plan","Your plan and answers",'<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>',["setupHead"]],
+ ["devices","Connected devices",'<rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/>',["setupDevices"]],
+ ["family","Family",'<circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.5 2.7-6 6-6s6 2.5 6 6M14 20c0-2.6 1.4-4.6 3-4.6s4 1.6 4 4.6"/>',["famBox"]],
+ ["looks","Appearance",'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 3a9 9 0 0 1 0 18"/>',["looksSheet"]]];
+function setSub(k){const R=window.F2C_T&&F2C_T.rec?F2C_T.rec():null,f=(typeof ME!=="undefined"&&ME&&ME.fam)||{kids:[],parents:[],invites:[],sent:[]};
+ if(k==="plan"){const d=R&&(R.planDate||R.planned);return (d?"Built "+new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"})+". ":"")+"Add new info, edit answers or rebuild"}
+ if(k==="devices"){const w=R&&R.wear,last=w&&w.days&&w.days.length?w.days[w.days.length-1]:null;const t=($("setupDevices")||{}).textContent||"";
+  return /disconnect|connected to whoop|whoop connected/i.test(t)?"WHOOP connected":last?"Data imported up to "+last.date:"Sleep, recovery and steps from a watch or ring"}
+ if(k==="family"){const a=[];if(f.kids.length)a.push(f.kids.length+" linked");if(f.sent.length)a.push(f.sent.length+" waiting");if(f.parents.length)a.push(f.parents.length+" can see your plan");return a.length?a.join(" · "):"Link your kids' accounts"}
+ if(k==="looks"){const b=document.querySelector('#looksBox button[aria-pressed="true"], #looksBox button.on, #looksBox button[aria-checked="true"]');const nm=b&&b.querySelector(".lkname");return nm?nm.textContent.trim():"Colors and dark mode"}
+ return ""}
+let ssig="";
+function settingsRender(force){const sv=$("setupView");if(!sv)return;{const cb=$("checksBox");if(cb&&cb.closest("#v-plan")){ensure()}}
+ if(!$("setIndex")){const ix=document.createElement("div");ix.id="setIndex";const store=document.createElement("div");store.id="setStore";store.hidden=true;const t=$("setTitle");(t?t:sv.firstChild)&&(t?t.after(ix):sv.prepend(ix));ix.after(store)}
+ const store=$("setStore");SET.forEach(([,, ,ids])=>ids.forEach(id=>{const n=$(id);if(n&&n.parentNode!==store&&!(n.closest&&n.closest("#pdBody")))store.appendChild(n)}));
+ [...sv.children].forEach(c=>{if(!["setTitle","setIndex","setStore"].includes(c.id)&&!(c.closest&&c.closest("#pdBody")))store.appendChild(c)});
+ const subs=SET.map(([k])=>setSub(k)),sg=subs.join("|");if(!force&&sg===ssig&&$("setIndex").childElementCount)return;ssig=sg;
+ $("setIndex").innerHTML=`<div class="pilist">${SET.map(([k,t,ic],i)=>`<button type="button" class="pirow" data-set="${k}"><span class="piic">${I(ic)}</span><span class="pitx"><b>${esc_(t)}</b><small>${esc_(subs[i])}</small></span><span class="pich">${CHEV}</span></button>`).join("")}</div>`}
+function openSetting(k){settingsRender(true);const row=SET.find(x=>x[0]===k);if(!row)return;
+ if(k==="family"&&!$("famBox")&&window.F2C_famRender)F2C_famRender();
+ showSheet(row[1],row[3].map(id=>$(id)),"",()=>settingsRender(true));
+ if(k==="plan"){const ap=$("addPanel");if(ap)ap.hidden=true}}
+window.F2C_settingsRender=()=>settingsRender();window.F2C_openSetting=openSetting;
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-set]");if(b){openSetting(b.dataset.set);return}
+ const go=e.target.closest&&e.target.closest("#editIntake,#regen");if(go&&$("pdSheet")&&!$("pdSheet").hidden)setTimeout(close,0)},true);
+let st2=null;new MutationObserver(()=>{clearTimeout(st2);st2=setTimeout(()=>{if($("setupView")&&!$("v-plan").hidden&&!open)settingsRender()},120)}).observe(document.documentElement,{childList:true,subtree:true});
 
 const st=document.createElement("style");st.textContent=`
 .coachseg{display:flex;margin:0 0 14px}.coachseg button{flex:1}
@@ -118,6 +149,7 @@ const st=document.createElement("style");st.textContent=`
 .pdbody>section>h2:first-child,.pdbody>section>h3:first-child,.pdbody .revise>h3:first-child{display:none}
 .pdbody .note{margin:12px 0}.pdbody .revise{border:0;padding:0;background:none;box-shadow:none}
 body.pdlock{overflow:hidden}
+.pdbody>.sheet{border:0;box-shadow:none;background:none;padding-left:0;padding-right:0}.pdbody>.sheet>.label:first-child{display:none}
 .settitle{margin:2px 2px 12px;font-size:26px}
 `;document.head.appendChild(st);
 })();

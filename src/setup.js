@@ -16,13 +16,13 @@ function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
  let seg=$("planSeg"),sv=$("setupView");
  if(!seg){seg=document.createElement("div");seg.id="planSeg";seg.className="seg plansub";seg.innerHTML=`<button type="button" data-ps="plan">Written plan</button><button type="button" data-ps="setup">Setup &amp; devices</button>`;vp.insertBefore(seg,vp.firstChild)}
  if(!sv){sv=document.createElement("div");sv.id="setupView";sv.className="setupview";sv.innerHTML=`<div id="setupHead"></div><div id="setupDevices"></div>
-  <div class="sheet"><span class="label">Appearance</span><div id="looksBox">${looksHtml()}</div><p class="muted small">Pick a look. It changes this phone only, and the loading screen matches it.</p></div>`;seg.after(sv)}
+  <div class="sheet" id="looksSheet"><span class="label">Appearance</span><div id="looksBox">${looksHtml()}</div><p class="muted small">Pick a look. It changes this phone only, and the loading screen matches it.</p></div>`;seg.after(sv)}
  const top=pp.querySelector(":scope > .top");if(top&&top.parentNode!==$("setupHead"))$("setupHead").appendChild(top);
- const ap=$("addPanel");if(ap&&ap.parentNode!==sv)sv.insertBefore(ap,$("setupDevices").nextSibling);
+ const ap=$("addPanel");if(ap&&ap.parentNode!==$("setupHead"))$("setupHead").appendChild(ap);
  if(!$("wearBox")&&window.F2C_wearRender)try{F2C_wearRender()}catch(e){}
  seg.hidden=true;sub="setup";
- {const lb=sv.querySelector("#looksBox");if(lb)lb.innerHTML=looksHtml()}
- [...vp.children].forEach(c=>{if(c===seg)return;c.hidden=c!==sv});if(!$("setTitle"))sv.insertAdjacentHTML("afterbegin",`<h2 class="settitle" id="setTitle">Settings</h2>`)}
+ {const lb=$("looksBox");if(lb)lb.innerHTML=looksHtml()}
+ [...vp.children].forEach(c=>{if(c===seg)return;c.hidden=c!==sv});window.F2C_settingsRender&&F2C_settingsRender();if(!$("setTitle"))sv.insertAdjacentHTML("afterbegin",`<h2 class="settitle" id="setTitle">Settings</h2>`)}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-ps],button[data-theme],[data-gosetup]");if(!b||b.closest("#ptabs"))return;
  if(b.dataset.ps){ensure();return}
  if(b.dataset.theme){theme(b.dataset.theme);ensure();window.F2C_holoPanel&&0;return}
