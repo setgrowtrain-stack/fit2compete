@@ -177,6 +177,13 @@ body.wdopen{overflow:hidden}
 .scanbody .sheet:not(.wearcard) .sect,.scanbody .sheet:not(.wearcard) .label,.scanbody .sheet:not(.wearcard) summary{color:var(--ink)!important}.scanbody .note.gold{color:#1b1b1b}
 #v-body .scantap .wadv.small{display:none}.holobox .holoreset{top:48px;bottom:auto;right:8px;font-size:.72rem;padding:5px 10px}
 .scantap{cursor:pointer;display:block}.scantap .wtap{margin-top:2px}
+#v-body{display:flex;flex-direction:column}#v-body>*{order:3}#v-body>.scanstrip{order:1}#v-body>#holoWrap{order:2}#v-body>.scantap{order:2}
+#v-body>#holoWrap{margin-bottom:14px}
+.scanmore{display:grid;grid-template-columns:36px 1fr 30px;align-items:center;gap:10px;margin-top:14px;padding:11px 12px;border-radius:14px;background:var(--accent-soft);border:1.5px solid var(--accent)}
+.scanmore .smic{width:36px;height:36px;border-radius:10px;background:var(--accent);display:grid;place-items:center}.scanmore .smic svg{width:20px;height:20px;fill:none;stroke:var(--accent-ink,#fff);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.scanmore .smtx{display:grid;gap:1px;min-width:0}.scanmore b{font-size:.98rem;color:var(--ink)}.scanmore small{font-size:.78rem;color:var(--muted);line-height:1.3}
+.scanmore .smgo{width:30px;height:30px;border-radius:50%;background:var(--accent);display:grid;place-items:center}.scanmore .smgo svg{width:16px;height:16px;fill:none;stroke:var(--accent-ink,#fff);stroke-width:2.6}
+.scantap:active .scanmore{filter:brightness(1.1)}
 .scanstrip{display:flex;align-items:center;gap:10px;padding:10px 12px!important}.ssico{width:38px;height:38px;border-radius:12px;background:var(--gold-soft,#f6efd9);display:flex;align-items:center;justify-content:center;flex:none}.ssico .wic{width:22px;height:22px}
 .sstext{flex:1;min-width:0;display:flex;flex-direction:column}.sstext b{font-size:.95rem}.sstext span{font-size:.8rem;color:var(--muted,#64748b)}
 .sspill{border:1px solid var(--gold,#c9a227);background:var(--gold-soft,#f6efd9);color:inherit;font-weight:800;font-size:.75rem;border-radius:999px;padding:6px 10px;cursor:pointer}
