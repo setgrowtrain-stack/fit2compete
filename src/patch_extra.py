@@ -114,3 +114,10 @@ rep(' if(t<ctx.eatStart&&c.food===true)fails.push("needs food, and this is befor
     ' if(t<ctx.eatStart&&c.food===true)fails.push("needs food, and this is before your first meal");\n if(c.kcal&&(t<ctx.eatStart-5||t>ctx.eatEnd+30))fails.push("has calories, so it would break your fast; it goes inside your eating window");')
 rep('  if(their&&their.spread){placed.push({i,it,spread:true,t:ctx.wake,why:c.why',
     '  if(their&&their.spread&&c.kcal){placed.push({i,it,t:ctx.eatStart,why:c.why,moved:`Moved from ${it.time}: it has calories, so sip it during your eating window, not while fasting.`,from:ctx.wake});return}\n  if(their&&their.spread){placed.push({i,it,spread:true,t:ctx.wake,why:c.why')
+
+# v2.9: detailed health answers satisfy the quick-mode summary question
+rep('function filled(a,f){if(f.type==="photos")',
+    'function filled(a,f){if(f.id==="q_any"&&empty(a.q_any)&&PARQ7.every(k=>!empty(a[k])))return true;if(f.type==="photos")')
+# v2.9: a way back to the current plan from the questions, without rebuilding
+rep('const _renderStep=renderStep;renderStep=function(){_renderStep();',
+    'const _renderStep=renderStep;renderStep=function(){_renderStep();try{const rr=athletes[cur],sb=document.getElementById("stepBody");if(rr&&rr.plan&&sb&&!document.getElementById("keepPlanBox")){const d=document.createElement("div");d.id="keepPlanBox";d.className="savedNote";d.style.marginBottom="14px";d.innerHTML=`<span><b>Your current plan is still here.</b> Your answers are saved. Go back to it now, or finish here and build an updated plan.</span><div class="nav"><span></span><button class="btn" type="button" id="keepPlanBtn">Back to my plan</button></div>`;sb.prepend(d);document.getElementById("keepPlanBtn").onclick=()=>{try{readStep()}catch(e){}renderAll(true);window.scrollTo(0,0)}}}catch(e){}')
