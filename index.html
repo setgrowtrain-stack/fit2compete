@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795831031";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795833443";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -2757,6 +2757,7 @@ function eatenToday(){const t=T();if(!t)return null;const day=t.DAYS7[(new Date(
   out.rows.push({meal:x.name||("Meal "+(i+1)),food:(x.items||[]).join(", "),cal:x.calories,p:x.protein_g,c:x.carbs_g,f:x.fat_g})});
  food.forEach(it=>{if(it.est&&it.est.calories!==""&&it.est.calories!=null){out.cal+=+it.est.calories||0;out.p+=+it.est.protein_g||0;out.c+=+it.est.carbs_g||0;out.f+=+it.est.fat_g||0}else out.pending++});
  return out}
+window.F2C_eatenVsTarget=function(){try{const tg=targetNums(),e=eatenToday();if(!e||!tg.cal)return null;const g=(((athletes[cur]||{}).a||{}).bodyGoals||[]).join(" ");return {cal:e.cal,target:tg.cal,gain:/Gain weight|Build muscle/.test(g)&&!/Lose/.test(g),pending:e.pending}}catch(x){return null}};
 window.F2C_mealTotals=function(){const tg=targetNums(),e=eatenToday();if(!e||!tg.cal)return "";
  const pct=(a,b)=>b?Math.min(100,Math.round(100*a/b)):0;const row=(l,a,b,u)=>`<div class="v2tot"><span>${l}</span><div class="v2meter"><i style="width:${pct(a,b)}%"></i></div><b>${Math.round(a)}${u} / ${Math.round(b)}${u}</b></div>`;
  return `<div class="sheet v2meals"><span class="label">Eaten today vs target</span>${row("Calories",e.cal,tg.cal,"")}${tg.p?row("Protein",e.p,tg.p," g"):""}${tg.c?row("Carbs",e.c,tg.c," g"):""}${tg.f?row("Fat",e.f,tg.f," g"):""}
@@ -2802,17 +2803,18 @@ Rules:
 5. Use null for any number that isn't printed. Never guess a number.`;
 const PROTOCOL=`<ul class="clean"><li>Scan fasted, or 2 to 3 hours after eating.</li><li>Same time of day as your last scan.</li><li>No workout before the scan.</li><li>Use the bathroom first; normal water intake the day before.</li></ul>`;
 function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||""),bf=+last.bf;
- const z=bf?(fem?(bf<25?"green":bf<32?"yellow":"red"):(bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rc=ZC[z]||"#9aa4af";
+ const z=bf?(fem?(bf<10?"red":bf<14?"yellow":bf<25?"green":bf<32?"yellow":"red"):(bf<3?"red":bf<6?"yellow":bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rc=ZC[z]||"#9aa4af";
  const r=42,C=2*Math.PI*r,pct=Math.min(1,(bf||0)/(fem?45:40));
  const ch=(k,good)=>{const v=c&&c.change&&c.change[k];if(v==null||!isFinite(v))return "";const n=Math.round(v*10)/10;if(!n)return `<i class="wch">no change</i>`;const ok=(n>0)===good;return `<i class="wch" style="color:${ok?"var(--wd-green)":"var(--wd-red)"}">${n>0?"▲ +":"▼ "}${n}</i>`};
- const tc=(k,good)=>{const v=c&&c.change&&c.change[k];if(good==null||v==null||!isFinite(v))return "var(--ink)";const n=Math.round(v*10)/10;return !n?"var(--ink)":((n>0)===good?"var(--wd-green)":"var(--wd-red)")};
+ const tc=(k,good)=>{const v=c&&c.change&&c.change[k];if(good==null||v==null||!isFinite(v))return "var(--ink)";const n=Math.round(v*10)/10,small=Math.abs(n)<(k==="bmr"?10:0.5);return small?"var(--wd-yellow)":((n>0)===good?"var(--wd-green)":"var(--wd-red)")};
+ const G=((((athletes[cur]||{}).a||{}).bodyGoals)||[]).join(" "),wGood=/Lose weight|Lose fat/.test(G)&&!/Gain weight/.test(G)?false:/Gain weight/.test(G)?true:null,hasPrev=!!(c&&c.change);
  const t=(lab,val,u,k,good,col)=>val===""||val==null?"":`<div class="wt wsm"><b style="color:${col}">${e_(val)}<small>${u}</small></b><span>${lab}</span>${ch(k,good)}</div>`;
  return `<div class="sheet wearcard scancard"><div class="whead"><span>LAST SCAN${last.type==="dexa"?" · DEXA":" · INBODY"}</span><span>${e_(last.date||"")}</span></div>
   <div class="wtop"><div class="wt wrec"><svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" class="wtrack" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" style="stroke:${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 50 50)"/></svg>
     <div class="wrecv"><b style="color:${rc}">${bf?e_(bf)+"%":"–"}</b><span style="color:${rc}">${F2C_term("bf","BODY FAT")}</span>${ch("bf",false)}</div></div>
-   <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"var(--ink)").replace(/style="color:var\(--wd-(green|red)\)"/,'style="color:var(--muted)"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,tc("smm",true))}</div></div>
+   <div class="wcol">${wGood==null?t("WEIGHT",last.weight," lb","weight",null,"var(--ink)").replace(/style="color:var\(--wd-(green|red)\)"/,'style="color:var(--muted)"'):t("WEIGHT",last.weight," lb","weight",wGood,tc("weight",wGood))}${t("MUSCLE (SMM)",last.smm," lb","smm",true,tc("smm",true))}</div></div>
   <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,tc("lean",true))}${t("BMR",last.bmr," kcal","bmr",true,tc("bmr",true))}</div>
-  <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Numbers and arrows compare with your scan before this one: green is the direction you want, red the opposite.</p></div>`}
+  <p class="wadv small">Body fat ring (American Council on Exercise ranges${fem?", women":", men"}): green ${fem?"14 to 24%":"6 to 17%"}, yellow ${fem?"25 to 31% or 10 to 13%":"18 to 24% or 3 to 5%"}, red ${fem?"32% and up or under 10%":"25% and up or under 3%"}.${+((athletes[cur]||{}).a||{}).age<18?" These are adult ranges; for teens, ask your coach or doctor what's right.":""} ${hasPrev?"Other numbers compare with your scan before this one: green is the direction you want, yellow is about the same, red is the wrong way"+(wGood==null?" (weight stays gray because your goals don't say gain or lose)":"")+".":"Muscle, lean mass, BMR and weight get green, yellow or red after your next scan, when there's one to compare with."}</p></div>`}
 const scansOf=()=>((X.body&&X.body.scans)||[]);
 const SCIC='<svg viewBox="0 0 24 24" class="wic"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
@@ -3701,6 +3703,14 @@ const avg=(arr,k)=>{const v=arr.map(d=>d[k]).filter(x=>x!=null&&isFinite(x));ret
 const fmt={rec:v=>Math.round(v)+"%",hrv:v=>Math.round(v)+" ms",rhr:v=>Math.round(v)+" bpm",sleep:v=>{const h=Math.floor(v),m=Math.round((v-h)*60);return h+"h "+String(m).padStart(2,"0")+"m"},perf:v=>Math.round(v)+"%",strain:v=>(Math.round(v*10)/10)+"",steps:v=>Math.round(v).toLocaleString("en-US"),cal:v=>Math.round(v).toLocaleString("en-US"),deep:v=>Math.round(v)+" min",rem:v=>Math.round(v)+" min",spo2:v=>(Math.round(v*10)/10)+"%",resp:v=>(Math.round(v*10)/10)+"",temp:v=>(Math.round(v*10)/10)+"°",debt:v=>Math.round(v)+" min"};
 const LBL={rec:"Recovery",hrv:"HRV",rhr:"Resting HR",sleep:"Sleep",perf:"Sleep score",strain:"Strain",steps:"Steps",cal:"Calories",deep:"Deep sleep",rem:"REM sleep",spo2:"Blood oxygen",resp:"Breathing rate",temp:"Skin temp",debt:"Sleep debt"};
 const GOOD={rec:1,hrv:1,rhr:-1,sleep:1,perf:1,steps:1,deep:1,rem:1,debt:-1};
+/* v2.11 tile colors. Steps: 10,000+ green, 7,000+ yellow (Paluch et al., Lancet Public Health 2022: risk keeps falling to about 8,000 to 10,000). HRV and resting HR: against your own 30-day average (needs 7+ days): HRV 95%+ green, 85 to 95% yellow; resting HR within 2 bpm green, 3 to 6 above yellow. Without a baseline, resting HR under 65 green, 65 to 80 yellow, over 80 red; HRV stays uncolored (it only means something against your own normal). Eaten: on pace for the day's target (8 AM to 9 PM), 90%+ of pace green, 75%+ yellow; well over target yellow then red (more room when the goal is to gain). */
+window.F2C_tileZone=function(k,v,b){if(v==null||!isFinite(v))return "";b=b||{};
+ if(k==="steps")return v>=10000?"green":v>=7000?"yellow":"red";
+ if(k==="hrv"){if(!b.hrv)return "";const r=v/b.hrv;return r>=.95?"green":r>=.85?"yellow":"red"}
+ if(k==="rhr"){if(b.rhr){const d=v-b.rhr;return d<=2?"green":d<=6?"yellow":"red"}return v<65?"green":v<=80?"yellow":"red"}
+ if(k==="eat"){const t=b.target;if(!t)return "";const gain=!!b.gain,over=v/t;if(over>(gain?1.3:1.15))return "red";if(over>(gain?1.15:1.08))return "yellow";if(over>=.9)return "green";
+  const h=new Date().getHours()+new Date().getMinutes()/60;if(h<10)return "";const frac=Math.min(1,Math.max(.15,(h-8)/13)),pace=v/(t*frac);return pace>=.9?"green":pace>=.75?"yellow":"red"}
+ return ""};
 function zone(r){return r==null?"":r>=67?"green":r>=34?"yellow":"red"}
 function advice(d,base){if(!d)return "";const z=zone(d.rec),hrvLow=d.hrv!=null&&base.hrv&&d.hrv<base.hrv*0.85,rhrHigh=d.rhr!=null&&base.rhr&&d.rhr>=base.rhr+5,short=d.sleep!=null&&d.sleep<6;
  if(z==="red"||(hrvLow&&rhrHigh))return "Low recovery. Lift as planned but hold your weights (no increases), skip or shorten hard intervals and sprints, and get to bed early.";
@@ -3713,7 +3723,11 @@ window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";cons
  const ring=v=>{const r=42,c=2*Math.PI*r,p=Math.max(0,Math.min(100,v||0));return `<svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" class="wtrack" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" style="stroke:${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c*p/100} ${c}" transform="rotate(-90 50 50)"/></svg>`};
  const I={hrv:'<path d="M2 12h4l2-5 3 10 3-7 2 2h6"/>',rhr:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',steps:'<path d="M7 14c-1.5 0-2.5 1.5-2.5 3S5.5 20 7 20s2-1.5 2-3-0.5-3-2-3zM15 4c-1.5 0-2.5 1.5-2.5 3s1 3 2.5 3 2-1.5 2-3-.5-3-2-3zM6 12c0-2 .5-4 1.5-4S9 10 8.5 12M14 13c.5 2 1 4 2 4s1.5-2 1-4"/>',cal:'<path d="M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/>',debt:'<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>'};
  const ic=k=>`<svg viewBox="0 0 24 24" class="wic">${I[k]||""}</svg>`;
- const small=["hrv","rhr","steps","cal"].filter(k=>last[k]!=null).map(k=>`<div class="wt wsm" data-wd="${k==="hrv"||k==="rhr"?"rec":"strain"}" role="button" tabindex="0">${ic(k)}<b>${fmt[k](last[k])}</b><span>${k==="hrv"?"HRV":k==="rhr"?"RESTING HR":k==="steps"?"STEPS":"CALORIES"}</span></div>`).join("");
+ const nb=prev.filter(d=>d.hrv!=null).length,nr=prev.filter(d=>d.rhr!=null).length,eat=window.F2C_eatenVsTarget?F2C_eatenVsTarget():null;
+ const tcol=k=>{const v=last[k],z=window.F2C_tileZone?F2C_tileZone(k,v,{hrv:nb>=7?base.hrv:null,rhr:nr>=7?base.rhr:null}):"";return ZC[z]||"var(--ink)"};
+ const tile=(k,val,lab,col,wd)=>`<div class="wt wsm" data-wd="${wd}" role="button" tabindex="0">${ic(k)}<b style="color:${col}">${val}</b><span>${lab}</span></div>`;
+ const small=["hrv","rhr","steps"].filter(k=>last[k]!=null).map(k=>tile(k,fmt[k](last[k]),k==="hrv"?"HRV":k==="rhr"?"RESTING HR":"STEPS",tcol(k),k==="steps"?"strain":"rec")).join("")+
+  (eat&&eat.target?tile("cal",eat.cal?Math.round(eat.cal).toLocaleString("en-US"):"–",eat.cal?"EATEN / "+Math.round(eat.target).toLocaleString("en-US"):"LOG MEALS · "+Math.round(eat.target).toLocaleString("en-US"),eat.cal?(ZC[F2C_tileZone("eat",eat.cal,eat)]||"var(--ink)"):"var(--ink)","strain"):last.cal!=null?tile("cal",fmt.cal(last.cal),"CAL BURNED","var(--ink)","strain"):"");
  const src=(last.src||[]).some(x=>/whoop/.test(x))?"WHOOP":(last.src||[]).join(", ").toUpperCase();
  return `<div class="sheet wearcard"><div class="whead"><span>${esc(src||"WEARABLE")}</span><span>${last.date===today?"TODAY":esc(last.date)}</span></div>
   <div class="wtop"><div class="wt wrec" data-wd="rec" role="button" tabindex="0" aria-label="Recovery details">${ring(last.rec)}<div class="wrecv"><b style="color:${rc}">${last.rec!=null?Math.round(last.rec)+"%":"–"}</b><span style="color:${rc}">RECOVERY</span></div></div>

@@ -111,6 +111,7 @@ function eatenToday(){const t=T();if(!t)return null;const day=t.DAYS7[(new Date(
   out.rows.push({meal:x.name||("Meal "+(i+1)),food:(x.items||[]).join(", "),cal:x.calories,p:x.protein_g,c:x.carbs_g,f:x.fat_g})});
  food.forEach(it=>{if(it.est&&it.est.calories!==""&&it.est.calories!=null){out.cal+=+it.est.calories||0;out.p+=+it.est.protein_g||0;out.c+=+it.est.carbs_g||0;out.f+=+it.est.fat_g||0}else out.pending++});
  return out}
+window.F2C_eatenVsTarget=function(){try{const tg=targetNums(),e=eatenToday();if(!e||!tg.cal)return null;const g=(((athletes[cur]||{}).a||{}).bodyGoals||[]).join(" ");return {cal:e.cal,target:tg.cal,gain:/Gain weight|Build muscle/.test(g)&&!/Lose/.test(g),pending:e.pending}}catch(x){return null}};
 window.F2C_mealTotals=function(){const tg=targetNums(),e=eatenToday();if(!e||!tg.cal)return "";
  const pct=(a,b)=>b?Math.min(100,Math.round(100*a/b)):0;const row=(l,a,b,u)=>`<div class="v2tot"><span>${l}</span><div class="v2meter"><i style="width:${pct(a,b)}%"></i></div><b>${Math.round(a)}${u} / ${Math.round(b)}${u}</b></div>`;
  return `<div class="sheet v2meals"><span class="label">Eaten today vs target</span>${row("Calories",e.cal,tg.cal,"")}${tg.p?row("Protein",e.p,tg.p," g"):""}${tg.c?row("Carbs",e.c,tg.c," g"):""}${tg.f?row("Fat",e.f,tg.f," g"):""}
@@ -156,17 +157,18 @@ Rules:
 5. Use null for any number that isn't printed. Never guess a number.`;
 const PROTOCOL=`<ul class="clean"><li>Scan fasted, or 2 to 3 hours after eating.</li><li>Same time of day as your last scan.</li><li>No workout before the scan.</li><li>Use the bathroom first; normal water intake the day before.</li></ul>`;
 function scanCard(last,c){const fem=/^f/i.test(((athletes[cur]||{}).a||{}).sex||""),bf=+last.bf;
- const z=bf?(fem?(bf<25?"green":bf<32?"yellow":"red"):(bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rc=ZC[z]||"#9aa4af";
+ const z=bf?(fem?(bf<10?"red":bf<14?"yellow":bf<25?"green":bf<32?"yellow":"red"):(bf<3?"red":bf<6?"yellow":bf<18?"green":bf<25?"yellow":"red")):"",ZC={green:"var(--wd-green)",yellow:"var(--wd-yellow)",red:"var(--wd-red)"},rc=ZC[z]||"#9aa4af";
  const r=42,C=2*Math.PI*r,pct=Math.min(1,(bf||0)/(fem?45:40));
  const ch=(k,good)=>{const v=c&&c.change&&c.change[k];if(v==null||!isFinite(v))return "";const n=Math.round(v*10)/10;if(!n)return `<i class="wch">no change</i>`;const ok=(n>0)===good;return `<i class="wch" style="color:${ok?"var(--wd-green)":"var(--wd-red)"}">${n>0?"▲ +":"▼ "}${n}</i>`};
- const tc=(k,good)=>{const v=c&&c.change&&c.change[k];if(good==null||v==null||!isFinite(v))return "var(--ink)";const n=Math.round(v*10)/10;return !n?"var(--ink)":((n>0)===good?"var(--wd-green)":"var(--wd-red)")};
+ const tc=(k,good)=>{const v=c&&c.change&&c.change[k];if(good==null||v==null||!isFinite(v))return "var(--ink)";const n=Math.round(v*10)/10,small=Math.abs(n)<(k==="bmr"?10:0.5);return small?"var(--wd-yellow)":((n>0)===good?"var(--wd-green)":"var(--wd-red)")};
+ const G=((((athletes[cur]||{}).a||{}).bodyGoals)||[]).join(" "),wGood=/Lose weight|Lose fat/.test(G)&&!/Gain weight/.test(G)?false:/Gain weight/.test(G)?true:null,hasPrev=!!(c&&c.change);
  const t=(lab,val,u,k,good,col)=>val===""||val==null?"":`<div class="wt wsm"><b style="color:${col}">${e_(val)}<small>${u}</small></b><span>${lab}</span>${ch(k,good)}</div>`;
  return `<div class="sheet wearcard scancard"><div class="whead"><span>LAST SCAN${last.type==="dexa"?" · DEXA":" · INBODY"}</span><span>${e_(last.date||"")}</span></div>
   <div class="wtop"><div class="wt wrec"><svg viewBox="0 0 100 100" class="wring"><circle cx="50" cy="50" r="${r}" fill="none" class="wtrack" stroke-width="9"/><circle cx="50" cy="50" r="${r}" fill="none" style="stroke:${rc}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}" transform="rotate(-90 50 50)"/></svg>
     <div class="wrecv"><b style="color:${rc}">${bf?e_(bf)+"%":"–"}</b><span style="color:${rc}">${F2C_term("bf","BODY FAT")}</span>${ch("bf",false)}</div></div>
-   <div class="wcol">${t("WEIGHT",last.weight," lb","weight",null,"var(--ink)").replace(/style="color:var\(--wd-(green|red)\)"/,'style="color:var(--muted)"')}${t("MUSCLE (SMM)",last.smm," lb","smm",true,tc("smm",true))}</div></div>
+   <div class="wcol">${wGood==null?t("WEIGHT",last.weight," lb","weight",null,"var(--ink)").replace(/style="color:var\(--wd-(green|red)\)"/,'style="color:var(--muted)"'):t("WEIGHT",last.weight," lb","weight",wGood,tc("weight",wGood))}${t("MUSCLE (SMM)",last.smm," lb","smm",true,tc("smm",true))}</div></div>
   <div class="wsmall">${t("LEAN MASS",last.lean," lb","lean",true,tc("lean",true))}${t("BMR",last.bmr," kcal","bmr",true,tc("bmr",true))}</div>
-  <p class="wadv small">Ring color: green ${fem?"under 25%":"under 18%"}, yellow ${fem?"25 to 32%":"18 to 25%"}, red above. Numbers and arrows compare with your scan before this one: green is the direction you want, red the opposite.</p></div>`}
+  <p class="wadv small">Body fat ring (American Council on Exercise ranges${fem?", women":", men"}): green ${fem?"14 to 24%":"6 to 17%"}, yellow ${fem?"25 to 31% or 10 to 13%":"18 to 24% or 3 to 5%"}, red ${fem?"32% and up or under 10%":"25% and up or under 3%"}.${+((athletes[cur]||{}).a||{}).age<18?" These are adult ranges; for teens, ask your coach or doctor what's right.":""} ${hasPrev?"Other numbers compare with your scan before this one: green is the direction you want, yellow is about the same, red is the wrong way"+(wGood==null?" (weight stays gray because your goals don't say gain or lose)":"")+".":"Muscle, lean mass, BMR and weight get green, yellow or red after your next scan, when there's one to compare with."}</p></div>`}
 const scansOf=()=>((X.body&&X.body.scans)||[]);
 const SCIC='<svg viewBox="0 0 24 24" class="wic"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
 window.F2C_rBody=function(){const v=$("v-body");if(!v)return;const b=X.body,ro=!mine();
