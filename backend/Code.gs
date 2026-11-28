@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.6.1';
+var VERSION = '2.7.0';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -28,7 +28,7 @@ var TABS = {
   Rules:       ['Section', 'Rule', 'Active', 'Updated'],
   Evidence:    ['Topic', 'NASM says', 'Current research', 'Strength', 'What the app does', 'Sources', 'Last checked', 'Status', 'Active'],
   Log:         ['When', 'Email', 'Action', 'Detail'],
-  Family:      ['Parent email', 'Child email', 'Added'],
+  Family:      ['Parent email', 'Child email', 'Added', 'Status'],
   Plans:       ['Athlete Id', 'Athlete', 'Plan version', 'Day', 'Order', 'Exercise', 'Sets', 'Rep range', 'Target RIR', 'Tempo', 'Rest', 'Increment', 'Equipment type', 'Notes', 'Active', 'Updated'],
   SetLog:      ['Id', 'Date', 'Athlete Id', 'Athlete', 'Day', 'Exercise', 'Set #', 'Weight', 'Reps', 'RIR', 'Tempo', 'Done', 'Source', 'Logged by', 'Logged at'],
   Progression: ['Athlete Id', 'Exercise', 'Current working weight', 'Next suggestion', 'Status', 'Reason', 'Sessions at top', 'Sessions below', 'Last session', 'Updated'],
@@ -62,6 +62,7 @@ var API = {
   uploadFile: uploadFile, getFile: getFile, removeUpload: removeUpload,
   submitRequest: submitRequest, cancelRequest: cancelRequest, markApplied: markApplied, getExtras: getExtras,
   syncSets: syncSets, syncMeals: syncMeals, saveWearables: saveWearables, whoopStatus: whoopStatus, whoopStart: whoopStart, whoopSync: whoopSync, whoopDisconnect: whoopDisconnect, saveInBody: saveInBody, markNotesSeen: markNotesSeen,
+  familyInvite: familyInvite, familyRespond: familyRespond, familyRemove: familyRemove,
   listVideos: listVideos, version: function () { return VERSION; }
 };
 
@@ -234,10 +235,82 @@ function getUser_(email) {
 
 /* ---------------------------------------------------------------- athletes */
 
-function childrenOf_(email) {
+function childrenOf_(email) {   // accepted links only (rows from before v2.7 have no status and count as accepted)
   var v = sheet_('Family').getDataRange().getValues(), out = [];
-  for (var i = 1; i < v.length; i++) if (String(v[i][0]).trim().toLowerCase() === email && v[i][1]) out.push(String(v[i][1]).trim().toLowerCase());
+  for (var i = 1; i < v.length; i++) if (String(v[i][0]).trim().toLowerCase() === email && v[i][1] && famOk_(v[i][3])) out.push(String(v[i][1]).trim().toLowerCase());
   return out;
+}
+function famOk_(st) { st = String(st || '').toLowerCase(); return st === '' || st === 'accepted'; }
+
+/* ---------------------------------------------- family links (v2.7.0) */
+/** Who this user is linked to, and invites waiting on either side. */
+function familyState_(email) {
+  var v = sheet_('Family').getDataRange().getValues(), st = { kids: [], parents: [], invites: [], sent: [] };
+  for (var i = 1; i < v.length; i++) {
+    var p = String(v[i][0]).trim().toLowerCase(), c = String(v[i][1]).trim().toLowerCase(), ok = famOk_(v[i][3]);
+    if (!p || !c) continue;
+    if (p === email) (ok ? st.kids : st.sent).push(c);
+    if (c === email) { if (ok) st.parents.push(p); else st.invites.push({ parent: p, name: (getUser_(p) || {}).name || '' }); }
+  }
+  return st;
+}
+function familyInvite(token, child) {
+  var u = auth_(token); child = String(child || '').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(child)) throw err_('bad_request', 'That email address doesn\'t look right.');
+  if (child === u.email) throw err_('bad_request', 'That\'s your own email.');
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = sheet_('Family'); if (!sh.getRange(1, 4).getValue()) sh.getRange(1, 4).setValue('Status');
+    var v = sh.getDataRange().getValues(), pend = 0;
+    for (var i = 1; i < v.length; i++) {
+      var p = String(v[i][0]).trim().toLowerCase(), c = String(v[i][1]).trim().toLowerCase();
+      if (p === u.email && c === child) return { state: famOk_(v[i][3]) ? 'linked' : 'pending' };
+      if (p === child && c === u.email) throw err_('bad_request', 'That person is already linked as your parent.');
+      if (p === u.email && !famOk_(v[i][3])) pend++;
+    }
+    if (pend >= 10) throw err_('bad_request', 'You have 10 invites waiting. Cancel some first.');
+    sh.appendRow([u.email, child, new Date(), 'pending']);
+  } finally { lock.releaseLock(); }
+  var who = (u.name ? u.name + ' (' + u.email + ')' : u.email);
+  try {
+    MailApp.sendEmail({ to: child, name: APP_NAME, subject: APP_NAME + ': ' + (u.name || u.email) + ' wants to link to your account',
+      htmlBody: '<div style="font-family:Arial,sans-serif;font-size:15px;color:#0f172a"><p><b>' + who + '</b> asked to link to you as a parent in ' + APP_NAME + '. If you accept, they can see your plan and how you\'re following it. They can\'t change anything.</p>' +
+        '<p>Open <a href="' + APP_URL + '">' + APP_URL + '</a> and sign in with this email to accept or decline. If you don\'t know this person, decline.</p></div>' });
+  } catch (e) { log_(u.email, 'family_mail_fail', String(e)); }
+  log_(u.email, 'family_invite', child);
+  return { state: 'pending' };
+}
+function familyRespond(token, parent, accept) {
+  var u = auth_(token); parent = String(parent || '').trim().toLowerCase();
+  var lock = LockService.getScriptLock(); lock.waitLock(20000); var done = false;
+  try {
+    var sh = sheet_('Family'), v = sh.getDataRange().getValues();
+    for (var i = v.length - 1; i >= 1; i--) {
+      if (String(v[i][0]).trim().toLowerCase() === parent && String(v[i][1]).trim().toLowerCase() === u.email && !famOk_(v[i][3])) {
+        if (accept) sh.getRange(i + 1, 4).setValue('accepted'); else sh.deleteRow(i + 1);
+        done = true;
+      }
+    }
+  } finally { lock.releaseLock(); }
+  if (!done) throw err_('bad_request', 'That invite isn\'t waiting anymore.');
+  if (accept) try { MailApp.sendEmail({ to: parent, name: APP_NAME, subject: APP_NAME + ': ' + (u.name || u.email) + ' accepted your family link',
+    htmlBody: '<div style="font-family:Arial,sans-serif;font-size:15px"><p>' + (u.name || u.email) + ' accepted. Open <a href="' + APP_URL + '">' + APP_NAME + '</a> and tap Family to see their plan.</p></div>' }); } catch (e) {}
+  log_(u.email, accept ? 'family_accept' : 'family_decline', parent);
+  return familyState_(u.email);
+}
+/** Either side can end a link or cancel an invite. */
+function familyRemove(token, other) {
+  var u = auth_(token); other = String(other || '').trim().toLowerCase();
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var sh = sheet_('Family'), v = sh.getDataRange().getValues();
+    for (var i = v.length - 1; i >= 1; i--) {
+      var p = String(v[i][0]).trim().toLowerCase(), c = String(v[i][1]).trim().toLowerCase();
+      if ((p === u.email && c === other) || (p === other && c === u.email)) sh.deleteRow(i + 1);
+    }
+  } finally { lock.releaseLock(); }
+  log_(u.email, 'family_remove', other);
+  return familyState_(u.email);
 }
 
 /** The athlete's row, and whether this user may read or change it. */
@@ -279,6 +352,7 @@ function listAthletes(token) {
     } catch (e) { log_(u.email, 'list_skip', v[i][0] + ': ' + e); }
   }
   u.family = kids;
+  try { u.fam = familyState_(u.email); } catch (e) {}
   return { user: u, athletes: out, demo: false, v: VERSION };
 }
 
