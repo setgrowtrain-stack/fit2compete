@@ -11,7 +11,7 @@ function looksHtml(){const cur=get("f2c-theme")||"cyan",T=LOOKS();
  const grp=(g,title)=>{const ks=Object.keys(T).filter(k=>(T[k].g||"l")===g);return ks.length?`<h4 class="sect lookgrp">${title}</h4><div class="looks" role="radiogroup" aria-label="${title}">${ks.map(tile).join("")}</div>`:""};
  return grp("l","Light backgrounds")+grp("d","Dark backgrounds")}
 theme(get("f2c-theme")||"cyan");
-let sub=get("f2c-plansub")||"plan";
+let sub="setup"; // v2.13: this tab is Settings; the written plan lives on the Coach tab
 function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
  let seg=$("planSeg"),sv=$("setupView");
  if(!seg){seg=document.createElement("div");seg.id="planSeg";seg.className="seg plansub";seg.innerHTML=`<button type="button" data-ps="plan">Written plan</button><button type="button" data-ps="setup">Setup &amp; devices</button>`;vp.insertBefore(seg,vp.firstChild)}
@@ -20,11 +20,11 @@ function ensure(){const pp=$("planPanel"),vp=$("v-plan");if(!pp||!vp)return;
  const top=pp.querySelector(":scope > .top");if(top&&top.parentNode!==$("setupHead"))$("setupHead").appendChild(top);
  const ap=$("addPanel");if(ap&&ap.parentNode!==sv)sv.insertBefore(ap,$("setupDevices").nextSibling);
  if(!$("wearBox")&&window.F2C_wearRender)try{F2C_wearRender()}catch(e){}
- seg.querySelectorAll("[data-ps]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.ps===sub));
+ seg.hidden=true;sub="setup";
  {const lb=sv.querySelector("#looksBox");if(lb)lb.innerHTML=looksHtml()}
- [...vp.children].forEach(c=>{if(c===seg)return;c.hidden=sub==="setup"?c!==sv:c===sv})}
+ [...vp.children].forEach(c=>{if(c===seg)return;c.hidden=c!==sv});if(!$("setTitle"))sv.insertAdjacentHTML("afterbegin",`<h2 class="settitle" id="setTitle">Settings</h2>`)}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-ps],button[data-theme],[data-gosetup]");if(!b||b.closest("#ptabs"))return;
- if(b.dataset.ps){sub=b.dataset.ps;put("f2c-plansub",sub);ensure();return}
+ if(b.dataset.ps){ensure();return}
  if(b.dataset.theme){theme(b.dataset.theme);ensure();window.F2C_holoPanel&&0;return}
  if(b.dataset.gosetup!=null){sub="setup";put("f2c-plansub",sub);const t=document.querySelector('#ptabs button[data-tab="plan"]');t&&t.click();setTimeout(ensure,0)}});
 const mo=new MutationObserver(()=>{if($("v-plan")){mo.disconnect();ensure();new MutationObserver(()=>{clearTimeout(ensure._t);ensure._t=setTimeout(ensure,50)}).observe($("planPanel"),{childList:true})}});

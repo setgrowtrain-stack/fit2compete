@@ -158,7 +158,7 @@ rep('''sets.push(`${e_(v.wt||"–")}×${e_(v.reps||"–")}''', '''sets.push(`${e
 rep(''' coach:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'};''',
     ''' coach:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',body:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM7 9h10M12 9v12M9 21l3-6 3 6"/>'};''')
 rep('const TABS=[["today","Today"],["workouts","Workouts"],["meals","Meals"],["supps","Supps"],["coach","Coach"],["plan","Plan"]];',
-    'const TABS=[["today","Today"],["workouts","Workouts"],["meals","Meals"],["supps","Supps"],["body","Body"],["coach","Coach"],["plan","Plan"]];')
+    'const TABS=[["today","Today"],["workouts","Workouts"],["meals","Meals"],["supps","Supps"],["body","Body"],["coach","Coach"],["plan","Settings"]];')
 rep('<div id="v-supps" class="pview"></div><div id="v-coach" class="pview"></div>',
     '<div id="v-supps" class="pview"></div><div id="v-body" class="pview"></div><div id="v-coach" class="pview"></div>')
 rep('coach:()=>window.F2C_rCoach&&window.F2C_rCoach()})[ui.tab]();',
@@ -199,7 +199,7 @@ exec(open('/home/claude/v2/patch_extra.py',encoding='utf-8').read())
 exec(open('/home/claude/v2/patch_fast.py',encoding='utf-8').read())
 
 # ---------- v2 module, loaded before the service worker line ----------
-mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/water.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/cards.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/library.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/focus.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/family.js', encoding='utf-8').read()
+mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/water.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/cards.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/library.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/focus.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/family.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/coachplan.js', encoding='utf-8').read()
 rep('<script>if("serviceWorker" in navigator)', '<script>\n' + mod + '\n</script>\n<script>if("serviceWorker" in navigator)')
 
 open(dst, 'w', encoding='utf-8').write(s)
