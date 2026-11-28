@@ -117,3 +117,7 @@ rep('''   try{if(window.caches){const root=new URL("./",location.href).href,fres
     '''   if(window.F2C_splash)F2C_splash("Updating to the newest version…");
    try{if(window.F2C_updateNow)await F2C_updateNow()}catch(e){}
    location.reload();return true}}catch(e){}return false}''')
+
+# v2.8: workout flow (one exercise at a time while a workout runs) and supersets, see focus.js
+rep('h+=`</div>`+(window.F2C_wkTools?F2C_wkTools(w,ui.day):"");v.innerHTML=h;',
+    'h+=`</div>`+(window.F2C_wkTools?F2C_wkTools(w,ui.day):"");v.innerHTML=h;try{window.F2C_wkDecorate&&F2C_wkDecorate(v,XS,w,ui.day)}catch(err){console.warn("[F2C] workout flow",err)}')

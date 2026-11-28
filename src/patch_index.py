@@ -199,7 +199,7 @@ exec(open('/home/claude/v2/patch_extra.py',encoding='utf-8').read())
 exec(open('/home/claude/v2/patch_fast.py',encoding='utf-8').read())
 
 # ---------- v2 module, loaded before the service worker line ----------
-mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/water.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/cards.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/library.js', encoding='utf-8').read()
+mod = open(module, encoding='utf-8').read() + '\n' + open('/home/claude/v2/holo.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/workout.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/water.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/wear.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/supp.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/pain.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/setup.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/cards.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/library.js', encoding='utf-8').read() + '\n' + open('/home/claude/v2/focus.js', encoding='utf-8').read()
 rep('<script>if("serviceWorker" in navigator)', '<script>\n' + mod + '\n</script>\n<script>if("serviceWorker" in navigator)')
 
 open(dst, 'w', encoding='utf-8').write(s)

@@ -31,6 +31,7 @@ const key=(w,day)=>`w${w}|${day}`;
 function S(){const r=R();r.wk=r.wk||{};return r.wk}
 let ACTIVE=null; // {k, start} mirrored in rec.wk[k]
 function load(){try{const a=JSON.parse(localStorage.getItem("f2c_active")||"null");if(a&&R()&&S()[a.k]&&!S()[a.k].end)ACTIVE=a;else ACTIVE=null}catch(e){ACTIVE=null}}
+window.F2C_wkActive=()=>{load();return ACTIVE};window.F2C_wkSaveActive=()=>saveActive();window.F2C_wkFinish=()=>finish();
 function saveActive(){try{ACTIVE?localStorage.setItem("f2c_active",JSON.stringify(ACTIVE)):localStorage.removeItem("f2c_active")}catch(e){}}
 window.F2C_wkStart=function(w,day){if(!R())return "";load();const k=key(w,day),s=S()[k];
  if(s&&s.end)return `<div class="wkdone"><b>Workout time ${mmss(s.sec)}</b><span class="muted small">${s.sets||0} sets${s.lb?" · "+Math.round(s.lb).toLocaleString("en-US")+" lb lifted":""}${s.avgRest?" · average rest "+mmss(s.avgRest):""}</span><button type="button" class="linkbtn small" data-wkreset="${k}">Start over</button></div>`;
@@ -47,7 +48,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 /* ---------- rest countdown ---------- */
 let WORK=null; // {end,total,key,beeped}
-window.F2C_startWork=function(s,sec,btn){audio();if(!ACTIVE){const k=key(T().ui.week,T().ui.day);start(k)}
+window.F2C_startWork=function(s,sec,btn){audio();if(!ACTIVE){const k=key(T().ui.week,T().ui.day),c0=btn.closest(".excard"),k0=c0&&c0.querySelector("[data-k]"),s0=k0?k0.dataset.k.split("|")[2]:"";start(k);window.F2C_wkFocusCard&&F2C_wkFocusCard(s0)}
  const card=btn.closest(".excard"),rows=[...card.querySelectorAll('[data-f="done"]')],next=rows.find(x=>!x.checked);
  REST=null;WORK={end:Date.now()+sec*1000,total:sec,beeped:{},el:next?next.dataset.k:null};beep(660,0.15,0.4);tick()};
 let REST=null; // {end, total, beeped:Set}
@@ -56,7 +57,7 @@ function endRest(){REST=null;if(ACTIVE){ACTIVE.setStart=Date.now();saveActive()}
 window.F2C_setDone=function(k,checked){if(!ACTIVE||!checked)return;const L=T().LOG(),v=L[k];if(!v)return;const now=Date.now(),info=(window.F2C_KI||{})[k]||{};
  v.sec=Math.round((now-(ACTIVE.setStart||ACTIVE.start))/1000);v.at=now;
  const s=S()[ACTIVE.k];if(s){s.done=(s.done||0)+1;if(ACTIVE.lastRest)s.rests=(s.rests||[]).concat([ACTIVE.lastRest]).slice(-60)}
- T().touch();const sec=F2C_restSec(info.ex,info.rest);ACTIVE.restFor=k;saveActive();startRest(sec);
+ T().touch();const ssr=window.F2C_ssRest?F2C_ssRest(k):null,sec=ssr!=null?ssr:F2C_restSec(info.ex,info.rest);ACTIVE.restFor=k;saveActive();startRest(sec);
  const row=document.querySelector(`[data-k="${CSS.escape(k)}"][data-f="done"]`);const sr=row&&row.closest(".setrow");if(sr){let t=sr.querySelector(".settime");if(!t){t=document.createElement("span");t.className="settime";sr.appendChild(t)}t.textContent=mmss(v.sec)}};
 function bar(){let b=$("wkbar");if(!ACTIVE){if(b)b.remove();return null}
  if(!b){b=document.createElement("div");b.id="wkbar";b.className="wkbar2";document.body.appendChild(b);
@@ -85,7 +86,7 @@ function tick(){const b=bar();if(!b){clearInterval(iv);iv=null;return}if(!iv)iv=
  else{const setT=Math.round((Date.now()-(ACTIVE.setStart||ACTIVE.start))/1000);rest=`<div class="rest idle"><span class="label">This set</span><b>${mmss(setT)}</b><span class="muted small">Check off the set when you finish it.</span></div>`}
  const html=`<div class="wktime"><span class="label">Workout</span><b>${mmss(el)}</b></div>${rest}<button type="button" class="btn small fin" data-r="finish">Finish</button>`;
  if(b._h!==html){b.innerHTML=html;b._h=html}}
-function start(k){audio();beep(660,0.08,0.2);const now=Date.now();S()[k]={start:now};ACTIVE={k,start:now,setStart:now};saveActive();T().touch();keepAwake(true);tick();redraw()}
+function start(k){audio();beep(660,0.08,0.2);const now=Date.now();S()[k]={start:now};ACTIVE={k,start:now,setStart:now,step:0};saveActive();T().touch();keepAwake(true);tick();redraw()}
 function finish(){if(!ACTIVE)return;if(!confirm("Finish this workout?"))return;const s=S()[ACTIVE.k]||{},now=Date.now(),L=T().LOG();
  const keys=Object.keys(L).filter(k=>k.startsWith(ACTIVE.k+"|")&&L[k].done);let lb=0;
  keys.forEach(k=>{const info=(window.F2C_KI||{})[k]||{};lb+=window.F2C_setLoad?F2C_setLoad(info.ex||k.split("|")[2],L[k],info.range):0});
