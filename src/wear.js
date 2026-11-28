@@ -106,7 +106,7 @@ window.F2C_wearToday=function(){const W=X().wear||[];if(!W.length)return "";cons
    <div class="wt wmid" data-wd="strain" role="button" tabindex="0" aria-label="Strain details"><b style="color:${stc}">${last.strain!=null?(+last.strain).toFixed(1):"–"}</b><span style="color:${stc}">STRAIN</span></div></div></div>
   ${small?`<div class="wsmall">${small}</div>`:""}
   <p class="wtap">Tap Recovery, Sleep or Strain for the details</p>
-  ${stale?`<p class="wadv">No new data for a couple of days. Sync or upload on the Body tab.</p>`:`<p class="wadv">${esc(advice(last,base))}</p>`}</div>`};
+  ${stale?`<p class="wadv">No new data for a couple of days. Sync or upload in Settings › Connected devices.</p>`:`<p class="wadv">${esc(advice(last,base))}</p>`}</div>`};
 function wearHtml(){const W=X().wear||[],X7=W.slice(-7),P7=W.slice(-14,-7),X30=W.slice(-30);
  let h=`<div class="sheet" id="wearBox"><span class="label">Connected devices</span>`;
  const wh=X().whoop||{};

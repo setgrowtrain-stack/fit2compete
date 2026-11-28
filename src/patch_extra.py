@@ -150,3 +150,7 @@ rep('plan:\'<path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6"/>\'',
 # v2.14: the plan check box always lives with the plan on the Coach tab
 rep('let box=$("checksBox");if(!box){box=document.createElement("div");box.id="checksBox";vp.insertBefore(box,vp.firstChild)}',
     'let box=$("checksBox");if(!box){box=document.createElement("div");box.id="checksBox";const ps=$("planStore");if(ps)ps.prepend(box);else vp.insertBefore(box,vp.firstChild)}')
+# v2.16: the Today "things to check" banner opens the plan check on the Coach tab
+rep('const gc=$("goChecks");if(gc)gc.onclick=()=>{ui.tab=open?"plan":"supps";saveUI();show()};',
+    'const gc=$("goChecks");if(gc)gc.onclick=()=>{if(open&&window.F2C_openPlanPart){F2C_openPlanPart("check");return}ui.tab=open?"coach":"supps";saveUI();show()};')
+rep('Upload it with Plan › Add new info, or type it in.', 'Upload it with Settings › Your plan and answers › Add new info, or type it in.')
