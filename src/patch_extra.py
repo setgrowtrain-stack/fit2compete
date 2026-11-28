@@ -136,3 +136,6 @@ rep('function intakeText(a){',
 # review screen says plainly what a blank health screen means instead of blocking
 rep('if(+a.age>0&&+a.age<13)h+=',
     'if(!PARQ.some(k=>!empty(a[k])))h+=`<div class="note gold"><b>Health screen not answered.</b> That\'s fine. Your plan will keep conditioning moderate at first and list a quick check with your doctor as step one. You can answer it any time.</div>`;\n if(+a.age>0&&+a.age<13)h+=')
+# v2.12: chooser text matches the five required answers
+rep('Only a few answers are required: your name, age, goals, training days and the health screen.',
+    'Only five answers are required: your name, age, height, weight and what you\'re training for.')
