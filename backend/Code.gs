@@ -19,7 +19,7 @@ var APP_URL = 'https://setgrowtrain-stack.github.io/fit2compete/';
 var SESSION_DAYS = 90;
 var CODE_MINUTES = 10;
 var SCAN_DAYS = 28;            // InBody every 4 weeks
-var VERSION = '2.6.0';
+var VERSION = '2.6.1';
 
 var TABS = {
   Users:       ['Email', 'Name', 'Role', 'Active', 'Added'],
@@ -269,12 +269,12 @@ function listAthletes(token) {
   for (var i = 1; i < v.length; i++) {
     if (!v[i][0]) continue;
     var owner = String(v[i][1]).trim().toLowerCase(), isKid = kids.indexOf(owner) >= 0;
-    if (u.role !== 'admin' && owner !== u.email && !isKid) continue;
+    if (owner !== u.email && !isKid) continue;   // v2.6.1: admins see only their own profile and linked family, not every member
     try {
       var at = { r: i + 1, id: String(v[i][0]), owner: owner, name: String(v[i][2] || ''), fileId: String(v[i][6]) };
       var rec = applyAnswers_(at) || readRec_(at.fileId);
       rec.owner = v[i][1];
-      if (isKid && owner !== u.email) rec.familyChild = true;
+      if (isKid && owner !== u.email && u.role !== 'admin') rec.familyChild = true;
       out.push(rec);
     } catch (e) { log_(u.email, 'list_skip', v[i][0] + ': ' + e); }
   }
