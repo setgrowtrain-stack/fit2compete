@@ -121,3 +121,18 @@ rep('function filled(a,f){if(f.type==="photos")',
 # v2.9: a way back to the current plan from the questions, without rebuilding
 rep('const _renderStep=renderStep;renderStep=function(){_renderStep();',
     'const _renderStep=renderStep;renderStep=function(){_renderStep();try{const rr=athletes[cur],sb=document.getElementById("stepBody");if(rr&&rr.plan&&sb&&!document.getElementById("keepPlanBox")){const d=document.createElement("div");d.id="keepPlanBox";d.className="savedNote";d.style.marginBottom="14px";d.innerHTML=`<span><b>Your current plan is still here.</b> Your answers are saved. Go back to it now, or finish here and build an updated plan.</span><div class="nav"><span></span><button class="btn" type="button" id="keepPlanBtn">Back to my plan</button></div>`;sb.prepend(d);document.getElementById("keepPlanBtn").onclick=()=>{try{readStep()}catch(e){}renderAll(true);window.scrollTo(0,0)}}}catch(e){}')
+
+# v2.10: only name, height, weight and goal are required; nothing else ever blocks a plan
+rep('function missingIn(a,sec){',
+    'const F2C_REQ=["name","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));\nfunction missingIn(a,sec){')
+# the button never sits there dead: it says what's needed and jumps to it; with a plan on file it updates that plan
+rep('${missing.length||(+a.age>0&&+a.age<13)?" disabled":""}>Build my plan</button>',
+    '${(+a.age>0&&+a.age<13)?" disabled":""}>${athletes[cur]&&athletes[cur].plan?"Update my plan":"Build my plan"}</button>')
+rep('async function build(regen){\n if(BUSY)return;',
+    'async function build(regen){\n if(BUSY)return;\n {const mm=allMissing(A());if(mm.length){const si=SECTIONS.findIndex(s=>s.f.includes(mm[0]));const st0=document.getElementById("buildStatus");if(st0)st0.textContent="Add your "+mm.map(f=>lbl(f,A()).replace(/\\?$/,"").toLowerCase()).join(", ")+" first. Taking you there.";setTimeout(()=>{try{readStep()}catch(e){}showMissing=true;step=si<0?0:si;persist(cur);renderStep();window.scrollTo(0,0)},1200);return}}')
+# blank answers get safe, stated defaults in every plan request
+rep('function intakeText(a){',
+    'function F2C_gaps(a){const g=[];const v=k=>!empty(a[k]);\n if(!PARQ.some(v))g.push("NOT ANSWERED: health screen. Treat as not screened: keep conditioning moderate, no max-effort or all-out intervals in the first 2 weeks, and list a pre-exercise health check with a doctor as step one.");\n else if(!anyYes(a)&&!v("q_any")&&PARQ7.some(k=>!v(k)))g.push("NOT ANSWERED: part of the health screen. Keep conditioning moderate until it is answered.");\n if(!v("age"))g.push("NOT ANSWERED: age. Program as for an adult beginner-to-intermediate; ask for age in the summary.");\n else if(+a.age<18&&a.minor!=="Yes")g.push("NOT ANSWERED: parent or guardian agreement for an athlete under 18. Use teen-appropriate, technique-first programming, no maximal lifts, and say a parent should review the plan.");\n if(!v("days"))g.push("NOT ANSWERED: training days. Use 3 lifting days a week.");\n if(!v("sex"))g.push("NOT ANSWERED: sex. Use ranges that work for either, and note it in the summary.");\n return g.length?"\\n"+g.join("\\n"):""}\nfunction intakeText(a){return _intakeText(a)+F2C_gaps(a)}\nfunction _intakeText(a){')
+# review screen says plainly what a blank health screen means instead of blocking
+rep('if(+a.age>0&&+a.age<13)h+=',
+    'if(!PARQ.some(k=>!empty(a[k])))h+=`<div class="note gold"><b>Health screen not answered.</b> That\'s fine. Your plan will keep conditioning moderate at first and list a quick check with your doctor as step one. You can answer it any time.</div>`;\n if(+a.age>0&&+a.age<13)h+=')

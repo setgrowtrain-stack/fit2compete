@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fit 2 Compete">
-<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795827060";</script>
+<script>window.F2C_API="https://script.google.com/macros/s/AKfycbzE_G6pPiveBSk9HWIGFDXRP6Zp5IbcFPvHvIBAzidx6kjnKICLmrbkX1ZwfQrSlOPN/exec";window.F2C_BUILD="1795829030";</script>
 <title>Fit 2 Compete</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Lato:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'">
 <style>
@@ -1106,6 +1106,7 @@ function lvlOf(a,k){return a.lvl&&a.lvl[k]?a.lvl[k]:(a.mode==="quick"?"q":"d")}
 function inLvl(f,L){return f.lvl==="q"||(f.lvl==="d"&&L==="d")||(f.lvl==="qo"&&L==="q")}
 function visible(a,sec){const L=lvlOf(a,sec.k);return sec.f.filter(f=>inLvl(f,L)&&(!f.show||f.show(a)))}
 function filled(a,f){if(f.id==="q_any"&&empty(a.q_any)&&PARQ7.every(k=>!empty(a[k])))return true;if(f.type==="photos")return Object.keys(photos).length>0;if(f.type==="doc")return (a[f.id+"Mode"]||"skip")!=="skip"&&!!a[f.id];if(f.type==="gallery")return !!a[f.res]||!!(gal[f.id]&&gal[f.id].length);return !empty(a[f.id])}
+const F2C_REQ=["name","height","weight","focus"];SECTIONS.forEach(s=>s.f.forEach(f=>{f.req=F2C_REQ.includes(f.id)?1:0}));
 function missingIn(a,sec){return visible(a,sec).filter(f=>f.req&&!filled(a,f))}
 function allMissing(a){return SECTIONS.flatMap(s=>missingIn(a,s))}
 function detail(a){const fs=ALLF.filter(f=>f.lvl!=="qo"&&(!f.show||f.show(a)));
@@ -1186,12 +1187,13 @@ function reviewHTML(a){
  const skipped=SECTIONS.filter(s=>a.skipped&&a.skipped[s.k]).map(s=>s.t);
  let h="";
  if(anyYes(a)&&a.cleared!=="Yes, cleared")h+=`<div class="note warn"><b>Doctor clearance first.</b> At least one health screen answer is "yes". The plan will keep conditioning moderate and list clearance as step one.</div>`;
+ if(!PARQ.some(k=>!empty(a[k])))h+=`<div class="note gold"><b>Health screen not answered.</b> That's fine. Your plan will keep conditioning moderate at first and list a quick check with your doctor as step one. You can answer it any time.</div>`;
  if(+a.age>0&&+a.age<13)h+=`<div class="note warn"><b>Not for children under 13.</b> This prototype is not built for them.</div>`;
  if(has(a.focus,FOCUS[3])&&!Object.keys(photos).length&&!filled(a,{type:"doc",id:"scan"})&&!filled(a,{type:"doc",id:"labs"}))h+=`<div class="note gold"><b>Recommendations need something to go on.</b> You asked Claude to recommend goals. Add physique photos, a body scan or lab work for recommendations based on your body; otherwise they come from your answers only.</div>`;
  if(missing.length)h+=`<div class="note gold"><b>Still needed:</b> ${missing.length>3?missing.length+" required answers, including "+missing.slice(0,2).map(esc).join(" and "):missing.map(esc).join("; ")}.</div>`;
  else h+=`<div class="note ok"><b>Ready to build: ${dt.tier.toLowerCase()} plan.</b> ${dt.pct<65?"Every extra answer, photo or file makes the plan more personal, but none of them are required.":"Plenty of detail for a personal plan."}${skipped.length?" Skipped: "+skipped.map(esc).join(", ")+".":""}</div>`;
  h+=`<dl class="review">${rows.map(r=>`<div><dt>${esc(r[0])}</dt><dd style="margin:0;white-space:pre-wrap">${esc(String(r[1]).length>600?String(r[1]).slice(0,600)+"…":r[1])}</dd></div>`).join("")}</dl>`;
- h+=`<div class="nav"><span class="status" id="buildStatus"></span><button class="btn gold" id="build" type="button"${missing.length||(+a.age>0&&+a.age<13)?" disabled":""}>Build my plan</button></div>`;
+ h+=`<div class="nav"><span class="status" id="buildStatus"></span><button class="btn gold" id="build" type="button"${(+a.age>0&&+a.age<13)?" disabled":""}>${athletes[cur]&&athletes[cur].plan?"Update my plan":"Build my plan"}</button></div>`;
  return `<div class="field wide">${h}</div>`;
 }
 
@@ -1508,7 +1510,16 @@ Reply with ONLY one JSON object, no prose outside it, in this shape (keep string
 const MEAL_PROMPT=`You are a sports nutritionist. Write a practical meal plan that hits this athlete's nutrition targets from their training plan. Rules: use only foods that fit every listed diet choice; never include a listed allergen or disliked food; favor foods they like; respect their eating window and meals per day; match their cooking time and budget; spread protein evenly at about 0.4 g/kg per meal; put more carbs around training. Use normal grocery-store foods with simple household measures (cups, oz, pieces). Day totals must add up to the targets within about 5%. Reply with ONLY one JSON object:
 {"targets":"one line with the daily targets used","days":[{"day":"Training day","meals":[{"time":"12:00 PM","name":"Meal name","items":["6 oz chicken breast","1 cup cooked rice"],"calories":650,"protein_g":50,"carbs_g":70,"fat_g":15}],"totals":{"calories":2900,"protein_g":190,"carbs_g":330,"fat_g":85}}],"groceryList":[{"group":"Protein","items":["..."]}],"prepTips":["..."],"swaps":["simple substitutions that keep the numbers close"]}`;
 
-function intakeText(a){const lines=[];ALLF.forEach(f=>{if(f.show&&!f.show(a))return;
+function F2C_gaps(a){const g=[];const v=k=>!empty(a[k]);
+ if(!PARQ.some(v))g.push("NOT ANSWERED: health screen. Treat as not screened: keep conditioning moderate, no max-effort or all-out intervals in the first 2 weeks, and list a pre-exercise health check with a doctor as step one.");
+ else if(!anyYes(a)&&!v("q_any")&&PARQ7.some(k=>!v(k)))g.push("NOT ANSWERED: part of the health screen. Keep conditioning moderate until it is answered.");
+ if(!v("age"))g.push("NOT ANSWERED: age. Program as for an adult beginner-to-intermediate; ask for age in the summary.");
+ else if(+a.age<18&&a.minor!=="Yes")g.push("NOT ANSWERED: parent or guardian agreement for an athlete under 18. Use teen-appropriate, technique-first programming, no maximal lifts, and say a parent should review the plan.");
+ if(!v("days"))g.push("NOT ANSWERED: training days. Use 3 lifting days a week.");
+ if(!v("sex"))g.push("NOT ANSWERED: sex. Use ranges that work for either, and note it in the summary.");
+ return g.length?"\n"+g.join("\n"):""}
+function intakeText(a){return _intakeText(a)+F2C_gaps(a)}
+function _intakeText(a){const lines=[];ALLF.forEach(f=>{if(f.show&&!f.show(a))return;
   if(f.type==="photos")return;
   if(f.type==="doc"){if((a[f.id+"Mode"]||"skip")==="skip"||!a[f.id])return;lines.push(`${f.l}${a[f.id+"Date"]?" (dated "+a[f.id+"Date"]+")":""}:\n${a[f.id]}`);return}
   if(f.type==="gallery"){if(a[f.res])lines.push(`${f.resLabel}:\n${a[f.res]}`);return}
@@ -1539,6 +1550,7 @@ async function buildDays(plan,a,only,st){
  return days}
 async function build(regen){
  if(BUSY)return;
+ {const mm=allMissing(A());if(mm.length){const si=SECTIONS.findIndex(s=>s.f.includes(mm[0]));const st0=document.getElementById("buildStatus");if(st0)st0.textContent="Add your "+mm.map(f=>lbl(f,A()).replace(/\?$/,"").toLowerCase()).join(", ")+" first. Taking you there.";setTimeout(()=>{try{readStep()}catch(e){}showMissing=true;step=si<0?0:si;persist(cur);renderStep();window.scrollTo(0,0)},1200);return}}
  if(await appOutdated())return;
  const st=statusSink(document.getElementById("buildStatus")?"buildStatus":"reviseStatus");BUSY=true;
  const a=A();const btns=[document.getElementById("build"),document.getElementById("regen")].filter(Boolean);btns.forEach(b=>b.disabled=true);
@@ -1568,7 +1580,7 @@ async function build(regen){
  }catch(e){if(st)st.textContent=errCopy(e)}
  finally{BUSY=false;st.done();btns.forEach(b=>b.disabled=false);const bb=$("build");if(bb)bb.disabled=false}
 }
-function intakeNow(a){return intakeText(a).split("\n").filter(l=>!/^Today's date:/.test(l)).join("\n")}
+function intakeNow(a){return intakeText(a).split("\n").filter(l=>!/^Today's date:/.test(l)&&!/^NOT ANSWERED:/.test(l)).join("\n")}
 const ADJUST_RULES=`HOW TO CHANGE AN EXISTING PLAN (the athlete asked that new information adjusts their plan, not replaces it):
 - Keep the plan. Change only what the new or changed information actually affects. Keep the week layout, exercise names and order, sets, rep ranges and tempos the same unless the change requires otherwise, because the athlete's progress tracking follows exercise names.
 - Never swap exercises for variety. When an exercise must change (injury, equipment), pick the closest replacement for the same muscles and keep its sets and reps.

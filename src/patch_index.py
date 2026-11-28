@@ -68,7 +68,7 @@ between('async function build(regen){', 'function errCopy(e){', r'''async functi
  }catch(e){if(st)st.textContent=errCopy(e)}
  finally{BUSY=false;st.done();btns.forEach(b=>b.disabled=false);const bb=$("build");if(bb)bb.disabled=false}
 }
-function intakeNow(a){return intakeText(a).split("\n").filter(l=>!/^Today's date:/.test(l)).join("\n")}
+function intakeNow(a){return intakeText(a).split("\n").filter(l=>!/^Today's date:/.test(l)&&!/^NOT ANSWERED:/.test(l)).join("\n")}
 const ADJUST_RULES=`HOW TO CHANGE AN EXISTING PLAN (the athlete asked that new information adjusts their plan, not replaces it):
 - Keep the plan. Change only what the new or changed information actually affects. Keep the week layout, exercise names and order, sets, rep ranges and tempos the same unless the change requires otherwise, because the athlete's progress tracking follows exercise names.
 - Never swap exercises for variety. When an exercise must change (injury, equipment), pick the closest replacement for the same muscles and keep its sets and reps.
